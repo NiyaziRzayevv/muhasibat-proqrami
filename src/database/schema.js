@@ -273,6 +273,46 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_stock_movements_date ON stock_movements(created_at);
   CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date);
   CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
+
+  CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    customer_id INTEGER,
+    customer_name TEXT,
+    phone TEXT,
+    date TEXT NOT NULL,
+    time TEXT DEFAULT '09:00',
+    duration INTEGER DEFAULT 60,
+    status TEXT DEFAULT 'pending',
+    notes TEXT,
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date);
+  CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
+  CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customer_id);
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    priority TEXT DEFAULT 'medium',
+    status TEXT DEFAULT 'todo',
+    due_date TEXT,
+    assigned_to TEXT,
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+  CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+  CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 `;
 
 module.exports = { SCHEMA };

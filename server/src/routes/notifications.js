@@ -76,6 +76,45 @@ router.post('/check', requireAuth, async (req, res, next) => {
       }
     }
 
+    if (!existingTypes.has('upcoming_appointments')) {
+      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const upcomingCount = await prisma.appointment.count({
+        where: { date: { gte: today, lte: tomorrow }, status: { in: ['pending', 'confirmed'] } },
+      });
+      if (upcomingCount > 0) {
+        const n = await prisma.notification.create({
+          data: {
+            type: 'upcoming_appointments',
+            title: 'Yaxın Randevular',
+            message: `${upcomingCount} randevu bu gün/sabah üçün planlaşdırılıb`,
+            data: { count: upcomingCount },
+            userId,
+          }
+        });
+        created.push(mapNotif(n));
+      }
+    }
+
+    if (!existingTypes.has('overdue_tasks')) {
+      const today = new Date().toISOString().split('T')[0];
+      const overdueCount = await prisma.task.count({
+        where: { status: { not: 'done' }, dueDate: { not: null, lt: today } },
+      });
+      if (overdueCount > 0) {
+        const n = await prisma.notification.create({
+          data: {
+            type: 'overdue_tasks',
+            title: 'Gecikmiş Tapşırıqlar',
+            message: `${overdueCount} tapşırığın son tarixi keçib`,
+            data: { count: overdueCount },
+            userId,
+          }
+        });
+        created.push(mapNotif(n));
+      }
+    }
+
     res.json({ success: true, data: { created } });
   } catch (err) { next(err); }
 });

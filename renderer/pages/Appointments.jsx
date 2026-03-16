@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Calendar, Clock, Plus, Trash2, Edit3, CheckCircle, X, Search,
   User, Phone, AlarmClock, ChevronLeft, ChevronRight, Filter, Loader2, Save
@@ -6,6 +6,7 @@ import {
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 
 const STATUS = {
   pending:   { label: 'Gözləyir',    cls: 'bg-amber-500/20 text-amber-400 border-amber-700/30' },
@@ -16,16 +17,10 @@ const STATUS = {
 
 const EMPTY = { title: '', customer_name: '', phone: '', date: new Date().toISOString().split('T')[0], time: '09:00', duration: 60, notes: '', status: 'pending' };
 
-function loadFromStorage() {
-  try { return JSON.parse(localStorage.getItem('appointments') || '[]'); } catch { return []; }
-}
-function saveToStorage(data) {
-  localStorage.setItem('appointments', JSON.stringify(data));
-}
-
 export default function Appointments() {
   const { showNotification } = useApp();
-  const [appointments, setAppointments] = useState(loadFromStorage);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -33,14 +28,19 @@ export default function Appointments() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [deleteId, setDeleteId] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // list | today
+  const [viewMode, setViewMode] = useState('list');
 
   const today = new Date().toISOString().split('T')[0];
 
-  function persist(data) {
-    setAppointments(data);
-    saveToStorage(data);
-  }
+  const loadData = useCallback(async () => {
+    try {
+      const res = await apiBridge.getAppointments({});
+      if (res.success) setAppointments(res.data || []);
+    } catch (e) { console.error('Appointments load error:', e); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   function openCreate() {
     setEditing(null);
@@ -50,31 +50,46 @@ export default function Appointments() {
 
   function openEdit(a) {
     setEditing(a);
-    setForm({ ...a });
+    setForm({ title: a.title, customer_name: a.customer_name || '', phone: a.phone || '', date: a.date, time: a.time || '09:00', duration: a.duration || 60, notes: a.notes || '', status: a.status || 'pending' });
     setModalOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.title.trim()) { showNotification('Başlıq daxil edin', 'error'); return; }
     if (!form.date) { showNotification('Tarix seçin', 'error'); return; }
-    if (editing) {
-      persist(appointments.map(a => a.id === editing.id ? { ...form, id: editing.id } : a));
-      showNotification('Yeniləndi', 'success');
-    } else {
-      persist([...appointments, { ...form, id: Date.now() }]);
-      showNotification('Randevu əlavə edildi', 'success');
-    }
-    setModalOpen(false);
+    try {
+      if (editing) {
+        const res = await apiBridge.updateAppointment(editing.id, form);
+        if (res.success) { showNotification('Yeniləndi', 'success'); }
+        else { showNotification(res.error || 'Xəta', 'error'); }
+      } else {
+        const res = await apiBridge.createAppointment(form);
+        if (res.success) { showNotification('Randevu əlavə edildi', 'success'); }
+        else { showNotification(res.error || 'Xəta', 'error'); }
+      }
+      setModalOpen(false);
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
-  function handleDelete() {
-    persist(appointments.filter(a => a.id !== deleteId));
-    setDeleteId(null);
-    showNotification('Silindi', 'success');
+  async function handleDelete() {
+    try {
+      await apiBridge.deleteAppointment(deleteId);
+      setDeleteId(null);
+      showNotification('Silindi', 'success');
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
-  function changeStatus(id, status) {
-    persist(appointments.map(a => a.id === id ? { ...a, status } : a));
+  async function changeStatus(id, status) {
+    try {
+      await apiBridge.updateAppointment(id, { status });
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full"><Loader2 size={24} className="animate-spin text-primary-400" /></div>;
   }
 
   const filtered = appointments.filter(a => {

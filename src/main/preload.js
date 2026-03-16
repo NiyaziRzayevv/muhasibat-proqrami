@@ -180,6 +180,25 @@ contextBridge.exposeInMainWorld('api', {
   generateLicenseKey: () => ipcRenderer.invoke('license:generateKey'),
   getMachineId: () => ipcRenderer.invoke('license:machineId'),
 
+  // Appointments
+  getAppointments: (filters) => ipcRenderer.invoke('appointments:list', filters),
+  getAppointment: (id) => ipcRenderer.invoke('appointments:get', id),
+  createAppointment: (data) => ipcRenderer.invoke('appointments:create', data),
+  updateAppointment: (id, data) => ipcRenderer.invoke('appointments:update', id, data),
+  deleteAppointment: (id) => ipcRenderer.invoke('appointments:delete', id),
+  getUpcomingAppointments: (days, userId) => ipcRenderer.invoke('appointments:upcoming', days, userId),
+  getCustomerAppointments: (customerId) => ipcRenderer.invoke('appointments:customer', customerId),
+
+  // Tasks
+  getTasks: (filters) => ipcRenderer.invoke('tasks:list', filters),
+  getTask: (id) => ipcRenderer.invoke('tasks:get', id),
+  createTask: (data) => ipcRenderer.invoke('tasks:create', data),
+  updateTask: (id, data) => ipcRenderer.invoke('tasks:update', id, data),
+  deleteTask: (id) => ipcRenderer.invoke('tasks:delete', id),
+  getActiveTasks: (userId) => ipcRenderer.invoke('tasks:active', userId),
+  getOverdueTasks: (userId) => ipcRenderer.invoke('tasks:overdue', userId),
+  getTaskStats: (userId) => ipcRenderer.invoke('tasks:stats', userId),
+
   // Finance
   getFinanceSummary: (startDate, endDate, userId) => ipcRenderer.invoke('finance:summary', startDate, endDate, userId),
 

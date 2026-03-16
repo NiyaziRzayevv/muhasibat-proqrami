@@ -83,17 +83,77 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
   // Unpaid debts check
   try {
     const unpaid = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(remaining_amount),0) as total FROM records WHERE payment_status IN ('gozleyir','qismen','borc')`).get();
-    if (unpaid.count > 5) {
+    const saleDebt = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(total - paid_amount),0) as total FROM sales WHERE total > paid_amount`).get();
+    const totalCount = (unpaid.count || 0) + (saleDebt.count || 0);
+    const totalAmount = (unpaid.total || 0) + (saleDebt.total || 0);
+    if (totalCount > 0) {
       const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'unpaid_debts' AND is_read = 0 AND user_id = ?`).get(currentUserId);
       if (!existing) {
         createNotification({
           type: 'unpaid_debts',
           title: 'Ödənilməmiş Borclar',
-          message: `${unpaid.count} ödənilməmiş qeyd, toplam ${Number(unpaid.total).toFixed(2)} ₼`,
-          data: { count: unpaid.count, total: unpaid.total },
+          message: `${totalCount} ödənilməmiş qeyd, toplam ${Number(totalAmount).toFixed(2)} ₼`,
+          data: { count: totalCount, total: totalAmount },
           user_id: currentUserId,
         });
         notifications.push('unpaid_debts');
+      }
+    }
+  } catch (e) { /* ignore */ }
+
+  // Upcoming appointments check (today + tomorrow)
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const upcoming = db.prepare(`SELECT COUNT(*) as count FROM appointments WHERE date >= ? AND date <= ? AND status IN ('pending','confirmed')`).get(today, tomorrow);
+    if (upcoming.count > 0) {
+      const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'upcoming_appointments' AND is_read = 0 AND user_id = ?`).get(currentUserId);
+      if (!existing) {
+        createNotification({
+          type: 'upcoming_appointments',
+          title: 'Yaxın Randevular',
+          message: `${upcoming.count} randevu bu gün/sabah üçün planlaşdırılıb`,
+          data: { count: upcoming.count },
+          user_id: currentUserId,
+        });
+        notifications.push('upcoming_appointments');
+      }
+    }
+  } catch (e) { /* ignore */ }
+
+  // Overdue tasks check
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const overdue = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status != 'done' AND due_date IS NOT NULL AND due_date < ?`).get(today);
+    if (overdue.count > 0) {
+      const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'overdue_tasks' AND is_read = 0 AND user_id = ?`).get(currentUserId);
+      if (!existing) {
+        createNotification({
+          type: 'overdue_tasks',
+          title: 'Gecikmiş Tapşırıqlar',
+          message: `${overdue.count} tapşırığın son tarixi keçib`,
+          data: { count: overdue.count },
+          user_id: currentUserId,
+        });
+        notifications.push('overdue_tasks');
+      }
+    }
+  } catch (e) { /* ignore */ }
+
+  // Pending tasks check
+  try {
+    const pending = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status = 'todo'`).get();
+    if (pending.count > 5) {
+      const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'pending_tasks' AND is_read = 0 AND user_id = ?`).get(currentUserId);
+      if (!existing) {
+        createNotification({
+          type: 'pending_tasks',
+          title: 'Gözləyən Tapşırıqlar',
+          message: `${pending.count} tapşırıq hələ başlanmayıb`,
+          data: { count: pending.count },
+          user_id: currentUserId,
+        });
+        notifications.push('pending_tasks');
       }
     }
   } catch (e) { /* ignore */ }

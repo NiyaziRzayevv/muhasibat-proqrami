@@ -457,4 +457,119 @@ export const apiBridge = {
     }
     return await window.api.getUnreadCount(userId);
   }),
+
+  // ─── Appointments ───────────────────────────────────────────────────────
+  getAppointments: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/appointments?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getAppointments(filters);
+  }),
+
+  createAppointment: (data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/appointments`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.createAppointment(data);
+  }),
+
+  updateAppointment: (id, data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/appointments/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.updateAppointment(id, data);
+  }),
+
+  deleteAppointment: (id) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/appointments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.deleteAppointment(id);
+  }),
+
+  getUpcomingAppointments: (days, userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams({ days: days || 3, ...(userId ? { userId } : {}) }).toString();
+      const r = await fetch(`${resolveBaseUrl()}/appointments/upcoming?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getUpcomingAppointments(days, userId);
+  }),
+
+  getCustomerAppointments: (customerId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/appointments/customer/${customerId}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getCustomerAppointments(customerId);
+  }),
+
+  // ─── Tasks ──────────────────────────────────────────────────────────────
+  getTasks: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/tasks?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getTasks(filters);
+  }),
+
+  createTask: (data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.createTask(data);
+  }),
+
+  updateTask: (id, data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.updateTask(id, data);
+  }),
+
+  deleteTask: (id) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/tasks/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.deleteTask(id);
+  }),
+
+  getActiveTasks: (userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = userId ? `?userId=${userId}` : '';
+      const r = await fetch(`${resolveBaseUrl()}/tasks/active${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getActiveTasks(userId);
+  }),
+
+  getTaskStats: (userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = userId ? `?userId=${userId}` : '';
+      const r = await fetch(`${resolveBaseUrl()}/tasks/stats${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getTaskStats(userId);
+  }),
 };

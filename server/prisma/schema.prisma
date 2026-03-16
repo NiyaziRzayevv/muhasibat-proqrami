@@ -75,6 +75,8 @@ model User {
   categoriesCreated Category[] @relation("CategoryCreatedBy")
   pricesCreated    PriceBase[] @relation("PriceCreatedBy")
   stockMovementsCreated StockMovement[] @relation("StockMovementCreatedBy")
+  appointmentsCreated Appointment[] @relation("AppointmentCreatedBy")
+  tasksCreated Task[] @relation("TaskCreatedBy")
 
   @@map("users")
 }
@@ -186,6 +188,7 @@ model Customer {
   vehicles Vehicle[]
   records  Record[]
   sales    Sale[]
+  appointments Appointment[]
 
   createdBy User? @relation("CustomerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -392,4 +395,48 @@ model SaleItem {
 
   @@index([saleId])
   @@map("sale_items")
+}
+
+model Appointment {
+  id           Int       @id @default(autoincrement())
+  title        String
+  customerId   Int?      @map("customer_id")
+  customerName String?   @map("customer_name")
+  phone        String?
+  date         String
+  time         String?   @default("09:00")
+  duration     Int       @default(60)
+  status       String    @default("pending")
+  notes        String?
+  createdById  Int?      @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  customer  Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy User?     @relation("AppointmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([status])
+  @@index([customerId])
+  @@map("appointments")
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  priority    String    @default("medium")
+  status      String    @default("todo")
+  dueDate     String?   @map("due_date")
+  assignedTo  String?   @map("assigned_to")
+  createdById Int?      @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  createdBy User? @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@map("tasks")
 }

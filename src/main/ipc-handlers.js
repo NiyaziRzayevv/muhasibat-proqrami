@@ -17,6 +17,8 @@ const expensesDb = require('../database/expenses');
 const notificationsDb = require('../database/notifications');
 const auditLogsDb = require('../database/audit_logs');
 const licensesDb = require('../database/licenses');
+const appointmentsDb = require('../database/appointments');
+const tasksDb = require('../database/tasks');
 const { processSmartInput, createRecordFromParsed, createSaleFromParsed, updateRecordWithPayment } = require('../services/record-service');
 const { parseInventory, parseUniversal } = require('../ai/parser');
 const { createBackup, restoreBackup, listBackups } = require('../services/backup-service');
@@ -824,6 +826,101 @@ function registerHandlers() {
 
   ipcMain.handle('license:machineId', () => {
     try { return { success: true, data: licensesDb.getMachineId() }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Appointments ─────────────────────────────────────────────────────────
+  ipcMain.handle('appointments:list', (_, filters) => {
+    try { return { success: true, data: appointmentsDb.getAllAppointments(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:get', (_, id) => {
+    try {
+      const item = appointmentsDb.getAppointmentById(id);
+      if (!item) return { success: false, error: 'Tapılmadı' };
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:create', (_, data) => {
+    try {
+      const item = appointmentsDb.createAppointment(data);
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:update', (_, id, data) => {
+    try {
+      const item = appointmentsDb.updateAppointment(id, data);
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:delete', (_, id) => {
+    try {
+      appointmentsDb.deleteAppointment(id);
+      return { success: true };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:upcoming', (_, days, userId) => {
+    try { return { success: true, data: appointmentsDb.getUpcomingAppointments(days || 3, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('appointments:customer', (_, customerId) => {
+    try { return { success: true, data: appointmentsDb.getCustomerAppointments(customerId) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Tasks ────────────────────────────────────────────────────────────────
+  ipcMain.handle('tasks:list', (_, filters) => {
+    try { return { success: true, data: tasksDb.getAllTasks(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:get', (_, id) => {
+    try {
+      const item = tasksDb.getTaskById(id);
+      if (!item) return { success: false, error: 'Tapılmadı' };
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:create', (_, data) => {
+    try {
+      const item = tasksDb.createTask(data);
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:update', (_, id, data) => {
+    try {
+      const item = tasksDb.updateTask(id, data);
+      return { success: true, data: item };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:delete', (_, id) => {
+    try {
+      tasksDb.deleteTask(id);
+      return { success: true };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:active', (_, userId) => {
+    try { return { success: true, data: tasksDb.getActiveTasks(userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:overdue', (_, userId) => {
+    try { return { success: true, data: tasksDb.getOverdueTasks(userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('tasks:stats', (_, userId) => {
+    try { return { success: true, data: tasksDb.getTaskStats(userId || null) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 

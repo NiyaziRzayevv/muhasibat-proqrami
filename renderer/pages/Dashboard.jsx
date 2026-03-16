@@ -53,6 +53,9 @@ export default function Dashboard() {
   const [monthExpenses, setMonthExpenses] = useState(null);
   const [licenseStatus, setLicenseStatus] = useState(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [activeTasks, setActiveTasks] = useState([]);
+  const [taskStats, setTaskStats] = useState(null);
   const [liveTime, setLiveTime] = useState(new Date());
   const [sendingTelegram, setSendingTelegram] = useState(false);
 
@@ -110,6 +113,15 @@ export default function Dashboard() {
       if (monthExp.success) setMonthExpenses(monthExp.data);
       if (lic.success) setLicenseStatus(lic.data);
       if (notifCount.success) setUnreadNotifs(notifCount.data || 0);
+
+      const [apptRes, taskRes, taskStRes] = await Promise.all([
+        apiBridge.getUpcomingAppointments(3, userId),
+        apiBridge.getActiveTasks(userId),
+        apiBridge.getTaskStats(userId),
+      ]);
+      if (apptRes.success) setUpcomingAppointments(apptRes.data || []);
+      if (taskRes.success) setActiveTasks(taskRes.data || []);
+      if (taskStRes.success) setTaskStats(taskStRes.data);
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {
@@ -442,6 +454,107 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* RANDEVULAR VƏ TAPŞIRIQLAR */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Yaxın Randevular */}
+          <div className="bg-gradient-to-br from-dark-800/90 to-dark-900/90 border border-dark-700/50 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                  <Calendar size={18} className="text-cyan-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Yaxın Randevular</h3>
+                {upcomingAppointments.length > 0 && <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold">{upcomingAppointments.length}</span>}
+              </div>
+              <button onClick={() => navigate('/appointments')} className="text-xs px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
+                Hamısı <ArrowRight size={12} />
+              </button>
+            </div>
+            {upcomingAppointments.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingAppointments.slice(0, 5).map(a => (
+                  <div key={a.id} className="flex items-center gap-3 p-3 bg-dark-700/30 hover:bg-dark-700/50 rounded-xl transition-colors">
+                    <div className="text-center w-12 flex-shrink-0">
+                      <p className="text-sm font-bold text-white">{a.time || '—'}</p>
+                      <p className="text-[10px] text-dark-500">{a.date === new Date().toISOString().split('T')[0] ? 'Bugün' : a.date?.slice(5)}</p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{a.title}</p>
+                      {a.customer_name && <p className="text-xs text-dark-400">{a.customer_name}</p>}
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                      a.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400 border-blue-700/30' : 'bg-amber-500/20 text-amber-400 border-amber-700/30'
+                    }`}>{a.status === 'confirmed' ? 'Təsdiqləndi' : 'Gözləyir'}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Calendar size={24} className="mx-auto mb-2 text-dark-600" />
+                <p className="text-xs text-dark-500">Yaxın randevu yoxdur</p>
+              </div>
+            )}
+          </div>
+
+          {/* Aktiv Tapşırıqlar */}
+          <div className="bg-gradient-to-br from-dark-800/90 to-dark-900/90 border border-dark-700/50 rounded-2xl p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <CheckCircle size={18} className="text-purple-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Aktiv Tapşırıqlar</h3>
+                {taskStats && <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full font-bold">{(taskStats.todo || 0) + (taskStats.in_progress || 0)}</span>}
+              </div>
+              <button onClick={() => navigate('/tasks')} className="text-xs px-3 py-1.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
+                Hamısı <ArrowRight size={12} />
+              </button>
+            </div>
+            {taskStats && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="text-center p-2 bg-dark-700/30 rounded-lg">
+                  <p className="text-lg font-bold text-white">{taskStats.todo || 0}</p>
+                  <p className="text-[10px] text-dark-500">Gözləyir</p>
+                </div>
+                <div className="text-center p-2 bg-amber-900/20 rounded-lg border border-amber-800/20">
+                  <p className="text-lg font-bold text-amber-400">{taskStats.in_progress || 0}</p>
+                  <p className="text-[10px] text-dark-500">Davam edir</p>
+                </div>
+                <div className="text-center p-2 bg-emerald-900/20 rounded-lg border border-emerald-800/20">
+                  <p className="text-lg font-bold text-emerald-400">{taskStats.done || 0}</p>
+                  <p className="text-[10px] text-dark-500">Tamamlandı</p>
+                </div>
+              </div>
+            )}
+            {activeTasks.length > 0 ? (
+              <div className="space-y-2">
+                {activeTasks.slice(0, 5).map(t => {
+                  const isOverdue = t.due_date && t.due_date < new Date().toISOString().split('T')[0];
+                  return (
+                    <div key={t.id} className="flex items-center gap-3 p-3 bg-dark-700/30 hover:bg-dark-700/50 rounded-xl transition-colors">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        t.priority === 'high' ? 'bg-red-400' : t.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{t.title}</p>
+                        {t.due_date && <p className={`text-[10px] ${isOverdue ? 'text-red-400' : 'text-dark-500'}`}>{isOverdue ? '⚠ ' : ''}{t.due_date}</p>}
+                      </div>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        t.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400 border-amber-700/30' : 'bg-dark-600 text-dark-300 border-dark-500'
+                      }`}>{t.status === 'in_progress' ? 'Davam edir' : 'Gözləyir'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <CheckCircle size={24} className="mx-auto mb-2 text-dark-600" />
+                <p className="text-xs text-dark-500">Aktiv tapşırıq yoxdur</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* QRAFIKLƏR VƏ CƏDVƏLLƏR */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

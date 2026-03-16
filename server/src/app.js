@@ -26,6 +26,8 @@ const backupRouter = require('./routes/backup');
 const expensesRouter = require('./routes/expenses');
 const vehiclesRouter = require('./routes/vehicles');
 const notificationsRouter = require('./routes/notifications');
+const appointmentsRouter = require('./routes/appointments');
+const tasksRouter = require('./routes/tasks');
 
 function createApp() {
   const app = express();
@@ -70,6 +72,8 @@ function createApp() {
   app.use('/expenses', expensesRouter);
   app.use('/vehicles', vehiclesRouter);
   app.use('/notifications', notificationsRouter);
+  app.use('/appointments', appointmentsRouter);
+  app.use('/tasks', tasksRouter);
   app.use('/backup', backupRouter);
 
   app.use((err, req, res, _next) => {

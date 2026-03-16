@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   CheckSquare, Plus, Trash2, Edit3, X, Search,
-  Flag, Calendar, Circle, CheckCircle2, Clock, Save, AlertCircle
+  Flag, Calendar, Circle, CheckCircle2, Clock, Save, AlertCircle, Loader2
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 
 const PRIORITY = {
   high:   { label: 'Yüksək', cls: 'bg-red-500/20 text-red-400 border-red-700/30',    dot: 'bg-red-400' },
@@ -21,14 +22,10 @@ const STATUS_COLS = [
 
 const EMPTY = { title: '', description: '', priority: 'medium', status: 'todo', due_date: '', assigned_to: '' };
 
-function loadFromStorage() {
-  try { return JSON.parse(localStorage.getItem('tasks') || '[]'); } catch { return []; }
-}
-function saveToStorage(data) { localStorage.setItem('tasks', JSON.stringify(data)); }
-
 export default function Tasks() {
   const { showNotification } = useApp();
-  const [tasks, setTasks] = useState(loadFromStorage);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -37,7 +34,15 @@ export default function Tasks() {
   const [deleteId, setDeleteId] = useState(null);
   const [viewMode, setViewMode] = useState('kanban');
 
-  function persist(data) { setTasks(data); saveToStorage(data); }
+  const loadData = useCallback(async () => {
+    try {
+      const res = await apiBridge.getTasks({});
+      if (res.success) setTasks(res.data || []);
+    } catch (e) { console.error('Tasks load error:', e); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   function openCreate(status = 'todo') {
     setEditing(null);
@@ -45,32 +50,53 @@ export default function Tasks() {
     setModalOpen(true);
   }
 
-  function openEdit(t) { setEditing(t); setForm({ ...t }); setModalOpen(true); }
+  function openEdit(t) {
+    setEditing(t);
+    setForm({ title: t.title, description: t.description || '', priority: t.priority || 'medium', status: t.status || 'todo', due_date: t.due_date || '', assigned_to: t.assigned_to || '' });
+    setModalOpen(true);
+  }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.title.trim()) { showNotification('Başlıq daxil edin', 'error'); return; }
-    if (editing) {
-      persist(tasks.map(t => t.id === editing.id ? { ...form, id: editing.id } : t));
-      showNotification('Yeniləndi', 'success');
-    } else {
-      persist([...tasks, { ...form, id: Date.now(), created_at: new Date().toISOString() }]);
-      showNotification('Tapşırıq əlavə edildi', 'success');
-    }
-    setModalOpen(false);
+    try {
+      if (editing) {
+        const res = await apiBridge.updateTask(editing.id, form);
+        if (res.success) showNotification('Yeniləndi', 'success');
+        else showNotification(res.error || 'Xəta', 'error');
+      } else {
+        const res = await apiBridge.createTask(form);
+        if (res.success) showNotification('Tapşırıq əlavə edildi', 'success');
+        else showNotification(res.error || 'Xəta', 'error');
+      }
+      setModalOpen(false);
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
-  function handleDelete() {
-    persist(tasks.filter(t => t.id !== deleteId));
-    setDeleteId(null);
-    showNotification('Silindi', 'success');
+  async function handleDelete() {
+    try {
+      await apiBridge.deleteTask(deleteId);
+      setDeleteId(null);
+      showNotification('Silindi', 'success');
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
-  function moveStatus(id, status) {
-    persist(tasks.map(t => t.id === id ? { ...t, status } : t));
+  async function moveStatus(id, status) {
+    try {
+      await apiBridge.updateTask(id, { status });
+      await loadData();
+    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
-  function toggleDone(id) {
-    persist(tasks.map(t => t.id === id ? { ...t, status: t.status === 'done' ? 'todo' : 'done' } : t));
+  async function toggleDone(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    await moveStatus(id, t.status === 'done' ? 'todo' : 'done');
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full"><Loader2 size={24} className="animate-spin text-primary-400" /></div>;
   }
 
   const filtered = tasks.filter(t => {
