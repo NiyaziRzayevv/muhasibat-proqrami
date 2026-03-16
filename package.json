@@ -1,6 +1,6 @@
 {
   "name": "smartqeyd",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
   "main": "src/main/index.js",
   "scripts": {
@@ -113,7 +113,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "SmartQeyd",
-      "include": null
+      "include": null,
+      "artifactName": "SmartQeyd-Setup-${version}.${ext}"
     },
     "afterSign": null,
     "forceCodeSigning": false,
