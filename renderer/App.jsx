@@ -55,8 +55,17 @@ export default function App() {
   useEffect(() => {
     checkAuth();
     loadSettings();
-    checkLicense();
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role_name === 'admin' || currentUser.username === 'admin') {
+        setLicenseOk(true);
+      } else {
+        checkLicense();
+      }
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -223,7 +232,7 @@ export default function App() {
     );
   }
 
-  if (!licenseOk) {
+  if (!licenseOk && !isAdmin) {
     return (
       <AppContext.Provider value={ctx}>
         <div className="min-h-screen bg-dark-950 flex flex-col">
