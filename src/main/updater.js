@@ -13,9 +13,22 @@ function sendToRenderer(channel, ...args) {
 function initAutoUpdater(win) {
   mainWindow = win;
 
+  const { app } = require('electron');
+  logger.info('UPDATER', `Init auto-updater. Version: ${app.getVersion()}, isPackaged: ${app.isPackaged}`);
+
   // Disable auto-download — we ask user first
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowDowngrade = false;
+
+  // Force GitHub provider config
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'NiyaziRzayevv',
+    repo: 'muhasibat-proqrami',
+  });
+
+  logger.info('UPDATER', 'Feed URL set to GitHub: NiyaziRzayevv/muhasibat-proqrami');
 
   // Don't check for updates in dev mode
   if (process.argv.includes('--dev') || process.env.NODE_ENV === 'development') {
@@ -123,11 +136,18 @@ function initAutoUpdater(win) {
 
   // Check for updates 5 seconds after launch, then every 4 hours
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
+    logger.info('UPDATER', 'Auto-check starting...');
+    autoUpdater.checkForUpdates().then(r => {
+      logger.info('UPDATER', `Auto-check result: ${JSON.stringify(r?.updateInfo?.version)}`);
+    }).catch(e => {
+      logger.error('UPDATER', `Auto-check failed: ${e.message}`);
+    });
   }, 5000);
 
   setInterval(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
+    autoUpdater.checkForUpdates().catch(e => {
+      logger.error('UPDATER', `Interval check failed: ${e.message}`);
+    });
   }, 4 * 60 * 60 * 1000);
 }
 
