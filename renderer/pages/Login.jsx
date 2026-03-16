@@ -208,6 +208,7 @@ export default function Login({ onLogin, onPending }) {
 
         {/* Card */}
         <div className="bg-dark-900 border border-dark-800 rounded-2xl p-8 shadow-2xl">
+          {!window.api && (
           <div className="bg-dark-800/50 border border-dark-700 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-dark-300">Server</span>
@@ -233,6 +234,7 @@ export default function Login({ onLogin, onPending }) {
               placeholder="http://SERVER-IP:3001"
             />
           </div>
+          )}
 
           {/* Tabs */}
           <div className="flex bg-dark-800 rounded-xl p-1 mb-6">
