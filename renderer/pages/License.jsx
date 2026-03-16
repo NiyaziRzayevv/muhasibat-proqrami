@@ -5,7 +5,7 @@ import { apiBridge } from '../api/bridge';
 import { apiRequest } from '../api/http';
 
 export default function License() {
-  const { showNotification } = useApp();
+  const { showNotification, checkLicense } = useApp();
   const [license, setLicense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -53,6 +53,7 @@ export default function License() {
         showNotification('Lisenziya uğurla aktivləşdirildi!', 'success');
         setLicenseKey('');
         await loadLicense();
+        if (checkLicense) await checkLicense();
       } else {
         showNotification(res.error || 'Aktivasiya uğursuz oldu', 'error');
       }

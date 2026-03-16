@@ -49,11 +49,13 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userAccess, setUserAccess] = useState(null);
+  const [licenseOk, setLicenseOk] = useState(true);
   const smartInputRef = useRef(null);
 
   useEffect(() => {
     checkAuth();
     loadSettings();
+    checkLicense();
   }, []);
 
   useEffect(() => {
@@ -109,6 +111,17 @@ export default function App() {
     }, 15000);
     return () => clearInterval(interval);
   }, [currentUser, checkAccess]);
+
+  async function checkLicense() {
+    try {
+      const res = await apiBridge.getLicenseStatus();
+      if (res.success) {
+        setLicenseOk(!res.data.expired);
+      }
+    } catch (e) {
+      console.error('License check error:', e);
+    }
+  }
 
   async function loadSettings() {
     try {
@@ -169,7 +182,7 @@ export default function App() {
   const ctx = {
     settings, showNotification, refreshSettings, theme, setTheme, smartInputRef,
     currentUser, handleLogout, unreadCount, setUnreadCount, loadUnreadCount, isAdmin,
-    userAccess, checkAccess, hasSystemAccess,
+    userAccess, checkAccess, hasSystemAccess, checkLicense,
     hasPermission: (perm) => {
       if (!currentUser) return false;
       if (currentUser.role_name === 'admin') return true;
@@ -206,6 +219,27 @@ export default function App() {
     return (
       <AppContext.Provider value={ctx}>
         <NoAccess />
+      </AppContext.Provider>
+    );
+  }
+
+  if (!licenseOk) {
+    return (
+      <AppContext.Provider value={ctx}>
+        <div className="min-h-screen bg-dark-950 flex flex-col">
+          <div className="flex items-center justify-between px-6 py-3 bg-red-900/30 border-b border-red-800/40">
+            <div className="flex items-center gap-2 text-red-300 text-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Lisenziya müddəti bitib. Proqramı istifadə etmək üçün lisenziya açarı daxil edin.
+            </div>
+            <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-800/40 hover:bg-red-900/30">
+              Çıxış
+            </button>
+          </div>
+          <div className="flex-1">
+            <License />
+          </div>
+        </div>
       </AppContext.Provider>
     );
   }

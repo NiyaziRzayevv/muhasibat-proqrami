@@ -49,19 +49,27 @@ function activateLicense(licenseKey) {
     return { success: false, error: 'Lisenziya açarı yanlışdır' };
   }
 
-  const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Determine duration from key prefix
+  const prefix = parts[0];
+  let days = 365;
+  let licType = 'pro';
+  if (prefix.startsWith('M30')) { days = 30; licType = 'monthly'; }
+  else if (prefix.startsWith('M90')) { days = 90; licType = 'quarterly'; }
+  else if (prefix.startsWith('Y1')) { days = 365; licType = 'yearly'; }
+
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const existing = getLicense();
   if (existing) {
     db.prepare(`
-      UPDATE licenses SET license_key=?, license_type='pro', activated_at=datetime('now','localtime'),
+      UPDATE licenses SET license_key=?, license_type=?, activated_at=datetime('now','localtime'),
       expires_at=?, machine_id=?, is_active=1 WHERE id=?
-    `).run(licenseKey, expiresAt, machineId, existing.id);
+    `).run(licenseKey, licType, expiresAt, machineId, existing.id);
   } else {
     db.prepare(`
       INSERT INTO licenses (license_key, license_type, activated_at, expires_at, machine_id, is_active)
-      VALUES (?, 'pro', datetime('now','localtime'), ?, ?, 1)
-    `).run(licenseKey, expiresAt, machineId);
+      VALUES (?, ?, datetime('now','localtime'), ?, ?, 1)
+    `).run(licenseKey, licType, expiresAt, machineId);
   }
 
   return { success: true, data: getLicense() };
@@ -90,8 +98,14 @@ function getLicenseStatus() {
   };
 }
 
-// Generate a valid license key for testing (admin utility)
-function generateLicenseKey(prefix = 'BMS01') {
+// Generate a valid license key
+// duration: 30 | 90 | 365
+function generateLicenseKey(duration = 365) {
+  let prefix;
+  if (duration <= 30) prefix = 'M30';
+  else if (duration <= 90) prefix = 'M90';
+  else prefix = 'Y1000';
+
   const part1 = prefix.padEnd(5, '0').substring(0, 5).toUpperCase();
   const part2 = crypto.randomBytes(3).toString('hex').toUpperCase().substring(0, 5);
   const part3 = crypto.randomBytes(3).toString('hex').toUpperCase().substring(0, 5);
