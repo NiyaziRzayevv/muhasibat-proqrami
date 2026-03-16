@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smartqeyd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smartqeyd}
+      POSTGRES_DB: ${POSTGRES_DB:-smartqeyd}
+    volumes:
+      - smartqeyd_pg_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../../server
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ../../server/.env
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-smartqeyd}:${POSTGRES_PASSWORD:-smartqeyd}@db:5432/${POSTGRES_DB:-smartqeyd}?schema=public
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+    command: sh -c "npx prisma migrate deploy; npx prisma db push; node prisma/seed.js; node src/index.js"
+
+volumes:
+  smartqeyd_pg_data:

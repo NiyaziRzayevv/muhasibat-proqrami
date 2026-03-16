@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartqeyd
+      POSTGRES_PASSWORD: smartqeyd
+      POSTGRES_DB: smartqeyd
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartqeyd_pg_data:/var/lib/postgresql/data
+
+volumes:
+  smartqeyd_pg_data:

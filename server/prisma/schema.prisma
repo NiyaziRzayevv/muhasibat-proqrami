@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Setting {
+  key   String  @id
+  value String?
+
+  @@map("settings")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  displayName String?  @map("display_name")
+  permissions Json     @default(dbgenerated("'{}'::jsonb"))
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  username         String    @unique
+  passwordHash     String    @map("password_hash")
+  fullName         String?   @map("full_name")
+  email            String?
+  phone            String?
+  roleId           Int?      @map("role_id")
+  isActive         Boolean   @default(true) @map("is_active")
+  approvalStatus   String    @default("pending") @map("approval_status")
+
+  approvedById     Int?      @map("approved_by")
+  approvedAt       DateTime? @map("approved_at")
+
+  lastLogin        DateTime? @map("last_login")
+
+  accessType       String?   @map("access_type")
+  accessExpiresAt  DateTime? @map("access_expires_at")
+  accessGrantedById Int?     @map("access_granted_by")
+  accessGrantedAt  DateTime? @map("access_granted_at")
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  role             Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  sessions         Session[]
+  passwordResets   PasswordReset[]
+
+  approvedBy       User?     @relation("UserApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers    User[]    @relation("UserApprover")
+
+  accessGrantedBy  User?     @relation("UserAccessGranter", fields: [accessGrantedById], references: [id], onDelete: SetNull)
+  accessGrantedUsers User[]  @relation("UserAccessGranter")
+
+  expenses         Expense[]
+  notifications    Notification[]
+
+  recordsCreated   Record[]  @relation("RecordCreatedBy")
+  salesCreated     Sale[]    @relation("SaleCreatedBy")
+
+  customersCreated Customer[] @relation("CustomerCreatedBy")
+  vehiclesCreated  Vehicle[] @relation("VehicleCreatedBy")
+
+  productsCreated  Product[] @relation("ProductCreatedBy")
+  suppliersCreated Supplier[] @relation("SupplierCreatedBy")
+  categoriesCreated Category[] @relation("CategoryCreatedBy")
+  pricesCreated    PriceBase[] @relation("PriceCreatedBy")
+  stockMovementsCreated StockMovement[] @relation("StockMovementCreatedBy")
+
+  @@map("users")
+}
+
+model Session {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  token     String    @unique
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model License {
+  id         Int      @id @default(autoincrement())
+  licenseKey String?  @unique @map("license_key")
+  licenseType String  @default("trial") @map("license_type")
+  activatedAt DateTime? @map("activated_at")
+  expiresAt   DateTime? @map("expires_at")
+  machineId   String?  @map("machine_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("licenses")
+}
+
+model Expense {
+  id            Int       @id @default(autoincrement())
+  date          String
+  category      String
+  description   String?
+  amount        Float     @default(0)
+  paymentMethod String    @default("cash") @map("payment_method")
+  reference     String?
+  userId        Int?      @map("user_id")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  syncStatus    String    @default("local") @map("sync_status")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("expenses")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String
+  title     String
+  message   String?
+  data      Json     @default(dbgenerated("'{}'::jsonb"))
+  isRead    Boolean  @default(false) @map("is_read")
+  userId    Int?     @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   Int?     @map("entity_id")
+  userId     Int?     @map("user_id")
+  userName   String?  @map("user_name")
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdById Int?   @map("created_by")
+
+  vehicles Vehicle[]
+  records  Record[]
+  sales    Sale[]
+
+  createdBy User? @relation("CustomerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("customers")
+}
+
+model Vehicle {
+  id         Int      @id @default(autoincrement())
+  customerId Int?     @map("customer_id")
+  brand      String?
+  model      String?
+  plate      String?
+  year       Int?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdById Int?    @map("created_by")
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  records  Record[]
+
+  createdBy User? @relation("VehicleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([plate])
+  @@map("vehicles")
+}
+
+model PriceBase {
+  id          Int      @id @default(autoincrement())
+  brand       String?
+  serviceType String   @map("service_type")
+  price       Float?
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdById Int?     @map("created_by")
+
+  createdBy User? @relation("PriceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("price_base")
+}
+
+model Record {
+  id              Int      @id @default(autoincrement())
+  date            String
+  time            String?
+
+  customerId      Int?     @map("customer_id")
+  customerName    String?  @map("customer_name")
+  customerPhone   String?  @map("customer_phone")
+
+  vehicleId       Int?     @map("vehicle_id")
+  carBrand        String?  @map("car_brand")
+  carModel        String?  @map("car_model")
+  carPlate        String?  @map("car_plate")
+
+  serviceType     String?  @map("service_type")
+  extraServices   String?  @map("extra_services")
+
+  quantity        Float    @default(1)
+  unitPrice       Float?   @map("unit_price")
+  totalPrice      Float?   @map("total_price")
+
+  paymentStatus   String   @default("gozleyir") @map("payment_status")
+  paidAmount      Float    @default(0) @map("paid_amount")
+  remainingAmount Float    @default(0) @map("remaining_amount")
+
+  notes           String?
+  rawInput        String?  @map("raw_input")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdById     Int?     @map("created_by")
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("RecordCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([customerId])
+  @@index([carBrand])
+  @@index([paymentStatus])
+  @@map("records")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  color       String   @default("#3b82f6")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdById Int?     @map("created_by")
+
+  products Product[]
+  createdBy User? @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("categories")
+}
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdById Int?   @map("created_by")
+
+  products Product[]
+  createdBy User? @relation("SupplierCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("suppliers")
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  name       String
+  categoryId Int?     @map("category_id")
+  sku        String?  @unique
+  barcode    String?
+  buyPrice   Float    @default(0) @map("buy_price")
+  sellPrice  Float    @default(0) @map("sell_price")
+  stockQty   Float    @default(0) @map("stock_qty")
+  minStock   Float    @default(5) @map("min_stock")
+  unit       String   @default("ədəd")
+  supplierId Int?     @map("supplier_id")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdById Int?    @map("created_by")
+
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  stockMovements StockMovement[]
+  saleItems SaleItem[]
+
+  createdBy User? @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([sku])
+  @@map("products")
+}
+
+model StockMovement {
+  id           Int      @id @default(autoincrement())
+  productId    Int      @map("product_id")
+  movementType String   @map("movement_type")
+  qty          Float
+  qtyBefore    Float    @default(0) @map("qty_before")
+  qtyAfter     Float    @default(0) @map("qty_after")
+  refType      String?  @map("ref_type")
+  refId        Int?     @map("ref_id")
+  note         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdById  Int?     @map("created_by")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model Sale {
+  id            Int      @id @default(autoincrement())
+  date          String
+  time          String?
+  customerId    Int?     @map("customer_id")
+  customerName  String?  @map("customer_name")
+  subtotal      Float    @default(0)
+  discount      Float    @default(0)
+  total         Float    @default(0)
+  paymentStatus String   @default("odenilib") @map("payment_status")
+  paidAmount    Float    @default(0) @map("paid_amount")
+  paymentMethod String   @default("cash") @map("payment_method")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdById   Int?     @map("created_by")
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    SaleItem[]
+  createdBy User? @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@map("sales")
+}
+
+model SaleItem {
+  id          Int      @id @default(autoincrement())
+  saleId      Int      @map("sale_id")
+  productId   Int?     @map("product_id")
+  productName String?  @map("product_name")
+  qty         Float
+  unitPrice   Float    @map("unit_price")
+  total       Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@map("sale_items")
+}

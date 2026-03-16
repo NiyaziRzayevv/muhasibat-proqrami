@@ -1,0 +1,37 @@
+node_modules/
+server/node_modules/
+dist/
+dist-electron/
+dist-electron-new/
+dist-output/
+build-cache/
+
+# Environment
+.env
+server/.env
+renderer/.env
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database
+*.sqlite
+*.sqlite3
+data/
+
+# Electron builder cache
+electron-builder-cache/
+
+# Installer output
+installer/

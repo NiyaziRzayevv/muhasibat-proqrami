@@ -1,0 +1,127 @@
+{
+  "name": "smartqeyd",
+  "version": "1.0.0",
+  "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "npm run build:renderer && electron .",
+    "start:fast": "electron .",
+    "dev": "concurrently \"npm run dev:renderer\" \"wait-on http://localhost:5173 && electron . --dev\"",
+    "dev:renderer": "vite",
+    "build": "npm run build:renderer && npx cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
+    "build:renderer": "vite build",
+    "pack": "electron-builder --dir",
+    "dist": "npx cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
+    "publish": "npm run build:renderer && npx cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish always",
+    "rebuild": "npx prebuild-install --runtime electron --target 28.2.1 --arch x64 --dist-url https://electronjs.org/headers --tag-prefix v",
+    "package": "npm run build:renderer && npx @electron/packager . SmartQeyd --platform=win32 --arch=x64 --out=dist-electron --overwrite --prune=true --icon=assets/logo.ico --ignore=^/renderer --ignore=^/\\.git --ignore=^/vite\\.config --ignore=^/tailwind\\.config --ignore=^/postcss\\.config --ignore=^/dist-electron --asar.unpack=**\\node_modules\\better-sqlite3\\** && node -e \"const{rcedit}=require('rcedit');rcedit('dist-electron/SmartQeyd-win32-x64/SmartQeyd.exe',{icon:'assets/logo.ico'}).then(()=>console.log('Icon embed edildi'))\"",
+    "server:install": "npm --prefix server install",
+    "server:dev": "npm --prefix server run dev",
+    "server:start": "npm --prefix server run start",
+    "server:prisma:generate": "npm --prefix server run prisma:generate",
+    "server:prisma:migrate:init": "npm --prefix server run prisma:migrate:init",
+    "server:prisma:migrate:dev": "npm --prefix server run prisma:migrate:dev",
+    "server:prisma:migrate:deploy": "npm --prefix server run prisma:migrate:deploy",
+    "server:seed": "npm --prefix server run seed",
+    "pg:up": "docker compose -f infra/docker/docker-compose.dev.yml up -d",
+    "pg:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
+    "prod:up": "docker compose -f infra/docker/docker-compose.prod.yml up -d --build",
+    "prod:down": "docker compose -f infra/docker/docker-compose.prod.yml down"
+  },
+  "keywords": [
+    "electron",
+    "servis",
+    "avtomobil",
+    "muhasibat"
+  ],
+  "author": "SmartQeyd",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "date-fns": "^3.3.1",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.3.9",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "openai": "^4.28.0",
+    "pdfmake": "^0.3.5",
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@electron/packager": "^19.0.5",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^28.2.1",
+    "electron-builder": "^24.9.1",
+    "lucide-react": "^0.344.0",
+    "postcss": "^8.4.35",
+    "rcedit": "^5.0.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.2",
+    "recharts": "^2.12.2",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.4",
+    "vite-plugin-electron": "^0.28.4",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.smartqeyd.app",
+    "productName": "SmartQeyd",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/database/**/*",
+      "src/ai/**/*",
+      "src/services/**/*",
+      "src/exports/**/*",
+      "src/utils/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "icon": "assets/logo.ico",
+    "win": {
+      "icon": "assets/logo.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "verifyUpdateCodeSignature": false,
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/logo.ico",
+      "uninstallerIcon": "assets/logo.ico",
+      "installerHeaderIcon": "assets/logo.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SmartQeyd",
+      "include": null
+    },
+    "afterSign": null,
+    "forceCodeSigning": false,
+    "publish": {
+      "provider": "github",
+      "owner": "NiyaziRzayevv",
+      "repo": "muhasibat-proqrami",
+      "releaseType": "release"
+    }
+  }
+}
