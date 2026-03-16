@@ -198,8 +198,8 @@ export default function Login({ onLogin, onPending }) {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-dark-950 flex items-center justify-start overflow-y-auto p-4">
+      <div className="w-full max-w-md mx-auto my-auto">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <img src="./logo.png" alt="SmartQeyd" className="h-48 w-auto object-contain mb-4" />

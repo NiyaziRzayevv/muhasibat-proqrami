@@ -225,7 +225,7 @@ export default function Dashboard() {
 
         {/* GƏLİR DETAYLARI */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-950/60 border border-emerald-700/30 rounded-2xl p-5 hover:border-emerald-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-900/20">
+          <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-950/60 border border-emerald-700/30 rounded-2xl p-5 hover:border-emerald-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-900/20 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
@@ -237,7 +237,7 @@ export default function Dashboard() {
             <p className="text-xs text-emerald-400/70">{todayStats?.count || 0} qeyd bu gün</p>
           </div>
 
-          <div className="group relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/60 border border-blue-700/30 rounded-2xl p-5 hover:border-blue-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-900/20">
+          <div className="group relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/60 border border-blue-700/30 rounded-2xl p-5 hover:border-blue-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-900/20 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
@@ -249,7 +249,7 @@ export default function Dashboard() {
             <p className="text-xs text-blue-400/70">{monthStats?.count || 0} qeyd bu ay</p>
           </div>
 
-          <div className="group relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/60 border border-purple-700/30 rounded-2xl p-5 hover:border-purple-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/20">
+          <div className="group relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/60 border border-purple-700/30 rounded-2xl p-5 hover:border-purple-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/20 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
@@ -261,7 +261,7 @@ export default function Dashboard() {
             <p className="text-xs text-purple-400/70">{allStats?.count || 0} ümumi qeyd</p>
           </div>
 
-          <div className="group relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/60 border border-amber-700/30 rounded-2xl p-5 hover:border-amber-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20">
+          <div className="group relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/60 border border-amber-700/30 rounded-2xl p-5 hover:border-amber-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20 cursor-pointer" onClick={() => navigate('/debts')}>
             <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
@@ -276,7 +276,7 @@ export default function Dashboard() {
 
         {/* İŞ STATİSTİKASI */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="group bg-gradient-to-br from-cyan-900/30 to-dark-800/80 border border-cyan-800/20 rounded-2xl p-5 hover:border-cyan-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-cyan-900/30 to-dark-800/80 border border-cyan-800/20 rounded-2xl p-5 hover:border-cyan-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
                 <Wrench size={20} className="text-cyan-400" />
@@ -287,7 +287,7 @@ export default function Dashboard() {
             <p className="text-xs text-cyan-400/70">Əməliyyat</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-indigo-900/30 to-dark-800/80 border border-indigo-800/20 rounded-2xl p-5 hover:border-indigo-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-indigo-900/30 to-dark-800/80 border border-indigo-800/20 rounded-2xl p-5 hover:border-indigo-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/customers')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
                 <Users size={20} className="text-indigo-400" />
@@ -298,7 +298,7 @@ export default function Dashboard() {
             <p className="text-xs text-indigo-400/70">Ümumi müştəri</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-orange-900/30 to-dark-800/80 border border-orange-800/20 rounded-2xl p-5 hover:border-orange-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-orange-900/30 to-dark-800/80 border border-orange-800/20 rounded-2xl p-5 hover:border-orange-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
                 <Star size={20} className="text-orange-400" />
@@ -309,7 +309,7 @@ export default function Dashboard() {
             <p className="text-xs text-orange-400/70">{topServices[0] ? `${topServices[0].count} dəfə` : ''}</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-teal-900/30 to-dark-800/80 border border-teal-800/20 rounded-2xl p-5 hover:border-teal-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-teal-900/30 to-dark-800/80 border border-teal-800/20 rounded-2xl p-5 hover:border-teal-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/records')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
                 <Car size={20} className="text-teal-400" />
@@ -388,7 +388,7 @@ export default function Dashboard() {
 
         {/* ANBAR VƏ SATIŞ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="group bg-gradient-to-br from-violet-900/30 to-dark-800/80 border border-violet-800/20 rounded-2xl p-5 hover:border-violet-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-violet-900/30 to-dark-800/80 border border-violet-800/20 rounded-2xl p-5 hover:border-violet-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/products')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
                 <Package size={20} className="text-violet-400" />
@@ -399,7 +399,7 @@ export default function Dashboard() {
             <p className="text-xs text-violet-400/70">{stockValue?.total_products || 0} məhsul növü</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-green-900/30 to-dark-800/80 border border-green-800/20 rounded-2xl p-5 hover:border-green-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-green-900/30 to-dark-800/80 border border-green-800/20 rounded-2xl p-5 hover:border-green-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/sales')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
                 <ShoppingBag size={20} className="text-green-400" />
@@ -410,7 +410,7 @@ export default function Dashboard() {
             <p className="text-xs text-green-400/70">{todaySales?.count || 0} satış bu gün</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-rose-900/30 to-dark-800/80 border border-rose-800/20 rounded-2xl p-5 hover:border-rose-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-rose-900/30 to-dark-800/80 border border-rose-800/20 rounded-2xl p-5 hover:border-rose-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/products')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
                 <AlertTriangle size={20} className="text-rose-400" />
@@ -421,7 +421,7 @@ export default function Dashboard() {
             <p className="text-xs text-rose-400/70">Limitin altında</p>
           </div>
 
-          <div className="group bg-gradient-to-br from-sky-900/30 to-dark-800/80 border border-sky-800/20 rounded-2xl p-5 hover:border-sky-700/40 transition-all duration-300">
+          <div className="group bg-gradient-to-br from-sky-900/30 to-dark-800/80 border border-sky-800/20 rounded-2xl p-5 hover:border-sky-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/products')}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center">
                 <Package size={20} className="text-sky-400" />
