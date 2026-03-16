@@ -60,14 +60,271 @@ function resolveBaseUrl() {
   return '';
 }
 
+let _originalWindowApi = null;
+
+function _getToken() {
+  try { return localStorage.getItem('auth_token') || ''; } catch { return ''; }
+}
+
+function _remoteCall(path, opts = {}) {
+  const base = resolveBaseUrl();
+  if (!base) return Promise.resolve({ success: false, error: 'No server URL' });
+  const token = _getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const fetchOpts = { method: opts.method || 'GET', headers };
+  if (opts.body !== undefined) fetchOpts.body = JSON.stringify(opts.body);
+  let url = `${base}${path}`;
+  if (opts.query) {
+    const qs = new URLSearchParams(opts.query).toString();
+    if (qs) url += `?${qs}`;
+  }
+  return fetch(url, fetchOpts).then(r => r.json()).catch(e => ({ success: false, error: e.message }));
+}
+
+function _buildRemoteProxy() {
+  return {
+    // Records
+    getRecords: (filters) => _remoteCall('/records', { query: filters }),
+    getRecord: (id) => _remoteCall(`/records/${id}`),
+    createRecord: (data) => _remoteCall('/records', { method: 'POST', body: data }),
+    updateRecord: (id, data) => _remoteCall(`/records/${id}`, { method: 'PUT', body: data }),
+    deleteRecord: (id) => _remoteCall(`/records/${id}`, { method: 'DELETE' }),
+    deleteMultipleRecords: (ids) => _remoteCall('/records/bulk-delete', { method: 'POST', body: { ids } }),
+
+    // Smart input parsing
+    parseInput: (text) => _remoteCall('/parse/input', { method: 'POST', body: { text } }),
+    parseInventory: (text) => _remoteCall('/parse/inventory', { method: 'POST', body: { text } }),
+    parseUniversal: (text) => _remoteCall('/parse/universal', { method: 'POST', body: { text } }),
+    createFromParsed: (parsed, overrides) => _remoteCall('/records', { method: 'POST', body: { ...parsed, ...overrides } }),
+    createSaleFromParsed: (parsed, overrides) => _remoteCall('/sales', { method: 'POST', body: { ...parsed, ...overrides } }),
+
+    // Stats
+    getTodayStats: (userId) => _remoteCall('/stats/today', { query: userId ? { userId } : {} }),
+    getMonthStats: (year, month, userId) => _remoteCall('/stats/month', { query: { year, month, ...(userId ? { userId } : {}) } }),
+    getAllTimeStats: (userId) => _remoteCall('/stats/alltime', { query: userId ? { userId } : {} }),
+    getTopServices: (limit, userId) => _remoteCall('/stats/top-services', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
+    getTopBrands: (limit, userId) => _remoteCall('/stats/top-brands', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
+    getMonthlyChart: (year, userId) => _remoteCall('/stats/monthly-chart', { query: { year, ...(userId ? { userId } : {}) } }),
+    getUnpaidRecords: (userId) => _remoteCall('/stats/unpaid', { query: userId ? { userId } : {} }),
+    getDebtStats: (userId) => _remoteCall('/stats/debt', { query: userId ? { userId } : {} }),
+    getProductStats: (userId) => _remoteCall('/stats/products', { query: userId ? { userId } : {} }),
+    getMonthlyRevenue: (year, userId) => _remoteCall('/stats/monthly-revenue', { query: { year, ...(userId ? { userId } : {}) } }),
+    getYearlyRevenue: (userId) => _remoteCall('/stats/yearly-revenue', { query: userId ? { userId } : {} }),
+
+    // Customers
+    getCustomers: (search, userId) => _remoteCall('/customers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
+    getCustomer: (id) => _remoteCall(`/customers/${id}`),
+    createCustomer: (data) => _remoteCall('/customers', { method: 'POST', body: data }),
+    updateCustomer: (id, data) => _remoteCall(`/customers/${id}`, { method: 'PUT', body: data }),
+    deleteCustomer: (id) => _remoteCall(`/customers/${id}`, { method: 'DELETE' }),
+    getCustomerRecords: (id) => _remoteCall(`/customers/${id}/records`),
+
+    // Vehicles
+    getVehicles: (search, userId) => _remoteCall('/vehicles', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
+    getVehicle: (id) => _remoteCall(`/vehicles/${id}`),
+    createVehicle: (data) => _remoteCall('/vehicles', { method: 'POST', body: data }),
+    updateVehicle: (id, data) => _remoteCall(`/vehicles/${id}`, { method: 'PUT', body: data }),
+    deleteVehicle: (id) => _remoteCall(`/vehicles/${id}`, { method: 'DELETE' }),
+
+    // Prices
+    getPrices: (search, userId) => _remoteCall('/records/prices', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
+    createPrice: (data) => _remoteCall('/records/prices', { method: 'POST', body: data }),
+    updatePrice: (id, data) => _remoteCall(`/records/prices/${id}`, { method: 'PUT', body: data }),
+    deletePrice: (id) => _remoteCall(`/records/prices/${id}`, { method: 'DELETE' }),
+
+    // Settings
+    getSettings: () => _remoteCall('/settings'),
+    saveSettings: (data) => _remoteCall('/settings', { method: 'PUT', body: data }),
+
+    // Categories
+    getCategories: (userId) => _remoteCall('/categories', { query: userId ? { userId } : {} }),
+    createCategory: (data) => _remoteCall('/categories', { method: 'POST', body: data }),
+    updateCategory: (id, data) => _remoteCall(`/categories/${id}`, { method: 'PUT', body: data }),
+    deleteCategory: (id) => _remoteCall(`/categories/${id}`, { method: 'DELETE' }),
+
+    // Suppliers
+    getSuppliers: (search, userId) => _remoteCall('/suppliers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
+    createSupplier: (data) => _remoteCall('/suppliers', { method: 'POST', body: data }),
+    updateSupplier: (id, data) => _remoteCall(`/suppliers/${id}`, { method: 'PUT', body: data }),
+    deleteSupplier: (id) => _remoteCall(`/suppliers/${id}`, { method: 'DELETE' }),
+    getSupplierProducts: (id) => _remoteCall(`/suppliers/${id}/products`),
+
+    // Products
+    getProducts: (filters) => _remoteCall('/products', { query: filters }),
+    getProduct: (id) => _remoteCall(`/products/${id}`),
+    createProduct: (data) => _remoteCall('/products', { method: 'POST', body: data }),
+    updateProduct: (id, data) => _remoteCall(`/products/${id}`, { method: 'PUT', body: data }),
+    deleteProduct: (id) => _remoteCall(`/products/${id}`, { method: 'DELETE' }),
+    getLowStockProducts: (userId) => _remoteCall('/products/low-stock', { query: userId ? { userId } : {} }),
+    getStockValue: (userId) => _remoteCall('/products/stock-value', { query: userId ? { userId } : {} }),
+    importProductsFromExcel: (rows, createdBy) => _remoteCall('/products/import', { method: 'POST', body: { rows, createdBy } }),
+
+    // Stock Movements
+    stockIn: (productId, qty, note, createdBy) => _remoteCall('/stock/in', { method: 'POST', body: { productId, quantity: qty, note, createdBy } }),
+    stockOut: (productId, qty, note, createdBy) => _remoteCall('/stock/out', { method: 'POST', body: { productId, quantity: qty, note, createdBy } }),
+    stockAdjust: (productId, newQty, note, createdBy) => _remoteCall('/stock/adjust', { method: 'POST', body: { productId, newQuantity: newQty, note, createdBy } }),
+    getStockMovements: (filters) => _remoteCall('/stock/movements', { query: filters }),
+    getStockStats: (userId) => _remoteCall('/stock/stats', { query: userId ? { userId } : {} }),
+
+    // Sales
+    getSales: (filters) => _remoteCall('/sales', { query: filters }),
+    getSale: (id) => _remoteCall(`/sales/${id}`),
+    createSale: (data) => _remoteCall('/sales', { method: 'POST', body: data }),
+    updateSalePayment: (id, paidAmount, status) => _remoteCall(`/sales/${id}/payment`, { method: 'PUT', body: { paidAmount, status } }),
+    deleteSale: (id) => _remoteCall(`/sales/${id}`, { method: 'DELETE' }),
+    getSalesStats: (startDate, endDate, userId) => _remoteCall('/sales/stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getTopSellingProducts: (limit, userId) => _remoteCall('/sales/top-products', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
+    getMonthlySalesChart: (year, userId) => _remoteCall('/sales/monthly-chart', { query: { year, ...(userId ? { userId } : {}) } }),
+    getSalesPaymentStats: (startDate, endDate, userId) => _remoteCall('/sales/payment-stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    generateSaleReceipt: (id) => _remoteCall(`/sales/${id}/receipt`),
+
+    // Auth
+    login: (username, password) => _remoteCall('/auth/login', { method: 'POST', body: { username, password } }),
+    logout: (token) => _remoteCall('/auth/logout', { method: 'POST', body: { token } }),
+    verifyToken: (token) => _remoteCall('/auth/verify', { method: 'POST', body: { token } }),
+    register: (data) => _remoteCall('/auth/register', { method: 'POST', body: data }),
+    requestPasswordReset: (username, phone, email) => _remoteCall('/auth/request-password-reset', { method: 'POST', body: { username, phone, email } }),
+    resetPassword: (token, newPassword) => _remoteCall('/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
+
+    // Users
+    getUsers: () => _remoteCall('/users'),
+    createUser: (data) => _remoteCall('/users', { method: 'POST', body: data }),
+    updateUser: (id, data) => _remoteCall(`/users/${id}`, { method: 'PUT', body: data }),
+    deleteUser: (id) => _remoteCall(`/users/${id}`, { method: 'DELETE' }),
+    getPendingUsers: () => _remoteCall('/users/pending'),
+    approveUser: (userId) => _remoteCall(`/users/${userId}/approve`, { method: 'POST' }),
+    rejectUser: (userId) => _remoteCall(`/users/${userId}/reject`, { method: 'POST' }),
+    grantAccess: (userId, accessType, grantedById, customDuration) => _remoteCall(`/users/${userId}/access`, { method: 'POST', body: { accessType, customDuration } }),
+    revokeAccess: (userId) => _remoteCall(`/users/${userId}/access`, { method: 'DELETE' }),
+    checkUserAccess: (userId) => _remoteCall(`/users/${userId}/access`),
+
+    // Roles
+    getRoles: () => _remoteCall('/roles'),
+    updateRolePermissions: (id, permissions) => _remoteCall(`/roles/${id}/permissions`, { method: 'PUT', body: { permissions } }),
+
+    // Expenses
+    getExpenses: (filters) => _remoteCall('/expenses', { query: filters }),
+    createExpense: (data) => _remoteCall('/expenses', { method: 'POST', body: data }),
+    updateExpense: (id, data) => _remoteCall(`/expenses/${id}`, { method: 'PUT', body: data }),
+    deleteExpense: (id) => _remoteCall(`/expenses/${id}`, { method: 'DELETE' }),
+    getExpenseStats: (startDate, endDate, userId) => _remoteCall('/expenses/stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getExpenseCategories: () => _remoteCall('/expenses/categories'),
+
+    // Notifications
+    getNotifications: (userId, limit) => _remoteCall('/notifications', { query: { ...(userId ? { userId } : {}), ...(limit ? { limit } : {}) } }),
+    getUnreadCount: (userId) => _remoteCall('/notifications/unread-count', { query: userId ? { userId } : {} }),
+    createNotification: (data) => _remoteCall('/notifications', { method: 'POST', body: data }),
+    markNotificationRead: (id) => _remoteCall(`/notifications/${id}/read`, { method: 'PUT' }),
+    markAllNotificationsRead: () => _remoteCall('/notifications/read-all', { method: 'PUT' }),
+    deleteNotification: (id) => _remoteCall(`/notifications/${id}`, { method: 'DELETE' }),
+    checkSystemNotifications: (userId) => _remoteCall('/notifications/check', { method: 'POST', body: { userId } }),
+
+    // Audit Logs
+    getAuditLogs: (filters) => _remoteCall('/audit', { query: filters }),
+    logAuditAction: (data) => _remoteCall('/audit', { method: 'POST', body: data }),
+    clearAuditLogs: (daysOld) => _remoteCall('/audit/clear', { method: 'POST', body: { daysOld } }),
+
+    // License
+    getLicenseStatus: () => _remoteCall('/licenses/status'),
+    activateLicense: (key) => _remoteCall('/licenses/activate', { method: 'POST', body: { license_key: key } }),
+    generateLicenseKey: () => _remoteCall('/licenses/admin/generate-key', { method: 'POST' }),
+    getMachineId: () => Promise.resolve({ success: true, data: 'remote-client' }),
+
+    // Appointments
+    getAppointments: (filters) => _remoteCall('/appointments', { query: filters }),
+    getAppointment: (id) => _remoteCall(`/appointments/${id}`),
+    createAppointment: (data) => _remoteCall('/appointments', { method: 'POST', body: data }),
+    updateAppointment: (id, data) => _remoteCall(`/appointments/${id}`, { method: 'PUT', body: data }),
+    deleteAppointment: (id) => _remoteCall(`/appointments/${id}`, { method: 'DELETE' }),
+    getUpcomingAppointments: (days, userId) => _remoteCall('/appointments/upcoming', { query: { days: days || 3, ...(userId ? { userId } : {}) } }),
+    getCustomerAppointments: (customerId) => _remoteCall(`/appointments/customer/${customerId}`),
+
+    // Tasks
+    getTasks: (filters) => _remoteCall('/tasks', { query: filters }),
+    getTask: (id) => _remoteCall(`/tasks/${id}`),
+    createTask: (data) => _remoteCall('/tasks', { method: 'POST', body: data }),
+    updateTask: (id, data) => _remoteCall(`/tasks/${id}`, { method: 'PUT', body: data }),
+    deleteTask: (id) => _remoteCall(`/tasks/${id}`, { method: 'DELETE' }),
+    getActiveTasks: (userId) => _remoteCall('/tasks/active', { query: userId ? { userId } : {} }),
+    getOverdueTasks: (userId) => _remoteCall('/tasks/overdue', { query: userId ? { userId } : {} }),
+    getTaskStats: (userId) => _remoteCall('/tasks/stats', { query: userId ? { userId } : {} }),
+
+    // Finance
+    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/stats/finance-summary', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+
+    // Backup (not available in remote mode)
+    createBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
+    restoreBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
+    listBackups: () => Promise.resolve({ success: true, data: [] }),
+    getDbPath: () => Promise.resolve({ success: true, data: 'Remote server rejimi' }),
+
+    // Export (not available in remote mode — handled by browser-side export)
+    exportExcel: null,
+    exportPdf: null,
+    exportDailyPdf: null,
+    exportCustomersExcel: null,
+
+    // File dialogs (not available in remote mode)
+    openFileDialog: null,
+    openFolderDialog: null,
+    openPath: null,
+    showItemInFolder: null,
+    openExternal: null,
+
+    // Logging
+    getLogPath: () => Promise.resolve({ success: false }),
+    openLogFolder: () => Promise.resolve({ success: false }),
+
+    // Telegram
+    sendTelegramMessage: () => Promise.resolve({ success: false, error: 'Remote rejimde dəstəklənmir' }),
+    sendTelegramReport: () => Promise.resolve({ success: false, error: 'Remote rejimde dəstəklənmir' }),
+
+    // Seed
+    seedData: () => Promise.resolve({ success: false }),
+
+    // Auto-Update (keep from original if available)
+    checkForUpdate: () => _originalWindowApi?.checkForUpdate?.() || Promise.resolve({ success: false }),
+    getAppVersion: () => _originalWindowApi?.getAppVersion?.() || Promise.resolve({ success: true, data: { version: 'remote' } }),
+    downloadUpdate: () => _originalWindowApi?.downloadUpdate?.() || Promise.resolve({ success: false }),
+    installUpdate: () => _originalWindowApi?.installUpdate?.(),
+    onUpdaterStatus: (cb) => _originalWindowApi?.onUpdaterStatus?.(cb) || (() => {}),
+  };
+}
+
+function _syncWindowApi(remoteEnabled) {
+  try {
+    if (remoteEnabled) {
+      if (window.api && !_originalWindowApi) {
+        _originalWindowApi = window.api;
+      }
+      window.api = _buildRemoteProxy();
+    } else {
+      if (_originalWindowApi) {
+        window.api = _originalWindowApi;
+        _originalWindowApi = null;
+      }
+    }
+  } catch {}
+}
+
+// On load, sync window.api state with stored remote config
+try {
+  const storedRemote = localStorage.getItem('use_remote') === 'true';
+  const storedUrl = localStorage.getItem('api_base_url') || '';
+  if (storedRemote && storedUrl) {
+    _syncWindowApi(true);
+  }
+} catch {}
+
 function hasRemote() {
   try {
     const localEnabled = localStorage.getItem('use_remote');
     const enabled = localEnabled === 'true' || import.meta.env.VITE_USE_REMOTE === 'true';
     const base = resolveBaseUrl();
     if (enabled && !!base) return true;
-    // Auto-detect: if window.api is not available (browser, not Electron), use remote if URL exists
-    if (!window.api && !!base) return true;
+    // Auto-detect: if running in browser (no original window.api), use remote if URL exists
+    if (!_originalWindowApi && !window.api && !!base) return true;
     return false;
   } catch {
     return false;
@@ -78,7 +335,7 @@ function getRemoteConfig() {
   try {
     const explicitEnabled = (localStorage.getItem('use_remote') === 'true') || (import.meta.env.VITE_USE_REMOTE === 'true');
     const baseUrl = resolveBaseUrl();
-    const enabled = explicitEnabled || (!window.api && !!baseUrl);
+    const enabled = explicitEnabled || (!_originalWindowApi && !window.api && !!baseUrl);
     return { enabled, baseUrl };
   } catch {
     return { enabled: false, baseUrl: '' };
@@ -91,6 +348,8 @@ function setRemoteConfig({ enabled, baseUrl }) {
     if (baseUrl !== undefined) localStorage.setItem('api_base_url', String(baseUrl || ''));
   } catch {
   }
+  // When remote is enabled, hide window.api so pages use apiRequest() fallback
+  _syncWindowApi(enabled);
 }
 
 function getToken() {
