@@ -16,8 +16,8 @@ function initAutoUpdater(win) {
   const { app } = require('electron');
   logger.info('UPDATER', `Init auto-updater. Version: ${app.getVersion()}, isPackaged: ${app.isPackaged}`);
 
-  // Disable auto-download — we ask user first
-  autoUpdater.autoDownload = false;
+  // Auto-download updates silently
+  autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowDowngrade = false;
 
@@ -50,19 +50,7 @@ function initAutoUpdater(win) {
       releaseNotes: info.releaseNotes,
     });
 
-    // Show dialog to user
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Yeniləmə mövcuddur',
-      message: `SmartQeyd v${info.version} mövcuddur.\n\nYeniləməni yükləmək istəyirsiniz?`,
-      buttons: ['Yüklə', 'Sonra'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(({ response }) => {
-      if (response === 0) {
-        autoUpdater.downloadUpdate();
-      }
-    });
+    // Auto-download is enabled, update will download automatically
   });
 
   autoUpdater.on('update-not-available', (info) => {
