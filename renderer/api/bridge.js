@@ -101,16 +101,17 @@ function _buildRemoteProxy() {
 
     // Stats
     getTodayStats: (userId) => _remoteCall('/stats/today', { query: userId ? { userId } : {} }),
-    getMonthStats: (year, month, userId) => _remoteCall('/stats/month', { query: { year, month, ...(userId ? { userId } : {}) } }),
-    getAllTimeStats: (userId) => _remoteCall('/stats/alltime', { query: userId ? { userId } : {} }),
+    getMonthStats: (year, month, userId) => _remoteCall(`/stats/month/${year}/${month}`, { query: userId ? { userId } : {} }),
+    getAllTimeStats: (userId) => _remoteCall('/stats/all-time', { query: userId ? { userId } : {} }),
     getTopServices: (limit, userId) => _remoteCall('/stats/top-services', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
     getTopBrands: (limit, userId) => _remoteCall('/stats/top-brands', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
-    getMonthlyChart: (year, userId) => _remoteCall('/stats/monthly-chart', { query: { year, ...(userId ? { userId } : {}) } }),
-    getUnpaidRecords: (userId) => _remoteCall('/stats/unpaid', { query: userId ? { userId } : {} }),
+    getMonthlyChart: (year, userId) => _remoteCall(`/stats/monthly-chart/${year}`, { query: userId ? { userId } : {} }),
+    getUnpaidRecords: (userId) => _remoteCall('/records/unpaid', { query: userId ? { userId } : {} }),
     getDebtStats: (userId) => _remoteCall('/stats/debt', { query: userId ? { userId } : {} }),
     getProductStats: (userId) => _remoteCall('/stats/products', { query: userId ? { userId } : {} }),
-    getMonthlyRevenue: (year, userId) => _remoteCall('/stats/monthly-revenue', { query: { year, ...(userId ? { userId } : {}) } }),
+    getMonthlyRevenue: (year, userId) => _remoteCall(`/stats/monthly-revenue/${year}`, { query: userId ? { userId } : {} }),
     getYearlyRevenue: (userId) => _remoteCall('/stats/yearly-revenue', { query: userId ? { userId } : {} }),
+    getCustomerCount: (userId) => _remoteCall('/stats/customers/count', { query: userId ? { userId } : {} }),
 
     // Customers
     getCustomers: (search, userId) => _remoteCall('/customers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
@@ -156,8 +157,8 @@ function _buildRemoteProxy() {
     createProduct: (data) => _remoteCall('/products', { method: 'POST', body: data }),
     updateProduct: (id, data) => _remoteCall(`/products/${id}`, { method: 'PUT', body: data }),
     deleteProduct: (id) => _remoteCall(`/products/${id}`, { method: 'DELETE' }),
-    getLowStockProducts: (userId) => _remoteCall('/products/low-stock', { query: userId ? { userId } : {} }),
-    getStockValue: (userId) => _remoteCall('/products/stock-value', { query: userId ? { userId } : {} }),
+    getLowStockProducts: (userId) => _remoteCall('/stats/low-stock', { query: userId ? { userId } : {} }),
+    getStockValue: (userId) => _remoteCall('/stats/stock-value', { query: userId ? { userId } : {} }),
     importProductsFromExcel: (rows, createdBy) => _remoteCall('/products/import', { method: 'POST', body: { rows, createdBy } }),
 
     // Stock Movements
@@ -173,9 +174,9 @@ function _buildRemoteProxy() {
     createSale: (data) => _remoteCall('/sales', { method: 'POST', body: data }),
     updateSalePayment: (id, paidAmount, status) => _remoteCall(`/sales/${id}/payment`, { method: 'PUT', body: { paidAmount, status } }),
     deleteSale: (id) => _remoteCall(`/sales/${id}`, { method: 'DELETE' }),
-    getSalesStats: (startDate, endDate, userId) => _remoteCall('/sales/stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    getTopSellingProducts: (limit, userId) => _remoteCall('/sales/top-products', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
-    getMonthlySalesChart: (year, userId) => _remoteCall('/sales/monthly-chart', { query: { year, ...(userId ? { userId } : {}) } }),
+    getSalesStats: (startDate, endDate, userId) => _remoteCall('/stats/sales', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getTopSellingProducts: (limit, userId) => _remoteCall('/stats/top-selling-products', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
+    getMonthlySalesChart: (year, userId) => _remoteCall(`/stats/monthly-sales-chart/${year}`, { query: userId ? { userId } : {} }),
     getSalesPaymentStats: (startDate, endDate, userId) => _remoteCall('/sales/payment-stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
     generateSaleReceipt: (id) => _remoteCall(`/sales/${id}/receipt`),
 
@@ -208,12 +209,12 @@ function _buildRemoteProxy() {
     createExpense: (data) => _remoteCall('/expenses', { method: 'POST', body: data }),
     updateExpense: (id, data) => _remoteCall(`/expenses/${id}`, { method: 'PUT', body: data }),
     deleteExpense: (id) => _remoteCall(`/expenses/${id}`, { method: 'DELETE' }),
-    getExpenseStats: (startDate, endDate, userId) => _remoteCall('/expenses/stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getExpenseStats: (startDate, endDate, userId) => _remoteCall('/stats/expenses', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
     getExpenseCategories: () => _remoteCall('/expenses/categories'),
 
     // Notifications
     getNotifications: (userId, limit) => _remoteCall('/notifications', { query: { ...(userId ? { userId } : {}), ...(limit ? { limit } : {}) } }),
-    getUnreadCount: (userId) => _remoteCall('/notifications/unread-count', { query: userId ? { userId } : {} }),
+    getUnreadCount: (userId) => _remoteCall('/stats/notifications/unread', { query: userId ? { userId } : {} }),
     createNotification: (data) => _remoteCall('/notifications', { method: 'POST', body: data }),
     markNotificationRead: (id) => _remoteCall(`/notifications/${id}/read`, { method: 'PUT' }),
     markAllNotificationsRead: () => _remoteCall('/notifications/read-all', { method: 'PUT' }),
@@ -251,7 +252,7 @@ function _buildRemoteProxy() {
     getTaskStats: (userId) => _remoteCall('/tasks/stats', { query: userId ? { userId } : {} }),
 
     // Finance
-    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/stats/finance-summary', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/stats/sales', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
 
     // Backup (not available in remote mode)
     createBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
