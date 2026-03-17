@@ -39,19 +39,26 @@ export default function Debts() {
   const loadDebts = useCallback(async () => {
     setLoading(true);
     try {
-      const [recRes, salesRes] = await Promise.all([
+      const fetchSales = (status) => window.api?.getSales
+        ? window.api.getSales({ payment_status: status, userId })
+        : apiRequest(`/sales?${new URLSearchParams({ ...(userId ? { userId } : {}), payment_status: status }).toString()}`, { token: getToken() });
+
+      const [recRes, borcRes, qismenRes, gozleyirRes] = await Promise.all([
         window.api?.getUnpaidRecords
           ? window.api.getUnpaidRecords(userId)
           : apiRequest(`/records/unpaid${userId ? `?userId=${userId}` : ''}`, { token: getToken() }),
-        window.api?.getSales
-          ? window.api.getSales({ payment_status: 'borc', userId })
-          : apiRequest(`/sales?${new URLSearchParams({ ...(userId ? { userId } : {}), payment_status: 'borc' }).toString()}`, { token: getToken() }),
+        fetchSales('borc'),
+        fetchSales('qismen'),
+        fetchSales('gozleyir'),
       ]);
       if (recRes.success) setRecords(recRes.data || []);
-      if (salesRes.success) {
-        const debts = (salesRes.data || []).filter(s => (s.total || 0) > (s.paid_amount || 0));
-        setSalesDebts(debts);
-      }
+      const allSales = [
+        ...(borcRes.success ? borcRes.data || [] : []),
+        ...(qismenRes.success ? qismenRes.data || [] : []),
+        ...(gozleyirRes.success ? gozleyirRes.data || [] : []),
+      ];
+      const debts = allSales.filter(s => (s.total || 0) > (s.paid_amount || 0));
+      setSalesDebts(debts);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [userId]);

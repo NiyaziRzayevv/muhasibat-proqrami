@@ -76,7 +76,11 @@ function _remoteCall(path, opts = {}) {
   if (opts.body !== undefined) fetchOpts.body = JSON.stringify(opts.body);
   let url = `${base}${path}`;
   if (opts.query) {
-    const qs = new URLSearchParams(opts.query).toString();
+    const cleaned = {};
+    for (const [k, v] of Object.entries(opts.query)) {
+      if (v !== null && v !== undefined && v !== '') cleaned[k] = v;
+    }
+    const qs = new URLSearchParams(cleaned).toString();
     if (qs) url += `?${qs}`;
   }
   return fetch(url, fetchOpts).then(r => r.json()).catch(e => ({ success: false, error: e.message }));
