@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, Users, Calendar, Loader2, FolderOpen, Package, ShoppingCart, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,6 +29,7 @@ function ExportCard({ icon: Icon, title, description, color, onExport, loading }
 
 export default function ExportPage() {
   const { showNotification, currentUser, isAdmin } = useApp();
+  const { t } = useLanguage();
   const userId = isAdmin ? null : currentUser?.id;
   const [loadingStates, setLoadingStates] = useState({});
   const [dateRange, setDateRange] = useState({

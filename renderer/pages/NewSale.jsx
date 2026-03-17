@@ -5,15 +5,19 @@ import {
   ShoppingCart, Package, AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../utils/currency';
 
 function fmt(n) {
   if (!n && n !== 0) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function NewSale() {
   const navigate = useNavigate();
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -282,7 +286,7 @@ export default function NewSale() {
                   <span className="text-white font-medium">{fmt(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-dark-400 text-sm shrink-0">Endirim (₼):</span>
+                  <span className="text-dark-400 text-sm shrink-0">Endirim ({csym}):</span>
                   <input type="number" min="0" step="0.01" className="input-field w-24 h-8 text-xs text-right"
                     value={discount} onChange={e => setDiscount(e.target.value)} />
                 </div>
@@ -304,7 +308,7 @@ export default function NewSale() {
 
               {paymentStatus === 'qismen' && (
                 <div>
-                  <label className="label">Ödənilən məbləğ (₼)</label>
+                  <label className="label">Ödənilən məbləğ ({csym})</label>
                   <input type="number" min="0" step="0.01" className="input-field"
                     value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
                 </div>

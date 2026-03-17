@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import LanguageContext from '../contexts/LanguageContext';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -20,8 +21,11 @@ export default class ErrorBoundary extends React.Component {
     this.setState({ hasError: false, error: null, info: null });
   };
 
+  static contextType = LanguageContext;
+
   render() {
     if (!this.state.hasError) return this.props.children;
+    const t = this.context?.t || (k => k);
 
     return (
       <div className="flex items-center justify-center h-full w-full p-8">
@@ -32,8 +36,8 @@ export default class ErrorBoundary extends React.Component {
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white mb-1">Xəta baş verdi</h2>
-            <p className="text-sm text-dark-400">Bu səhifə yüklənərkən xəta yarandı.</p>
+            <h2 className="text-lg font-bold text-white mb-1">{t('errorOccurredTitle')}</h2>
+            <p className="text-sm text-dark-400">{t('errorPageLoad')}</p>
           </div>
           {this.state.error && (
             <div className="bg-dark-800 border border-dark-700 rounded-xl p-3 text-left">
@@ -46,7 +50,7 @@ export default class ErrorBoundary extends React.Component {
             onClick={this.handleReset}
             className="btn-primary mx-auto"
           >
-            <RefreshCw size={14} /> Yenidən cəhd et
+            <RefreshCw size={14} /> {t('retryButton')}
           </button>
         </div>
       </div>

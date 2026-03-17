@@ -9,30 +9,36 @@ import { useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
+import { getCurrencySymbol } from '../utils/currency';
 import { apiBridge } from '../api/bridge';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const PAYMENT_STATUS_OPTIONS = [
-  { value: '', label: 'Hamısı' },
-  { value: 'odenilib', label: 'Ödənilib' },
-  { value: 'gozleyir', label: 'Gözləyir' },
-  { value: 'qismen', label: 'Qismən' },
-  { value: 'borc', label: 'Borc' },
-];
+function getPaymentStatusOptions(t) {
+  return [
+    { value: '', label: t('all') },
+    { value: 'odenilib', label: t('statusPaid') },
+    { value: 'gozleyir', label: t('statusWaiting') },
+    { value: 'qismen', label: t('statusPartial') },
+    { value: 'borc', label: t('statusDebt') },
+  ];
+}
 
-const STATUS_MAP = {
-  odenilib: { label: 'Ödənilib', cls: 'status-odenilib' },
-  gozleyir: { label: 'Gözləyir', cls: 'status-gozleyir' },
-  qismen: { label: 'Qismən', cls: 'status-qismen' },
-  borc: { label: 'Borc', cls: 'status-borc' },
-};
+function getStatusMap(t) {
+  return {
+    odenilib: { label: t('statusPaid'), cls: 'status-odenilib' },
+    gozleyir: { label: t('statusWaiting'), cls: 'status-gozleyir' },
+    qismen: { label: t('statusPartial'), cls: 'status-qismen' },
+    borc: { label: t('statusDebt'), cls: 'status-borc' },
+  };
+}
 
 function fmt(n) {
   if (n === null || n === undefined || n === '') return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 const EDIT_EMPTY = {
@@ -45,7 +51,11 @@ const EDIT_EMPTY = {
 
 export default function Records() {
   const navigate = useNavigate();
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const PAYMENT_STATUS_OPTIONS = getPaymentStatusOptions(t);
+  const STATUS_MAP = getStatusMap(t);
   const userId = isAdmin ? undefined : currentUser?.id;
 
   const [records, setRecords] = useState([]);
@@ -551,15 +561,15 @@ export default function Records() {
           <div><label className="label">Kod / Seriya</label><input className="input-field" value={editForm.car_plate} onChange={e => setEditField('car_plate', e.target.value)} /></div>
           <div><label className="label">Xidmət növü</label><input className="input-field" value={editForm.service_type} onChange={e => setEditField('service_type', e.target.value)} /></div>
           <div className="col-span-2"><label className="label">Əlavə xidmətlər</label><input className="input-field" value={editForm.extra_services} onChange={e => setEditField('extra_services', e.target.value)} /></div>
-          <div><label className="label">Vahid qiymət (₼)</label><input type="number" step="0.01" className="input-field" value={editForm.unit_price} onChange={e => setEditField('unit_price', e.target.value)} /></div>
-          <div><label className="label">Yekun qiymət (₼)</label><input type="number" step="0.01" className="input-field" value={editForm.total_price} onChange={e => setEditField('total_price', e.target.value)} /></div>
+          <div><label className="label">Vahid qiymət ({csym})</label><input type="number" step="0.01" className="input-field" value={editForm.unit_price} onChange={e => setEditField('unit_price', e.target.value)} /></div>
+          <div><label className="label">Yekun qiymət ({csym})</label><input type="number" step="0.01" className="input-field" value={editForm.total_price} onChange={e => setEditField('total_price', e.target.value)} /></div>
           <div>
             <label className="label">Ödəniş statusu</label>
             <select className="select-field" value={editForm.payment_status} onChange={e => setEditField('payment_status', e.target.value)}>
               {PAYMENT_STATUS_OPTIONS.slice(1).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
-          <div><label className="label">Ödənilən məbləğ (₼)</label><input type="number" step="0.01" className="input-field" value={editForm.paid_amount} onChange={e => setEditField('paid_amount', e.target.value)} /></div>
+          <div><label className="label">Ödənilən məbləğ ({csym})</label><input type="number" step="0.01" className="input-field" value={editForm.paid_amount} onChange={e => setEditField('paid_amount', e.target.value)} /></div>
           <div className="col-span-2"><label className="label">Qeyd</label><textarea className="input-field resize-none h-16" value={editForm.notes} onChange={e => setEditField('notes', e.target.value)} /></div>
         </div>
       </Modal>

@@ -3,9 +3,11 @@ import { Shield, Key, CheckCircle, XCircle, Clock, Copy, RefreshCw, Cpu, AlertTr
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function License() {
   const { showNotification, checkLicense, isAdmin } = useApp();
+  const { t } = useLanguage();
   const [license, setLicense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);

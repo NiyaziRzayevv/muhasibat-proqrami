@@ -9,139 +9,141 @@ import {
   Bell, Key, LogOut, User, Calendar, CheckSquare, BarChart2
 } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
-// Admin üçün tam menü
-function buildAdminNav(unreadCount) {
+function buildAdminNav(unreadCount, t) {
   return [
     {
-      label: 'Əsas',
+      label: t('sidebarMain'),
       items: [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/new-record', icon: PlusCircle, label: 'Əlavə et' },
-        { to: '/records', icon: Table2, label: 'Qeydlər' },
+        { to: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { to: '/new-record', icon: PlusCircle, label: t('addNew') },
+        { to: '/records', icon: Table2, label: t('recordsPage') },
       ]
     },
     {
-      label: 'Satış',
+      label: t('sidebarSales'),
       items: [
-        { to: '/pos', icon: Monitor, label: 'POS / Kassa' },
-        { to: '/sales', icon: ShoppingCart, label: 'Satışlar' },
-        { to: '/products', icon: Package, label: 'Məhsullar' },
-        { to: '/stock-movements', icon: ArrowLeftRight, label: 'Stok' },
-        { to: '/suppliers', icon: Truck, label: 'Təchizatçılar' },
+        { to: '/pos', icon: Monitor, label: t('posKassa') },
+        { to: '/sales', icon: ShoppingCart, label: t('salesPage') },
+        { to: '/products', icon: Package, label: t('products') },
+        { to: '/stock-movements', icon: ArrowLeftRight, label: t('stock') },
+        { to: '/suppliers', icon: Truck, label: t('suppliers') },
       ]
     },
     {
-      label: 'Müştərilər',
+      label: t('sidebarCustomers'),
       items: [
-        { to: '/customers', icon: Users, label: 'Müştərilər' },
-        { to: '/customer-history', icon: History, label: 'Tarixçə' },
-        { to: '/vehicles', icon: Boxes, label: 'Aktivlər' },
-        { to: '/debts', icon: CreditCard, label: 'Borclar' },
+        { to: '/customers', icon: Users, label: t('customers') },
+        { to: '/customer-history', icon: History, label: t('history') },
+        { to: '/vehicles', icon: Boxes, label: t('vehicles') || 'Əşyalar' },
+        { to: '/debts', icon: CreditCard, label: t('debts') },
       ]
     },
     {
-      label: 'Maliyyə',
+      label: t('sidebarFinance'),
       items: [
-        { to: '/finance', icon: DollarSign, label: 'Maliyyə' },
-        { to: '/expenses', icon: TrendingDown, label: 'Xərclər' },
-        { to: '/price-base', icon: Tag, label: 'Qiymətlər' },
+        { to: '/finance', icon: DollarSign, label: t('finance') },
+        { to: '/expenses', icon: TrendingDown, label: t('expenses') },
+        { to: '/assets', icon: Building2, label: t('assets') || 'Aktivlər' },
+        { to: '/price-base', icon: Tag, label: t('prices') },
       ]
     },
     {
-      label: 'Hesabat',
+      label: t('sidebarReports'),
       items: [
-        { to: '/reports', icon: BarChart3, label: 'Hesabatlar' },
-        { to: '/analytics', icon: BarChart2, label: 'Analitika' },
-        { to: '/export', icon: Download, label: 'Export' },
+        { to: '/reports', icon: BarChart3, label: t('reports') },
+        { to: '/analytics', icon: BarChart2, label: t('analytics') },
+        { to: '/export', icon: Download, label: t('exportPage') },
       ]
     },
     {
-      label: 'İdarəetmə',
+      label: t('sidebarManagement'),
       items: [
-        { to: '/appointments', icon: Calendar, label: 'Randevular' },
-        { to: '/tasks', icon: CheckSquare, label: 'Tapşırıqlar' },
+        { to: '/appointments', icon: Calendar, label: t('appointments') },
+        { to: '/tasks', icon: CheckSquare, label: t('tasks') },
       ]
     },
     {
-      label: 'Sistem',
+      label: t('sidebarSystem'),
       items: [
-        { to: '/notifications', icon: Bell, label: 'Bildirişlər', badge: unreadCount > 0 ? unreadCount : null },
-        { to: '/users', icon: Shield, label: 'İstifadəçilər' },
-        { to: '/audit-log', icon: Activity, label: 'Audit Log' },
-        { to: '/license', icon: Key, label: 'Lisenziya' },
-        { to: '/settings', icon: Settings, label: 'Ayarlar' },
+        { to: '/notifications', icon: Bell, label: t('notifications'), badge: unreadCount > 0 ? unreadCount : null },
+        { to: '/users', icon: Shield, label: t('users') },
+        { to: '/audit-log', icon: Activity, label: t('auditLog') },
+        { to: '/license', icon: Key, label: t('license') },
+        { to: '/settings', icon: Settings, label: t('settings') },
       ]
     },
   ];
 }
 
-// Adi istifadəçi üçün tam mühasibat menüsü (Admin bölmələri olmadan)
-function buildUserNav(unreadCount) {
+function buildUserNav(unreadCount, t) {
   return [
     {
-      label: 'Əsas',
+      label: t('sidebarMain'),
       items: [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/new-record', icon: PlusCircle, label: 'Əlavə et' },
-        { to: '/records', icon: Table2, label: 'Qeydlər' },
+        { to: '/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+        { to: '/new-record', icon: PlusCircle, label: t('addNew') },
+        { to: '/records', icon: Table2, label: t('recordsPage') },
       ]
     },
     {
-      label: 'Satış',
+      label: t('sidebarSales'),
       items: [
-        { to: '/pos', icon: Monitor, label: 'POS / Kassa' },
-        { to: '/sales', icon: ShoppingCart, label: 'Satışlar' },
-        { to: '/products', icon: Package, label: 'Məhsullar' },
-        { to: '/stock-movements', icon: ArrowLeftRight, label: 'Stok' },
-        { to: '/suppliers', icon: Truck, label: 'Təchizatçılar' },
+        { to: '/pos', icon: Monitor, label: t('posKassa') },
+        { to: '/sales', icon: ShoppingCart, label: t('salesPage') },
+        { to: '/products', icon: Package, label: t('products') },
+        { to: '/stock-movements', icon: ArrowLeftRight, label: t('stock') },
+        { to: '/suppliers', icon: Truck, label: t('suppliers') },
       ]
     },
     {
-      label: 'Müştərilər',
+      label: t('sidebarCustomers'),
       items: [
-        { to: '/customers', icon: Users, label: 'Müştərilər' },
-        { to: '/customer-history', icon: History, label: 'Tarixçə' },
-        { to: '/vehicles', icon: Boxes, label: 'Aktivlər' },
-        { to: '/debts', icon: CreditCard, label: 'Borclar' },
+        { to: '/customers', icon: Users, label: t('customers') },
+        { to: '/customer-history', icon: History, label: t('history') },
+        { to: '/vehicles', icon: Boxes, label: t('vehicles') || 'Əşyalar' },
+        { to: '/debts', icon: CreditCard, label: t('debts') },
       ]
     },
     {
-      label: 'Maliyyə',
+      label: t('sidebarFinance'),
       items: [
-        { to: '/finance', icon: DollarSign, label: 'Maliyyə' },
-        { to: '/expenses', icon: TrendingDown, label: 'Xərclər' },
-        { to: '/price-base', icon: Tag, label: 'Qiymətlər' },
+        { to: '/finance', icon: DollarSign, label: t('finance') },
+        { to: '/expenses', icon: TrendingDown, label: t('expenses') },
+        { to: '/assets', icon: Building2, label: t('assets') || 'Aktivlər' },
+        { to: '/price-base', icon: Tag, label: t('prices') },
       ]
     },
     {
-      label: 'Hesabat',
+      label: t('sidebarReports'),
       items: [
-        { to: '/reports', icon: BarChart3, label: 'Hesabatlar' },
-        { to: '/analytics', icon: BarChart2, label: 'Analitika' },
-        { to: '/export', icon: Download, label: 'Export' },
+        { to: '/reports', icon: BarChart3, label: t('reports') },
+        { to: '/analytics', icon: BarChart2, label: t('analytics') },
+        { to: '/export', icon: Download, label: t('exportPage') },
       ]
     },
     {
-      label: 'İdarəetmə',
+      label: t('sidebarManagement'),
       items: [
-        { to: '/appointments', icon: Calendar, label: 'Randevular' },
-        { to: '/tasks', icon: CheckSquare, label: 'Tapşırıqlar' },
-        { to: '/notifications', icon: Bell, label: 'Bildirişlər', badge: unreadCount > 0 ? unreadCount : null },
+        { to: '/appointments', icon: Calendar, label: t('appointments') },
+        { to: '/tasks', icon: CheckSquare, label: t('tasks') },
+        { to: '/notifications', icon: Bell, label: t('notifications'), badge: unreadCount > 0 ? unreadCount : null },
       ]
     },
   ];
 }
 
-function buildNav(unreadCount, isAdmin) {
-  return isAdmin ? buildAdminNav(unreadCount) : buildUserNav(unreadCount);
+function buildNav(unreadCount, isAdmin, t) {
+  return isAdmin ? buildAdminNav(unreadCount, t) : buildUserNav(unreadCount, t);
 }
 
 export default function Sidebar({ collapsed, onToggle }) {
   const { settings, currentUser, handleLogout, unreadCount } = useApp();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const isAdmin = currentUser?.role_name === 'admin';
-  const NAV_SECTIONS = buildNav(unreadCount, isAdmin);
+  const NAV_SECTIONS = buildNav(unreadCount, isAdmin, t);
 
   async function doLogout() {
     await handleLogout();

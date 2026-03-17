@@ -188,6 +188,18 @@ router.post('/', requireAuth, async (req, res, next) => {
       return sale;
     });
 
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'create',
+        entityType: 'sale',
+        entityId: created.id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+        newData: { total, items: normalizedItems.length, customer: customerName },
+      }
+    }).catch(() => {});
+
     res.json({ success: true, data: mapSale(created) });
   } catch (err) { next(err); }
 });
@@ -246,6 +258,16 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       await tx.saleItem.deleteMany({ where: { saleId: id } });
       await tx.sale.delete({ where: { id } });
     });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'delete',
+        entityType: 'sale',
+        entityId: id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+      }
+    }).catch(() => {});
 
     res.json({ success: true });
   } catch (err) { next(err); }

@@ -7,27 +7,33 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const STATUS_MAP = {
-  odenilib: { label: 'Ödənilib', cls: 'status-odenilib' },
-  gozleyir: { label: 'Gözləyir', cls: 'status-gozleyir' },
-  qismen:   { label: 'Qismən',   cls: 'status-qismen' },
-  borc:     { label: 'Borc',     cls: 'status-borc' },
-};
+function getStatusMap(t) {
+  return {
+    odenilib: { label: t('statusPaid'), cls: 'status-odenilib' },
+    gozleyir: { label: t('statusWaiting'), cls: 'status-gozleyir' },
+    qismen:   { label: t('statusPartial'),   cls: 'status-qismen' },
+    borc:     { label: t('statusDebt'),     cls: 'status-borc' },
+  };
+}
 
-const METHOD_MAP = {
-  cash:     { label: 'Nağd',     cls: 'bg-emerald-500/15 text-emerald-400', Icon: Banknote },
-  card:     { label: 'Kart',     cls: 'bg-blue-500/15 text-blue-400',    Icon: CreditCard },
-  transfer: { label: 'Köçürmə', cls: 'bg-violet-500/15 text-violet-400', Icon: ArrowLeftRight },
-  debt:     { label: 'Borc',    cls: 'bg-red-500/15 text-red-400',      Icon: UserX },
-  partial:  { label: 'Qismən',  cls: 'bg-amber-500/15 text-amber-400',  Icon: ChevronDown },
-};
+function getMethodMap(t) {
+  return {
+    cash:     { label: t('cash'),     cls: 'bg-emerald-500/15 text-emerald-400', Icon: Banknote },
+    card:     { label: t('card'),     cls: 'bg-blue-500/15 text-blue-400',    Icon: CreditCard },
+    transfer: { label: t('transfer'), cls: 'bg-violet-500/15 text-violet-400', Icon: ArrowLeftRight },
+    debt:     { label: t('statusDebt'),    cls: 'bg-red-500/15 text-red-400',      Icon: UserX },
+    partial:  { label: t('statusPartial'),  cls: 'bg-amber-500/15 text-amber-400',  Icon: ChevronDown },
+  };
+}
 
-function MethodBadge({ method }) {
-  const m = METHOD_MAP[method] || { label: method || '—', cls: 'bg-dark-700 text-dark-400', Icon: Banknote };
+function MethodBadge({ method, METHOD_MAP }) {
+  const m = (METHOD_MAP || {})[method] || { label: method || '—', cls: 'bg-dark-700 text-dark-400', Icon: Banknote };
   const Icon = m.Icon;
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.cls}`}>
@@ -38,12 +44,16 @@ function MethodBadge({ method }) {
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function Sales() {
   const navigate = useNavigate();
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const STATUS_MAP = getStatusMap(t);
+  const METHOD_MAP = getMethodMap(t);
   const userId = isAdmin ? undefined : currentUser?.id;
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -276,7 +286,7 @@ export default function Sales() {
             <TrendingUp size={14} className="text-emerald-400" />
           </div>
           <p className="text-2xl font-black text-emerald-400">{fmt(totalRevenue)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ məcmu</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} məcmu</p>
         </div>
         <div className="card p-4 border border-blue-800/30 bg-blue-900/10">
           <div className="flex items-center justify-between mb-1">
@@ -308,7 +318,7 @@ export default function Sales() {
             <BarChart2 size={14} className="text-amber-400" />
           </div>
           <p className="text-2xl font-black text-amber-400">{fmt(avgSale)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ / satış</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} / satış</p>
         </div>
       </div>
 
@@ -323,7 +333,7 @@ export default function Sales() {
             <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }}
-              formatter={(v) => [`${Number(v).toFixed(2)} ₼`, 'Gəlir']} />
+              formatter={(v) => [`${Number(v).toFixed(2)} ${csym}`, 'Gəlir']} />
             <Bar dataKey="revenue" fill="#10b981" radius={[3,3,0,0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -398,7 +408,7 @@ export default function Sales() {
                   <td className={`text-xs font-semibold ${ (sale.total - (sale.paid_amount||0)) > 0 ? 'text-red-400' : 'text-dark-600' }`}>
                     { (sale.total - (sale.paid_amount||0)) > 0 ? fmt(sale.total - (sale.paid_amount||0)) : '—' }
                   </td>
-                  <td><MethodBadge method={sale.payment_method} /></td>
+                  <td><MethodBadge method={sale.payment_method} METHOD_MAP={METHOD_MAP} /></td>
                   <td>
                     <span className={STATUS_MAP[sale.payment_status]?.cls || 'status-badge bg-dark-700 text-dark-400'}>
                       {STATUS_MAP[sale.payment_status]?.label || sale.payment_status}
@@ -451,7 +461,7 @@ export default function Sales() {
                 <p className="text-xs text-dark-400 mt-0.5">Ödənilən</p>
               </div>
               <div className="card p-3 text-center">
-                <MethodBadge method={detailSale.payment_method} />
+                <MethodBadge method={detailSale.payment_method} METHOD_MAP={METHOD_MAP} />
                 <p className="text-xs text-dark-400 mt-1">Ödəniş üsulu</p>
               </div>
               <div className="card p-3 text-center">
@@ -513,7 +523,7 @@ export default function Sales() {
               <div className="flex justify-between text-xs border-t border-dark-700 pt-1 mt-1"><span className="text-dark-300">Qalıq:</span><span className="text-red-400 font-bold">{fmt((payModal.total || 0) - (payModal.paid_amount || 0))}</span></div>
             </div>
             <div>
-              <label className="label">Alınan məbləğ (₼)</label>
+              <label className="label">Alınan məbləğ ({csym})</label>
               <input type="number" min="0" step="0.01" className="input-field" value={payAmount}
                 onChange={e => setPayAmount(e.target.value)} autoFocus />
             </div>

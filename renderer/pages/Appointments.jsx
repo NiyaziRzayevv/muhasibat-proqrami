@@ -7,18 +7,23 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const STATUS = {
-  pending:   { label: 'Gözləyir',    cls: 'bg-amber-500/20 text-amber-400 border-amber-700/30' },
-  confirmed: { label: 'Təsdiqləndi', cls: 'bg-blue-500/20 text-blue-400 border-blue-700/30' },
-  completed: { label: 'Tamamlandı',  cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-700/30' },
-  cancelled: { label: 'Ləğv edildi', cls: 'bg-red-500/20 text-red-400 border-red-700/30' },
-};
+function getStatus(t) {
+  return {
+    pending:   { label: t('waiting'),    cls: 'bg-amber-500/20 text-amber-400 border-amber-700/30' },
+    confirmed: { label: t('confirmed'), cls: 'bg-blue-500/20 text-blue-400 border-blue-700/30' },
+    completed: { label: t('completed'),  cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-700/30' },
+    cancelled: { label: t('cancelled'), cls: 'bg-red-500/20 text-red-400 border-red-700/30' },
+  };
+}
 
 const EMPTY = { title: '', customer_name: '', phone: '', date: new Date().toISOString().split('T')[0], time: '09:00', duration: 60, notes: '', status: 'pending' };
 
 export default function Appointments() {
   const { showNotification } = useApp();
+  const { t } = useLanguage();
+  const STATUS = getStatus(t);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

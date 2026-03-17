@@ -201,6 +201,26 @@ contextBridge.exposeInMainWorld('api', {
 
   // Finance
   getFinanceSummary: (startDate, endDate, userId) => ipcRenderer.invoke('finance:summary', startDate, endDate, userId),
+  getFinanceTransactions: (filters) => ipcRenderer.invoke('finance:transactions', filters),
+  createFinanceTransaction: (data) => ipcRenderer.invoke('finance:createTransaction', data),
+  deleteFinanceTransaction: (id) => ipcRenderer.invoke('finance:deleteTransaction', id),
+
+  // Assets
+  getAssets: (filters) => ipcRenderer.invoke('assets:getAll', filters),
+  getAsset: (id) => ipcRenderer.invoke('assets:getOne', id),
+  createAsset: (data) => ipcRenderer.invoke('assets:create', data),
+  updateAsset: (id, data) => ipcRenderer.invoke('assets:update', id, data),
+  deleteAsset: (id) => ipcRenderer.invoke('assets:delete', id),
+  getAssetCategories: () => ipcRenderer.invoke('assets:categories'),
+
+  // Debts (unified)
+  getDebts: (filters) => ipcRenderer.invoke('debts:getAll', filters),
+  payDebt: (data) => ipcRenderer.invoke('debts:pay', data),
+  getDebtPayments: (filters) => ipcRenderer.invoke('debts:payments', filters),
+  getDebtStatsUnified: (userId) => ipcRenderer.invoke('debts:stats', userId),
+
+  // Record Payment
+  updateRecordPayment: (id, paidAmount, status) => ipcRenderer.invoke('records:updatePayment', id, paidAmount, status),
 
   // Auto-Update
   checkForUpdate: () => ipcRenderer.invoke('updater:check'),

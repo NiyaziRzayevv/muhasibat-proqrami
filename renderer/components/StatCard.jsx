@@ -1,7 +1,9 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function StatCard({ title, value, subtitle, icon: Icon, color = 'blue', trend, loading }) {
+  const { t } = useLanguage();
   const colorMap = {
     blue: { bg: 'bg-primary-900/30', border: 'border-primary-800/40', icon: 'text-primary-400', value: 'text-primary-300' },
     green: { bg: 'bg-emerald-900/30', border: 'border-emerald-800/40', icon: 'text-emerald-400', value: 'text-emerald-300' },
@@ -35,7 +37,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = '
       {trend !== undefined && (
         <div className={`flex items-center gap-1 text-xs ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {trend >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-          <span>{Math.abs(trend)}% əvvəlki dövrə nisbətən</span>
+          <span>{Math.abs(trend)}% {t('smartComparedPrev')}</span>
         </div>
       )}
     </div>

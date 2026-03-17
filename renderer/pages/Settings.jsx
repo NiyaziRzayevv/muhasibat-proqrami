@@ -7,6 +7,7 @@ import {
 import { useApp } from '../App';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function UpdateSection() {
   const [version, setVersion] = useState('');
@@ -103,7 +104,8 @@ function UpdateSection() {
 }
 
 export default function Settings() {
-  const { showNotification, refreshSettings, setTheme } = useApp();
+  const { showNotification, refreshSettings, setTheme, setCurrency, isAdmin } = useApp();
+  const { t, lang, changeLang, languageNames } = useLanguage();
   const [form, setForm] = useState({
     company_name: '', master_name: '', phone: '', address: '',
     currency: 'AZN', theme: 'dark', openai_api_key: '',
@@ -342,18 +344,44 @@ export default function Settings() {
         </div>
 
         <div className="card p-5 space-y-4">
-          <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider">Görünüş</p>
-          <div className="grid grid-cols-2 gap-4">
+          <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider">{t('appearance')}</p>
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="label">Tema</label>
-              <select className="select-field" value={form.theme} onChange={e => setForm(f => ({ ...f, theme: e.target.value }))}>
-                <option value="dark">Tünd (Dark)</option>
-                <option value="light">Açıq (Light)</option>
+              <label className="label">{t('language')}</label>
+              <div className="flex gap-2">
+                {['az', 'ru', 'en'].map(code => (
+                  <button
+                    key={code}
+                    onClick={() => changeLang(code)}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 ${
+                      lang === code
+                        ? 'bg-primary-600/20 border-primary-500/50 text-primary-400'
+                        : 'bg-dark-800 border-dark-700 text-dark-400 hover:border-dark-600 hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-center">{languageNames[code]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="label">{t('darkMode')}</label>
+              <select className="select-field" value={form.theme} onChange={e => {
+                const v = e.target.value;
+                setForm(f => ({ ...f, theme: v }));
+                setTheme(v);
+              }}>
+                <option value="dark">{t('darkMode')}</option>
+                <option value="light">{t('lightMode')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Valyuta</label>
-              <select className="select-field" value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
+              <label className="label">{t('currency')}</label>
+              <select className="select-field" value={form.currency} onChange={e => {
+                const v = e.target.value;
+                setForm(f => ({ ...f, currency: v }));
+                setCurrency(v);
+              }}>
                 <option value="AZN">AZN (₼)</option>
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
@@ -362,7 +390,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
             AI Parser Ayarları
             <span className="px-2 py-0.5 text-xs bg-purple-900/30 text-purple-400 border border-purple-700/30 rounded-full">OpenAI</span>
@@ -401,9 +429,9 @@ export default function Settings() {
               <span className="text-sm text-dark-300">{form.use_ai_parser === 'true' ? 'Aktiv' : 'Deaktiv'}</span>
             </div>
           </div>
-        </div>
+        </div>}
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
             <Database size={13} className="text-primary-400" /> Verilənlər Bazası
           </p>
@@ -416,9 +444,9 @@ export default function Settings() {
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
             <Send size={13} className="text-primary-400" /> Telegram İnteqrasiyası
           </p>
@@ -456,9 +484,9 @@ export default function Settings() {
           <p className="text-xs text-dark-500">
             Bot tokeni @BotFather-dan, Chat ID-ni isə qrupa botu əlavə edib mesaj yazaraq öyrənə bilərsiniz.
           </p>
-        </div>
+        </div>}
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
               <Download size={13} className="text-primary-400" /> Backup
@@ -509,16 +537,16 @@ export default function Settings() {
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
             <Download size={13} className="text-primary-400" /> Proqram Yeniləməsi
           </p>
           <UpdateSection />
-        </div>
+        </div>}
 
-        <div className="card p-5 space-y-4">
+        {isAdmin && <div className="card p-5 space-y-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-2">
             <Terminal size={13} className="text-primary-400" /> Sistem Logları
           </p>
@@ -548,7 +576,7 @@ export default function Settings() {
             <p>Loqlanan əməliyyatlar: <span className="text-dark-400">RAW_INPUT · PARSED_RESULT · DB_INSERT · TOTAL_RECALCULATED · ERROR_LOG · STOCK · MIGRATION</span></p>
             <p>Maksimum fayl həcmi: <span className="text-dark-400">5 MB (avtomatik arxivləşir)</span></p>
           </div>
-        </div>
+        </div>}
 
         <div className="h-4" />
       </div>

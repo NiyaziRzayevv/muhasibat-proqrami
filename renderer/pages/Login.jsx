@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Lock, User, AlertCircle, UserPlus, Phone, Mail, ArrowLeft, CheckCircle, Clock } from 'lucide-react';
 import { apiBridge } from '../api/bridge';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Login({ onLogin, onPending }) {
+  const { t, lang, changeLang } = useLanguage();
   const initialRemote = apiBridge.getRemoteConfig();
   const [mode, setMode] = useState('login'); // 'login', 'register', 'pending', 'forgot'
   const [username, setUsername] = useState('');
@@ -37,7 +39,7 @@ export default function Login({ onLogin, onPending }) {
   async function handleLogin(e) {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError('İstifadəçi adı və şifrəni daxil edin');
+      setError(t('enterUsernamePassword'));
       return;
     }
     setLoading(true);
@@ -51,10 +53,10 @@ export default function Login({ onLogin, onPending }) {
       } else if (res.isPending) {
         setMode('pending');
       } else {
-        setError(res.message || res.error || 'Giriş uğursuz oldu');
+        setError(res.message || res.error || t('loginFailed'));
       }
     } catch (e) {
-      setError('Giriş xətası: ' + e.message);
+      setError(t('loginError') + ': ' + e.message);
     } finally {
       setLoading(false);
     }
@@ -63,15 +65,15 @@ export default function Login({ onLogin, onPending }) {
   async function handleRegister(e) {
     e.preventDefault();
     if (!username.trim() || !password.trim() || !fullName.trim()) {
-      setError('İstifadəçi adı, ad soyad və şifrə tələb olunur');
+      setError(t('requiredFields'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Şifrələr uyğun gəlmir');
+      setError(t('passwordMismatch'));
       return;
     }
     if (password.length < 6) {
-      setError('Şifrə minimum 6 simvol olmalıdır');
+      setError(t('passwordMinLength'));
       return;
     }
     setLoading(true);
@@ -86,12 +88,12 @@ export default function Login({ onLogin, onPending }) {
       });
       if (res.success) {
         setMode('pending');
-        setSuccess('Qeydiyyat uğurlu oldu! Admin təsdiqi gözləyin.');
+        setSuccess(t('registerSuccess'));
       } else {
-        setError(res.error || 'Qeydiyyat uğursuz oldu');
+        setError(res.error || t('registerFailed'));
       }
     } catch (e) {
-      setError('Qeydiyyat xətası: ' + e.message);
+      setError(t('registerError') + ': ' + e.message);
     } finally {
       setLoading(false);
     }
@@ -170,10 +172,9 @@ export default function Login({ onLogin, onPending }) {
           <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Clock size={40} className="text-amber-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Təsdiq Gözlənilir</h1>
+          <h1 className="text-2xl font-bold text-white mb-3">{t('pendingApproval')}</h1>
           <p className="text-dark-400 mb-6">
-            Qeydiyyatınız uğurla tamamlandı. Admin tərəfindən təsdiqlənməsini gözləyin.
-            Təsdiqləndikdən sonra sistemə daxil ola bilərsiniz.
+            {t('pendingApprovalText')}
           </p>
           <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-3 text-left">
@@ -190,7 +191,7 @@ export default function Login({ onLogin, onPending }) {
             onClick={() => { setMode('login'); resetForm(); }}
             className="flex items-center justify-center gap-2 text-primary-400 hover:text-primary-300 transition-colors mx-auto"
           >
-            <ArrowLeft size={16} /> Giriş səhifəsinə qayıt
+            <ArrowLeft size={16} /> {t('backToLogin')}
           </button>
         </div>
       </div>
@@ -203,7 +204,23 @@ export default function Login({ onLogin, onPending }) {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <img src="./logo.png" alt="SmartQeyd" className="h-48 w-auto object-contain mb-4" />
-          <p className="text-dark-400 text-sm mt-1">Ağıllı Biznes İdarəetmə Sistemi</p>
+          <p className="text-dark-400 text-sm mt-1">Smart Business Management</p>
+          {/* Language Switcher */}
+          <div className="flex gap-2 mt-3">
+            {['az', 'ru', 'en'].map(code => (
+              <button
+                key={code}
+                onClick={() => changeLang(code)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
+                  lang === code
+                    ? 'bg-primary-600/20 border-primary-500/50 text-primary-400'
+                    : 'bg-dark-800/50 border-dark-700/50 text-dark-500 hover:text-white hover:border-dark-600'
+                }`}
+              >
+                {code === 'az' ? 'AZ' : code === 'ru' ? 'RU' : 'EN'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Card */}
@@ -247,7 +264,7 @@ export default function Login({ onLogin, onPending }) {
                 mode === 'login' ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white'
               }`}
             >
-              <LogIn size={16} /> Giriş
+              <LogIn size={16} /> {t('loginButton')}
             </button>
             <button
               onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
@@ -255,7 +272,7 @@ export default function Login({ onLogin, onPending }) {
                 mode === 'register' ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white'
               }`}
             >
-              <UserPlus size={16} /> Qeydiyyat
+              <UserPlus size={16} /> {t('registerButton')}
             </button>
             <button
               onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
@@ -263,7 +280,7 @@ export default function Login({ onLogin, onPending }) {
                 mode === 'forgot' ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white'
               }`}
             >
-              <Lock size={16} /> Parolu unutdum
+              <Lock size={16} /> {t('forgotPassword')}
             </button>
           </div>
 
@@ -284,7 +301,7 @@ export default function Login({ onLogin, onPending }) {
           {mode === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">İstifadəçi adı</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('username')}</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -299,7 +316,7 @@ export default function Login({ onLogin, onPending }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">Şifrə</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('password')}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -329,7 +346,7 @@ export default function Login({ onLogin, onPending }) {
                 ) : (
                   <>
                     <LogIn size={18} />
-                    Daxil ol
+                    {t('loginButton')}
                   </>
                 )}
               </button>
@@ -337,7 +354,7 @@ export default function Login({ onLogin, onPending }) {
           ) : mode === 'register' ? (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">Ad Soyad *</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('fullName')} *</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -352,7 +369,7 @@ export default function Login({ onLogin, onPending }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">İstifadəçi adı *</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('username')} *</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500">@</span>
                   <input
@@ -367,7 +384,7 @@ export default function Login({ onLogin, onPending }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-dark-300 mb-2">Telefon</label>
+                  <label className="block text-sm font-medium text-dark-300 mb-2">{t('phone')}</label>
                   <div className="relative">
                     <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                     <input
@@ -380,7 +397,7 @@ export default function Login({ onLogin, onPending }) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-300 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-dark-300 mb-2">{t('email')}</label>
                   <div className="relative">
                     <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                     <input
@@ -395,7 +412,7 @@ export default function Login({ onLogin, onPending }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">Şifrə *</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('password')} *</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -416,7 +433,7 @@ export default function Login({ onLogin, onPending }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">Şifrə təkrarı *</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('confirmPassword')} *</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -443,20 +460,20 @@ export default function Login({ onLogin, onPending }) {
                 ) : (
                   <>
                     <UserPlus size={18} />
-                    Qeydiyyatdan keç
+                    {t('registerButton')}
                   </>
                 )}
               </button>
 
               <p className="text-xs text-dark-500 text-center mt-3">
-                Qeydiyyatdan sonra admin tərəfindən təsdiqlənməlisiniz
+                {t('pendingApprovalText')}
               </p>
             </form>
           ) : (
             // Forgot Password form
             <form onSubmit={resetToken ? handleResetPassword : handleForgotPassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">İstifadəçi adı *</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">{t('username')} *</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                   <input
@@ -464,7 +481,7 @@ export default function Login({ onLogin, onPending }) {
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     className="w-full bg-dark-800 border border-dark-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
-                    placeholder="İstifadəçi adınız"
+                    placeholder={t('username')}
                     autoFocus
                   />
                 </div>
@@ -474,7 +491,7 @@ export default function Login({ onLogin, onPending }) {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-dark-300 mb-2">Telefon</label>
+                      <label className="block text-sm font-medium text-dark-300 mb-2">{t('phone')}</label>
                       <div className="relative">
                         <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                         <input
@@ -487,7 +504,7 @@ export default function Login({ onLogin, onPending }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-dark-300 mb-2">Email</label>
+                      <label className="block text-sm font-medium text-dark-300 mb-2">{t('email')}</label>
                       <div className="relative">
                         <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                         <input
@@ -511,7 +528,7 @@ export default function Login({ onLogin, onPending }) {
                     ) : (
                       <>
                         <Lock size={18} />
-                        Şifrə sıfırlama kodu al
+                        {t('sendResetCode')}
                       </>
                     )}
                   </button>
@@ -519,7 +536,7 @@ export default function Login({ onLogin, onPending }) {
               ) : (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-dark-300 mb-2">Yeni şifrə *</label>
+                    <label className="block text-sm font-medium text-dark-300 mb-2">{t('newPassword')} *</label>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                       <input
@@ -540,7 +557,7 @@ export default function Login({ onLogin, onPending }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-dark-300 mb-2">Şifrə təkrarı *</label>
+                    <label className="block text-sm font-medium text-dark-300 mb-2">{t('confirmNewPassword')} *</label>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
                       <input
@@ -567,7 +584,7 @@ export default function Login({ onLogin, onPending }) {
                     ) : (
                       <>
                         <CheckCircle size={18} />
-                        Şifrəni dəyişdir
+                        {t('resetPassword')}
                       </>
                     )}
                   </button>

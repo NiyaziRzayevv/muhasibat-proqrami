@@ -13,26 +13,29 @@ import StatCard from '../components/StatCard';
 import UniversalSmartInput from '../components/UniversalSmartInput';
 import { Package, AlertTriangle, ShoppingBag, Percent, Target, Activity } from 'lucide-react';
 import { useApp } from '../App';
+import { getCurrencySymbol } from '../utils/currency';
 import { apiBridge } from '../api/bridge';
-
-const AZ_MONTHS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'İyn', 'İyl', 'Avq', 'Sen', 'Okt', 'Noy', 'Dek'];
-
-const PAYMENT_STATUS_MAP = {
-  odenilib: { label: 'Ödənilib', cls: 'status-odenilib' },
-  gozleyir: { label: 'Gözləyir', cls: 'status-gozleyir' },
-  qismen: { label: 'Qismən', cls: 'status-qismen' },
-  borc: { label: 'Borc', cls: 'status-borc' },
-};
+import { useLanguage } from '../contexts/LanguageContext';
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { currentUser, isAdmin, showNotification } = useApp();
+  const { currentUser, isAdmin, showNotification, currency } = useApp();
+  const { t, translations } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
+
+  const MONTHS_SHORT = translations.monthsShort || ['Yan','Fev','Mar','Apr','May','İyn','İyl','Avq','Sen','Okt','Noy','Dek'];
+  const PAYMENT_STATUS_MAP = {
+    odenilib: { label: t('statusPaid'), cls: 'status-odenilib' },
+    gozleyir: { label: t('statusWaiting'), cls: 'status-gozleyir' },
+    qismen: { label: t('statusPartial'), cls: 'status-qismen' },
+    borc: { label: t('statusDebt'), cls: 'status-borc' },
+  };
   const [loading, setLoading] = useState(true);
   const [todayStats, setTodayStats] = useState(null);
   const [monthStats, setMonthStats] = useState(null);
@@ -94,7 +97,7 @@ export default function Dashboard() {
       if (brands.success) setTopBrands(brands.data);
       if (chart.success) {
         const chartData = chart.data.map(d => ({
-          name: AZ_MONTHS[parseInt(d.month) - 1],
+          name: MONTHS_SHORT[parseInt(d.month) - 1],
           total: d.total,
           count: d.count,
         }));
@@ -142,7 +145,7 @@ export default function Dashboard() {
         <div className="bg-dark-800 border border-dark-600 rounded-lg px-3 py-2 text-xs shadow-xl">
           <p className="text-dark-300 mb-1">{label}</p>
           <p className="text-primary-400 font-semibold">{fmt(payload[0]?.value)}</p>
-          <p className="text-dark-400">{payload[0]?.payload?.count} qeyd</p>
+          <p className="text-dark-400">{payload[0]?.payload?.count} {t('record')}</p>
         </div>
       );
     }
@@ -153,13 +156,13 @@ export default function Dashboard() {
     setSendingTelegram(true);
     try {
       if (!window.api?.sendTelegramReport) {
-        showNotification('Telegram göndərmə yalnız Electron rejimində mövcuddur', 'error');
+        showNotification(t('telegramOnlyElectron'), 'error');
         return;
       }
       const res = await window.api.sendTelegramReport(userId);
-      if (res.success) showNotification('Günlük hesabat Telegram-a göndərildi', 'success');
-      else showNotification('Xəta: ' + res.error, 'error');
-    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
+      if (res.success) showNotification(t('telegramSent'), 'success');
+      else showNotification(t('error') + ': ' + res.error, 'error');
+    } catch (e) { showNotification(t('error') + ': ' + e.message, 'error'); }
     finally { setSendingTelegram(false); }
   }
 
@@ -167,7 +170,7 @@ export default function Dashboard() {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dashboard</h1>
+          <h1 className="page-title">{t('dashboard')}</h1>
           <p className="text-sm text-dark-400 mt-0.5">
             {liveTime.toLocaleDateString('az-AZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
@@ -185,7 +188,7 @@ export default function Dashboard() {
           </button>
           <button onClick={loadData} disabled={loading} className="btn-secondary">
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-            Yenilə
+            {t('refresh')}
           </button>
         </div>
       </div>
@@ -193,10 +196,10 @@ export default function Dashboard() {
       {/* QUICK ACTIONS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'POS Satış', icon: ShoppingCart, color: 'emerald', path: '/pos' },
-          { label: 'Yeni Qeyd', icon: Plus, color: 'blue', path: '/new-record' },
-          { label: 'Xərc Əlavə', icon: Wallet, color: 'red', path: '/expenses' },
-          { label: 'Hesabatlar', icon: BarChart2, color: 'purple', path: '/reports' },
+          { label: t('posSale'), icon: ShoppingCart, color: 'emerald', path: '/pos' },
+          { label: t('newRecord'), icon: Plus, color: 'blue', path: '/new-record' },
+          { label: t('addExpense'), icon: Wallet, color: 'red', path: '/expenses' },
+          { label: t('reports'), icon: BarChart2, color: 'purple', path: '/reports' },
         ].map(a => {
           const Icon = a.icon;
           const cls = {
@@ -218,7 +221,7 @@ export default function Dashboard() {
         <div className="card p-4">
           <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-3 flex items-center gap-2">
             <Star size={13} className="text-primary-400" />
-            Ağıllı Əlavə Et
+            {t('smartAdd')}
           </p>
           <UniversalSmartInput onDone={() => loadData()} />
         </div>
@@ -231,10 +234,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                 <DollarSign size={20} className="text-emerald-400" />
               </div>
-              <p className="text-xs font-medium text-emerald-300/80 uppercase tracking-wider">Bugünkü Gəlir</p>
+              <p className="text-xs font-medium text-emerald-300/80 uppercase tracking-wider">{t('todayRevenue')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{fmt(todayStats?.revenue)}</p>
-            <p className="text-xs text-emerald-400/70">{todayStats?.count || 0} qeyd bu gün</p>
+            <p className="text-xs text-emerald-400/70">{todayStats?.count || 0} {t('recordsThisDay')}</p>
           </div>
 
           <div className="group relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/60 border border-blue-700/30 rounded-2xl p-5 hover:border-blue-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-900/20 cursor-pointer" onClick={() => navigate('/records')}>
@@ -243,10 +246,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
                 <Calendar size={20} className="text-blue-400" />
               </div>
-              <p className="text-xs font-medium text-blue-300/80 uppercase tracking-wider">Aylıq Gəlir</p>
+              <p className="text-xs font-medium text-blue-300/80 uppercase tracking-wider">{t('monthlyRevenue')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{fmt(monthStats?.revenue)}</p>
-            <p className="text-xs text-blue-400/70">{monthStats?.count || 0} qeyd bu ay</p>
+            <p className="text-xs text-blue-400/70">{monthStats?.count || 0} {t('recordsThisMonth')}</p>
           </div>
 
           <div className="group relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/60 border border-purple-700/30 rounded-2xl p-5 hover:border-purple-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-900/20 cursor-pointer" onClick={() => navigate('/records')}>
@@ -255,10 +258,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
                 <TrendingUp size={20} className="text-purple-400" />
               </div>
-              <p className="text-xs font-medium text-purple-300/80 uppercase tracking-wider">Ümumi Gəlir</p>
+              <p className="text-xs font-medium text-purple-300/80 uppercase tracking-wider">{t('totalRevenue')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{fmt(allStats?.revenue)}</p>
-            <p className="text-xs text-purple-400/70">{allStats?.count || 0} ümumi qeyd</p>
+            <p className="text-xs text-purple-400/70">{allStats?.count || 0} {t('totalRecords')}</p>
           </div>
 
           <div className="group relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/60 border border-amber-700/30 rounded-2xl p-5 hover:border-amber-600/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20 cursor-pointer" onClick={() => navigate('/debts')}>
@@ -267,10 +270,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
                 <CreditCard size={20} className="text-amber-400" />
               </div>
-              <p className="text-xs font-medium text-amber-300/80 uppercase tracking-wider">Ödənilməmiş</p>
+              <p className="text-xs font-medium text-amber-300/80 uppercase tracking-wider">{t('unpaid')}</p>
             </div>
             <p className="text-2xl font-bold text-amber-300 mb-1">{fmt(allStats?.debt)}</p>
-            <p className="text-xs text-amber-400/70">Gözləyən məbləğ</p>
+            <p className="text-xs text-amber-400/70">{t('pendingAmount')}</p>
           </div>
         </div>
 
@@ -281,10 +284,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
                 <Wrench size={20} className="text-cyan-400" />
               </div>
-              <p className="text-xs font-medium text-cyan-300/80 uppercase tracking-wider">Bu Gün İş</p>
+              <p className="text-xs font-medium text-cyan-300/80 uppercase tracking-wider">{t('todayWork')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{todayStats?.count || 0}</p>
-            <p className="text-xs text-cyan-400/70">Əməliyyat</p>
+            <p className="text-xs text-cyan-400/70">{t('operation')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-indigo-900/30 to-dark-800/80 border border-indigo-800/20 rounded-2xl p-5 hover:border-indigo-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/customers')}>
@@ -292,10 +295,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
                 <Users size={20} className="text-indigo-400" />
               </div>
-              <p className="text-xs font-medium text-indigo-300/80 uppercase tracking-wider">Müştəri</p>
+              <p className="text-xs font-medium text-indigo-300/80 uppercase tracking-wider">{t('customer')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{customerCount}</p>
-            <p className="text-xs text-indigo-400/70">Ümumi müştəri</p>
+            <p className="text-xs text-indigo-400/70">{t('totalCustomers')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-orange-900/30 to-dark-800/80 border border-orange-800/20 rounded-2xl p-5 hover:border-orange-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/records')}>
@@ -303,10 +306,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
                 <Star size={20} className="text-orange-400" />
               </div>
-              <p className="text-xs font-medium text-orange-300/80 uppercase tracking-wider">Top Xidmət</p>
+              <p className="text-xs font-medium text-orange-300/80 uppercase tracking-wider">{t('topService')}</p>
             </div>
             <p className="text-lg font-bold text-white mb-1 truncate">{topServices[0]?.service_type?.split(' ').slice(0, 2).join(' ') || '—'}</p>
-            <p className="text-xs text-orange-400/70">{topServices[0] ? `${topServices[0].count} dəfə` : ''}</p>
+            <p className="text-xs text-orange-400/70">{topServices[0] ? `${topServices[0].count} ${t('times')}` : ''}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-teal-900/30 to-dark-800/80 border border-teal-800/20 rounded-2xl p-5 hover:border-teal-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/records')}>
@@ -314,10 +317,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
                 <Car size={20} className="text-teal-400" />
               </div>
-              <p className="text-xs font-medium text-teal-300/80 uppercase tracking-wider">Top Marka</p>
+              <p className="text-xs font-medium text-teal-300/80 uppercase tracking-wider">{t('topBrand')}</p>
             </div>
             <p className="text-lg font-bold text-white mb-1">{topBrands[0]?.car_brand || '—'}</p>
-            <p className="text-xs text-teal-400/70">{topBrands[0] ? `${topBrands[0].count} qeyd` : ''}</p>
+            <p className="text-xs text-teal-400/70">{topBrands[0] ? `${topBrands[0].count} ${t('record')}` : ''}</p>
           </div>
         </div>
 
@@ -328,10 +331,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
                 <TrendingDown size={20} className="text-red-400" />
               </div>
-              <p className="text-xs font-medium text-red-300/80 uppercase tracking-wider">Bu Gün Xərc</p>
+              <p className="text-xs font-medium text-red-300/80 uppercase tracking-wider">{t('todayExpense')}</p>
             </div>
             <p className="text-2xl font-bold text-red-300 mb-1">{fmt(todayExpenses?.total)}</p>
-            <p className="text-xs text-red-400/70">{todayExpenses?.count || 0} əməliyyat</p>
+            <p className="text-xs text-red-400/70">{todayExpenses?.count || 0} {t('operations')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-pink-900/30 to-dark-800/80 border border-pink-800/20 rounded-2xl p-5 hover:border-pink-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/expenses')}>
@@ -339,10 +342,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center">
                 <TrendingDown size={20} className="text-pink-400" />
               </div>
-              <p className="text-xs font-medium text-pink-300/80 uppercase tracking-wider">Aylıq Xərc</p>
+              <p className="text-xs font-medium text-pink-300/80 uppercase tracking-wider">{t('monthlyExpense')}</p>
             </div>
             <p className="text-2xl font-bold text-pink-300 mb-1">{fmt(monthExpenses?.total)}</p>
-            <p className="text-xs text-pink-400/70">Bu ay ümumi xərc</p>
+            <p className="text-xs text-pink-400/70">{t('thisMonthTotalExpense')}</p>
           </div>
 
           <div className={`group bg-gradient-to-br rounded-2xl p-5 transition-all duration-300 cursor-pointer border ${
@@ -354,10 +357,10 @@ export default function Dashboard() {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${unreadNotifs > 0 ? 'bg-yellow-500/20' : 'bg-dark-700/50'}`}>
                 <Bell size={20} className={unreadNotifs > 0 ? 'text-yellow-400' : 'text-dark-400'} />
               </div>
-              <p className={`text-xs font-medium uppercase tracking-wider ${unreadNotifs > 0 ? 'text-yellow-300/80' : 'text-dark-400/80'}`}>Bildirişlər</p>
+              <p className={`text-xs font-medium uppercase tracking-wider ${unreadNotifs > 0 ? 'text-yellow-300/80' : 'text-dark-400/80'}`}>{t('notifications')}</p>
             </div>
             <p className={`text-2xl font-bold mb-1 ${unreadNotifs > 0 ? 'text-yellow-300' : 'text-white'}`}>{unreadNotifs}</p>
-            <p className="text-xs text-dark-500">Oxunmamış bildiriş</p>
+            <p className="text-xs text-dark-500">{t('unreadNotifications')}</p>
           </div>
 
           <div className={`group bg-gradient-to-br rounded-2xl p-5 transition-all duration-300 cursor-pointer border ${
@@ -373,15 +376,15 @@ export default function Dashboard() {
               }`}>
                 <Key size={20} className={licenseStatus?.expired ? 'text-red-400' : licenseStatus?.daysLeft <= 7 ? 'text-amber-400' : 'text-emerald-400'} />
               </div>
-              <p className="text-xs font-medium text-dark-300/80 uppercase tracking-wider">Lisenziya</p>
+              <p className="text-xs font-medium text-dark-300/80 uppercase tracking-wider">{t('licenseStatus')}</p>
             </div>
             <p className={`text-lg font-bold mb-1 ${
               licenseStatus?.expired ? 'text-red-300' : licenseStatus?.daysLeft <= 7 ? 'text-amber-300' : 'text-emerald-300'
             }`}>
-              {licenseStatus?.expired ? 'Müddəti Bitib' : licenseStatus?.type === 'trial' ? 'Sınaq' : 'PRO'}
+              {licenseStatus?.expired ? t('expired') : licenseStatus?.type === 'trial' ? t('trial') : 'PRO'}
             </p>
             <p className="text-xs text-dark-500">
-              {licenseStatus?.expired ? 'Aktivasiya lazımdır' : `${licenseStatus?.daysLeft || 0} gün qalır`}
+              {licenseStatus?.expired ? t('activationRequired') : `${licenseStatus?.daysLeft || 0} ${t('daysLeft')}`}
             </p>
           </div>
         </div>
@@ -393,10 +396,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
                 <Package size={20} className="text-violet-400" />
               </div>
-              <p className="text-xs font-medium text-violet-300/80 uppercase tracking-wider">Anbar Dəyəri</p>
+              <p className="text-xs font-medium text-violet-300/80 uppercase tracking-wider">{t('warehouseValue')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{fmt(stockValue?.sell_value)}</p>
-            <p className="text-xs text-violet-400/70">{stockValue?.total_products || 0} məhsul növü</p>
+            <p className="text-xs text-violet-400/70">{stockValue?.total_products || 0} {t('productTypes')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-green-900/30 to-dark-800/80 border border-green-800/20 rounded-2xl p-5 hover:border-green-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/sales')}>
@@ -404,10 +407,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
                 <ShoppingBag size={20} className="text-green-400" />
               </div>
-              <p className="text-xs font-medium text-green-300/80 uppercase tracking-wider">Bugünkü Satış</p>
+              <p className="text-xs font-medium text-green-300/80 uppercase tracking-wider">{t('todaySales')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{fmt(todaySales?.revenue)}</p>
-            <p className="text-xs text-green-400/70">{todaySales?.count || 0} satış bu gün</p>
+            <p className="text-xs text-green-400/70">{todaySales?.count || 0} {t('salesToday')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-rose-900/30 to-dark-800/80 border border-rose-800/20 rounded-2xl p-5 hover:border-rose-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/products')}>
@@ -415,10 +418,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
                 <AlertTriangle size={20} className="text-rose-400" />
               </div>
-              <p className="text-xs font-medium text-rose-300/80 uppercase tracking-wider">Azalan Stok</p>
+              <p className="text-xs font-medium text-rose-300/80 uppercase tracking-wider">{t('lowStock')}</p>
             </div>
             <p className="text-2xl font-bold text-rose-300 mb-1">{lowStockProducts.length || 0}</p>
-            <p className="text-xs text-rose-400/70">Limitin altında</p>
+            <p className="text-xs text-rose-400/70">{t('belowLimit')}</p>
           </div>
 
           <div className="group bg-gradient-to-br from-sky-900/30 to-dark-800/80 border border-sky-800/20 rounded-2xl p-5 hover:border-sky-700/40 transition-all duration-300 cursor-pointer" onClick={() => navigate('/products')}>
@@ -426,10 +429,10 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center">
                 <Package size={20} className="text-sky-400" />
               </div>
-              <p className="text-xs font-medium text-sky-300/80 uppercase tracking-wider">Ümumi Vahid</p>
+              <p className="text-xs font-medium text-sky-300/80 uppercase tracking-wider">{t('totalUnits')}</p>
             </div>
             <p className="text-2xl font-bold text-white mb-1">{stockValue?.total_units || 0}</p>
-            <p className="text-xs text-sky-400/70">Anbardakı məhsul</p>
+            <p className="text-xs text-sky-400/70">{t('warehouseProducts')}</p>
           </div>
         </div>
 
@@ -437,10 +440,10 @@ export default function Dashboard() {
           <div className="card p-4 border-amber-800/30 bg-amber-950/20">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-amber-400 flex items-center gap-2">
-                <AlertTriangle size={14} /> Azalan Stok Xəbərdarlığı ({lowStockProducts.length})
+                <AlertTriangle size={14} /> {t('lowStockWarning')} ({lowStockProducts.length})
               </h3>
               <button onClick={() => navigate('/products')} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
-                Hamısı <ArrowRight size={12} />
+                {t('all')} <ArrowRight size={12} />
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -464,11 +467,11 @@ export default function Dashboard() {
                 <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center">
                   <Calendar size={18} className="text-cyan-400" />
                 </div>
-                <h3 className="text-sm font-semibold text-white">Yaxın Randevular</h3>
+                <h3 className="text-sm font-semibold text-white">{t('upcomingAppointments')}</h3>
                 {upcomingAppointments.length > 0 && <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold">{upcomingAppointments.length}</span>}
               </div>
               <button onClick={() => navigate('/appointments')} className="text-xs px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
-                Hamısı <ArrowRight size={12} />
+                {t('all')} <ArrowRight size={12} />
               </button>
             </div>
             {upcomingAppointments.length > 0 ? (
@@ -477,7 +480,7 @@ export default function Dashboard() {
                   <div key={a.id} className="flex items-center gap-3 p-3 bg-dark-700/30 hover:bg-dark-700/50 rounded-xl transition-colors">
                     <div className="text-center w-12 flex-shrink-0">
                       <p className="text-sm font-bold text-white">{a.time || '—'}</p>
-                      <p className="text-[10px] text-dark-500">{a.date === new Date().toISOString().split('T')[0] ? 'Bugün' : a.date?.slice(5)}</p>
+                      <p className="text-[10px] text-dark-500">{a.date === new Date().toISOString().split('T')[0] ? t('today') : a.date?.slice(5)}</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white font-medium truncate">{a.title}</p>
@@ -485,14 +488,14 @@ export default function Dashboard() {
                     </div>
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                       a.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400 border-blue-700/30' : 'bg-amber-500/20 text-amber-400 border-amber-700/30'
-                    }`}>{a.status === 'confirmed' ? 'Təsdiqləndi' : 'Gözləyir'}</span>
+                    }`}>{a.status === 'confirmed' ? t('confirmed') : t('waiting')}</span>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-6">
                 <Calendar size={24} className="mx-auto mb-2 text-dark-600" />
-                <p className="text-xs text-dark-500">Yaxın randevu yoxdur</p>
+                <p className="text-xs text-dark-500">{t('noUpcomingAppointments')}</p>
               </div>
             )}
           </div>
@@ -504,45 +507,45 @@ export default function Dashboard() {
                 <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center">
                   <CheckCircle size={18} className="text-purple-400" />
                 </div>
-                <h3 className="text-sm font-semibold text-white">Aktiv Tapşırıqlar</h3>
+                <h3 className="text-sm font-semibold text-white">{t('activeTasks')}</h3>
                 {taskStats && <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full font-bold">{(taskStats.todo || 0) + (taskStats.in_progress || 0)}</span>}
               </div>
               <button onClick={() => navigate('/tasks')} className="text-xs px-3 py-1.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
-                Hamısı <ArrowRight size={12} />
+                {t('all')} <ArrowRight size={12} />
               </button>
             </div>
             {taskStats && (
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="text-center p-2 bg-dark-700/30 rounded-lg">
                   <p className="text-lg font-bold text-white">{taskStats.todo || 0}</p>
-                  <p className="text-[10px] text-dark-500">Gözləyir</p>
+                  <p className="text-[10px] text-dark-500">{t('waiting')}</p>
                 </div>
                 <div className="text-center p-2 bg-amber-900/20 rounded-lg border border-amber-800/20">
                   <p className="text-lg font-bold text-amber-400">{taskStats.in_progress || 0}</p>
-                  <p className="text-[10px] text-dark-500">Davam edir</p>
+                  <p className="text-[10px] text-dark-500">{t('continuing')}</p>
                 </div>
                 <div className="text-center p-2 bg-emerald-900/20 rounded-lg border border-emerald-800/20">
                   <p className="text-lg font-bold text-emerald-400">{taskStats.done || 0}</p>
-                  <p className="text-[10px] text-dark-500">Tamamlandı</p>
+                  <p className="text-[10px] text-dark-500">{t('done')}</p>
                 </div>
               </div>
             )}
             {activeTasks.length > 0 ? (
               <div className="space-y-2">
-                {activeTasks.slice(0, 5).map(t => {
-                  const isOverdue = t.due_date && t.due_date < new Date().toISOString().split('T')[0];
+                {activeTasks.slice(0, 5).map(tk => {
+                  const isOverdue = tk.due_date && tk.due_date < new Date().toISOString().split('T')[0];
                   return (
-                    <div key={t.id} className="flex items-center gap-3 p-3 bg-dark-700/30 hover:bg-dark-700/50 rounded-xl transition-colors">
+                    <div key={tk.id} className="flex items-center gap-3 p-3 bg-dark-700/30 hover:bg-dark-700/50 rounded-xl transition-colors">
                       <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        t.priority === 'high' ? 'bg-red-400' : t.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
+                        tk.priority === 'high' ? 'bg-red-400' : tk.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
                       }`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium truncate">{t.title}</p>
-                        {t.due_date && <p className={`text-[10px] ${isOverdue ? 'text-red-400' : 'text-dark-500'}`}>{isOverdue ? '⚠ ' : ''}{t.due_date}</p>}
+                        <p className="text-sm text-white font-medium truncate">{tk.title}</p>
+                        {tk.due_date && <p className={`text-[10px] ${isOverdue ? 'text-red-400' : 'text-dark-500'}`}>{isOverdue ? '⚠ ' : ''}{tk.due_date}</p>}
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                        t.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400 border-amber-700/30' : 'bg-dark-600 text-dark-300 border-dark-500'
-                      }`}>{t.status === 'in_progress' ? 'Davam edir' : 'Gözləyir'}</span>
+                        tk.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400 border-amber-700/30' : 'bg-dark-600 text-dark-300 border-dark-500'
+                      }`}>{tk.status === 'in_progress' ? t('continuing') : t('waiting')}</span>
                     </div>
                   );
                 })}
@@ -550,7 +553,7 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-4">
                 <CheckCircle size={24} className="mx-auto mb-2 text-dark-600" />
-                <p className="text-xs text-dark-500">Aktiv tapşırıq yoxdur</p>
+                <p className="text-xs text-dark-500">{t('noActiveTasks')}</p>
               </div>
             )}
           </div>
@@ -565,7 +568,7 @@ export default function Dashboard() {
                 <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center">
                   <TrendingUp size={18} className="text-blue-400" />
                 </div>
-                <h3 className="text-sm font-semibold text-white">Aylıq Gəlir</h3>
+                <h3 className="text-sm font-semibold text-white">{t('monthlyRevenueChart')}</h3>
               </div>
               <span className="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg">{new Date().getFullYear()}</span>
             </div>
@@ -574,7 +577,7 @@ export default function Dashboard() {
                 <AreaChart data={monthlyChart}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}₼`} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}${csym}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.08)' }} />
                   <Area type="monotone" dataKey="total" stroke="#3b82f6" fill="#1e3a8a" strokeWidth={2} />
                 </AreaChart>
@@ -592,7 +595,7 @@ export default function Dashboard() {
               <div className="w-9 h-9 rounded-xl bg-orange-500/20 flex items-center justify-center">
                 <Star size={18} className="text-orange-400" />
               </div>
-              <h3 className="text-sm font-semibold text-white">Top Xidmətlər</h3>
+              <h3 className="text-sm font-semibold text-white">{t('topServices')}</h3>
             </div>
             {topServices.length > 0 ? (
               <div className="space-y-3">
@@ -609,18 +612,18 @@ export default function Dashboard() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm text-white font-bold">{s.count}</p>
-                      <p className="text-xs text-dark-400">dəfə</p>
+                      <p className="text-xs text-dark-400">{t('times')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-dark-500 text-sm">Məlumat yoxdur</p>
+              <p className="text-dark-500 text-sm">{t('noData')}</p>
             )}
           </div>
         </div>
 
-        {/* Markalar və Borc */}
+        {/* Brands and Debt */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Ən Çox Markalar */}
           <div className="bg-gradient-to-br from-dark-800/90 to-dark-900/90 border border-dark-700/50 rounded-2xl p-6 backdrop-blur-sm">
@@ -628,7 +631,7 @@ export default function Dashboard() {
               <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                 <Car size={18} className="text-emerald-400" />
               </div>
-              <h3 className="text-sm font-semibold text-white">Top Markalar</h3>
+              <h3 className="text-sm font-semibold text-white">{t('topBrands')}</h3>
             </div>
             {topBrands.length > 0 ? (
               <div className="space-y-3">
@@ -645,23 +648,23 @@ export default function Dashboard() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm text-white font-bold">{b.count}</p>
-                      <p className="text-xs text-dark-400">qeyd</p>
+                      <p className="text-xs text-dark-400">{t('record')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-dark-500 text-sm">Məlumat yoxdur</p>
+              <p className="text-dark-500 text-sm">{t('noData')}</p>
             )}
           </div>
 
-          {/* Borc Statistikası */}
+          {/* Debt Statistics */}
           <div className="bg-gradient-to-br from-dark-800/90 to-dark-900/90 border border-dark-700/50 rounded-2xl p-6 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-9 h-9 rounded-xl bg-violet-500/20 flex items-center justify-center">
                 <CreditCard size={18} className="text-violet-400" />
               </div>
-              <h3 className="text-sm font-semibold text-white">Ödəniş Statusu</h3>
+              <h3 className="text-sm font-semibold text-white">{t('paymentStatus')}</h3>
             </div>
             {debtStats ? (
               <div className="space-y-3">
@@ -670,7 +673,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                       <CheckCircle size={16} className="text-emerald-400" />
                     </div>
-                    <span className="text-sm text-emerald-200 font-medium">Ödənilib</span>
+                    <span className="text-sm text-emerald-200 font-medium">{t('paid')}</span>
                   </div>
                   <span className="text-lg text-emerald-100 font-bold">{fmt(debtStats.paid)}</span>
                 </div>
@@ -679,7 +682,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
                       <Clock size={16} className="text-amber-400" />
                     </div>
-                    <span className="text-sm text-amber-200 font-medium">Gözləyir</span>
+                    <span className="text-sm text-amber-200 font-medium">{t('waiting')}</span>
                   </div>
                   <span className="text-lg text-amber-100 font-bold">{fmt(debtStats.pending)}</span>
                 </div>
@@ -688,13 +691,13 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
                       <AlertTriangle size={16} className="text-red-400" />
                     </div>
-                    <span className="text-sm text-red-200 font-medium">Borc</span>
+                    <span className="text-sm text-red-200 font-medium">{t('debt')}</span>
                   </div>
                   <span className="text-lg text-red-100 font-bold">{fmt(debtStats.debt)}</span>
                 </div>
               </div>
             ) : (
-              <p className="text-dark-500 text-sm">Məlumat yoxdur</p>
+              <p className="text-dark-500 text-sm">{t('noData')}</p>
             )}
           </div>
         </div>
@@ -705,27 +708,27 @@ export default function Dashboard() {
               <div className="w-9 h-9 rounded-xl bg-primary-500/20 flex items-center justify-center">
                 <Clock size={18} className="text-primary-400" />
               </div>
-              <h3 className="text-sm font-semibold text-white">Son Qeydlər</h3>
+              <h3 className="text-sm font-semibold text-white">{t('recentRecords')}</h3>
             </div>
             <button onClick={() => navigate('/records')} className="text-xs px-3 py-1.5 bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
-              Hamısı <ArrowRight size={12} />
+              {t('all')} <ArrowRight size={12} />
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Tarix</th>
-                  <th>Aktiv</th>
-                  <th>Müştəri</th>
-                  <th>Xidmət</th>
-                  <th>Məbləğ</th>
-                  <th>Status</th>
+                  <th>{t('date')}</th>
+                  <th>{t('asset')}</th>
+                  <th>{t('customer')}</th>
+                  <th>{t('service')}</th>
+                  <th>{t('amount')}</th>
+                  <th>{t('status')}</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRecords.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center text-dark-500 py-8">Qeyd yoxdur</td></tr>
+                  <tr><td colSpan={6} className="text-center text-dark-500 py-8">{t('noData')}</td></tr>
                 ) : recentRecords.map(r => (
                   <tr key={r.id}>
                     <td className="text-dark-300">{r.date}</td>

@@ -175,9 +175,63 @@ router.put('/:id', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// UPDATE record payment
+router.put('/:id/payment', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    const body = req.body || {};
+    const record = await prisma.record.findUnique({ where: { id } });
+    if (!record) return res.status(404).json({ success: false, error: 'Qeyd tapılmadı' });
+
+    const totalPrice = record.totalPrice || 0;
+    const paidAmount = body.paid_amount !== undefined ? Number(body.paid_amount) : (record.paidAmount || 0);
+    const remaining = Math.max(0, totalPrice - paidAmount);
+    let paymentStatus = body.payment_status || body.paymentStatus;
+    if (!paymentStatus) {
+      paymentStatus = remaining <= 0 ? 'odenilib' : (paidAmount > 0 ? 'qismen' : 'borc');
+    }
+
+    const updated = await prisma.record.update({
+      where: { id },
+      data: { paidAmount, remainingAmount: remaining, paymentStatus },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'payment_update',
+        entityType: 'record',
+        entityId: id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+        oldData: { paid_amount: record.paidAmount, status: record.paymentStatus },
+        newData: { paid_amount: paidAmount, status: paymentStatus, remaining },
+      }
+    });
+
+    res.json({ success: true, data: {
+      ...updated,
+      customer_id: updated.customerId,
+      total_price: updated.totalPrice,
+      paid_amount: updated.paidAmount,
+      remaining_amount: updated.remainingAmount,
+      payment_status: updated.paymentStatus,
+    }});
+  } catch (err) { next(err); }
+});
+
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    await prisma.record.delete({ where: { id: parseInt(req.params.id) } });
+    const id = parseInt(req.params.id);
+    await prisma.record.delete({ where: { id } });
+    await prisma.auditLog.create({
+      data: {
+        action: 'delete',
+        entityType: 'record',
+        entityId: id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+      }
+    });
     res.json({ success: true });
   } catch (err) { next(err); }
 });

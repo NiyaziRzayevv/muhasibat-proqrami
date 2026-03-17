@@ -7,22 +7,30 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const PRIORITY = {
-  high:   { label: 'Yüksək', cls: 'bg-red-500/20 text-red-400 border-red-700/30',    dot: 'bg-red-400' },
-  medium: { label: 'Orta',   cls: 'bg-amber-500/20 text-amber-400 border-amber-700/30', dot: 'bg-amber-400' },
-  low:    { label: 'Aşağı',  cls: 'bg-blue-500/20 text-blue-400 border-blue-700/30',  dot: 'bg-blue-400' },
-};
+function getPriority(t) {
+  return {
+    high:   { label: t('high'), cls: 'bg-red-500/20 text-red-400 border-red-700/30',    dot: 'bg-red-400' },
+    medium: { label: t('medium'),   cls: 'bg-amber-500/20 text-amber-400 border-amber-700/30', dot: 'bg-amber-400' },
+    low:    { label: t('low'),  cls: 'bg-blue-500/20 text-blue-400 border-blue-700/30',  dot: 'bg-blue-400' },
+  };
+}
 
-const STATUS_COLS = [
-  { key: 'todo',        label: 'Gözləyir',    icon: Circle,       cls: 'text-dark-400' },
-  { key: 'in_progress', label: 'Davam edir',  icon: Clock,        cls: 'text-amber-400' },
-  { key: 'done',        label: 'Tamamlandı',  icon: CheckCircle2, cls: 'text-emerald-400' },
-];
+function getStatusCols(t) {
+  return [
+    { key: 'todo',        label: t('waiting'),    icon: Circle,       cls: 'text-dark-400' },
+    { key: 'in_progress', label: t('continuing'),  icon: Clock,        cls: 'text-amber-400' },
+    { key: 'done',        label: t('done'),  icon: CheckCircle2, cls: 'text-emerald-400' },
+  ];
+}
 
 const EMPTY = { title: '', description: '', priority: 'medium', status: 'todo', due_date: '', assigned_to: '' };
 
 export default function Tasks() {
+  const { t } = useLanguage();
+  const PRIORITY = getPriority(t);
+  const STATUS_COLS = getStatusCols(t);
   const { showNotification } = useApp();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);

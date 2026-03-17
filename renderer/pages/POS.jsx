@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -15,20 +17,25 @@ const CAT_COLORS = [
   '#06b6d4','#f97316','#ec4899','#84cc16','#6366f1',
 ];
 
-const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Nağd', icon: Banknote },
-  { value: 'card', label: 'Kart', icon: CreditCard },
-  { value: 'transfer', label: 'Köçürmə', icon: ArrowLeftRight },
-  { value: 'debt', label: 'Borc', icon: UserCheck },
-  { value: 'partial', label: 'Qismən', icon: ChevronDown },
-];
+function getPaymentMethods(t) {
+  return [
+    { value: 'cash', label: t('cash'), icon: Banknote },
+    { value: 'card', label: t('card'), icon: CreditCard },
+    { value: 'transfer', label: t('transfer'), icon: ArrowLeftRight },
+    { value: 'debt', label: t('statusDebt'), icon: UserCheck },
+    { value: 'partial', label: t('statusPartial'), icon: ChevronDown },
+  ];
+}
 
 function fmt(n) {
   return Number(n || 0).toFixed(2);
 }
 
 export default function POS() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const PAYMENT_METHODS = getPaymentMethods(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -227,7 +234,7 @@ export default function POS() {
         paid_amount: paymentMethod === 'debt' ? 0 :
                      paymentMethod === 'partial' ? (parseFloat(paidAmount) || 0) : total,
         payment_method: paymentMethod,
-        notes: paymentMethod === 'partial' ? `Qalıq: ${fmt(debt)} ₼` : null,
+        notes: paymentMethod === 'partial' ? `Qalıq: ${fmt(debt)} {csym}` : null,
         created_by: currentUser?.id || null,
       };
 
@@ -399,7 +406,7 @@ export default function POS() {
                     }`}>
                     <Zap size={10} className="text-amber-400 flex-shrink-0" />
                     <span className="truncate max-w-[100px]">{p.name}</span>
-                    <span className="text-primary-400 font-bold">{fmt(p.sell_price)}₼</span>
+                    <span className="text-primary-400 font-bold">{fmt(p.sell_price)}{csym}</span>
                     {inCart && <span className="bg-amber-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-black">{inCart.qty}</span>}
                   </button>
                 );
@@ -447,7 +454,7 @@ export default function POS() {
                       <span className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: catColor + '22', color: catColor }}>{cat.name}</span>
                     )}
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-bold text-primary-400">{fmt(p.sell_price)} ₼</span>
+                      <span className="text-sm font-bold text-primary-400">{fmt(p.sell_price)} {csym}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                         p.stock_qty <= 0 ? 'bg-red-900/40 text-red-400' :
                         p.stock_qty <= p.min_stock ? 'bg-amber-900/40 text-amber-400' :
@@ -483,7 +490,7 @@ export default function POS() {
                       p.stock_qty <= p.min_stock ? 'bg-amber-900/40 text-amber-400' : 'bg-dark-800 text-dark-500'}`}>
                       {p.stock_qty}
                     </span>
-                    <span className="text-sm font-bold text-primary-400 flex-shrink-0 w-16 text-right">{fmt(p.sell_price)} ₼</span>
+                    <span className="text-sm font-bold text-primary-400 flex-shrink-0 w-16 text-right">{fmt(p.sell_price)} {csym}</span>
                     {inCart && <span className="bg-primary-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{inCart.qty}</span>}
                   </button>
                 );
@@ -612,7 +619,7 @@ export default function POS() {
                     className="w-20 bg-dark-800 border border-dark-700 rounded-lg px-2 py-1 text-xs text-right text-white focus:outline-none focus:border-primary-500"
                   />
                   <span className="text-sm font-bold text-primary-400 w-20 text-right">
-                    {fmt(item.qty * item.unit_price)} ₼
+                    {fmt(item.qty * item.unit_price)} {csym}
                   </span>
                 </div>
               </div>
@@ -634,7 +641,7 @@ export default function POS() {
                 min="0"
                 max={subtotal}
               />
-              <span className="text-xs text-dark-400">₼</span>
+              <span className="text-xs text-dark-400">{csym}</span>
             </div>
           </div>
         )}
@@ -643,17 +650,17 @@ export default function POS() {
         <div className="px-4 py-3 border-t border-dark-800 space-y-1.5">
           <div className="flex justify-between text-sm text-dark-400">
             <span>Ara cəm:</span>
-            <span>{fmt(subtotal)} ₼</span>
+            <span>{fmt(subtotal)} {csym}</span>
           </div>
           {discountAmt > 0 && (
             <div className="flex justify-between text-sm text-emerald-400">
               <span>Endirim:</span>
-              <span>-{fmt(discountAmt)} ₼</span>
+              <span>-{fmt(discountAmt)} {csym}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-white text-base pt-1 border-t border-dark-800">
             <span>YEKUN:</span>
-            <span className="text-primary-400">{fmt(total)} ₼</span>
+            <span className="text-primary-400">{fmt(total)} {csym}</span>
           </div>
         </div>
 
@@ -689,18 +696,18 @@ export default function POS() {
                   className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 text-right text-sm text-white focus:outline-none focus:border-primary-500"
                   placeholder={fmt(total)}
                 />
-                <span className="text-xs text-dark-400">₼</span>
+                <span className="text-xs text-dark-400">{csym}</span>
               </div>
               {(paymentMethod === 'cash' || paymentMethod === 'partial') && paidAmount && parseFloat(paidAmount) > total && (
                 <div className="flex justify-between text-sm text-emerald-400 bg-emerald-900/20 rounded-lg px-3 py-2 border border-emerald-700/30">
                   <span className="font-medium">💵 Qaytarılacaq:</span>
-                  <span className="font-black text-base">{fmt(parseFloat(paidAmount) - total)} ₼</span>
+                  <span className="font-black text-base">{fmt(parseFloat(paidAmount) - total)} {csym}</span>
                 </div>
               )}
               {paymentMethod === 'partial' && debt > 0 && (
                 <div className="flex justify-between text-sm text-amber-400 bg-amber-900/10 rounded-lg px-3 py-1.5">
                   <span>Qalan borc:</span>
-                  <span className="font-bold">{fmt(debt)} ₼</span>
+                  <span className="font-bold">{fmt(debt)} {csym}</span>
                 </div>
               )}
             </div>
@@ -726,7 +733,7 @@ export default function POS() {
             ) : (
               <>
                 <CheckCircle size={20} />
-                Satışı Tamamla · {fmt(total)} ₼
+                Satışı Tamamla · {fmt(total)} {csym}
               </>
             )}
           </button>
@@ -779,18 +786,18 @@ export default function POS() {
                       </div>
                       <div className="bg-emerald-900/20 border border-emerald-800/30 rounded-xl p-3 text-center">
                         <p className="text-[10px] text-dark-400 mb-1">Ümumi gəlir</p>
-                        <p className="text-xl font-black text-emerald-400">{fmt(totalRevenue)} ₼</p>
+                        <p className="text-xl font-black text-emerald-400">{fmt(totalRevenue)} {csym}</p>
                       </div>
                       {totalDebt > 0 && (
                         <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-3 text-center">
                           <p className="text-[10px] text-dark-400 mb-1">Ödənilməyən</p>
-                          <p className="text-xl font-black text-red-400">{fmt(totalDebt)} ₼</p>
+                          <p className="text-xl font-black text-red-400">{fmt(totalDebt)} {csym}</p>
                         </div>
                       )}
                       {totalDebt === 0 && (
                         <div className="bg-blue-900/20 border border-blue-800/30 rounded-xl p-3 text-center">
                           <p className="text-[10px] text-dark-400 mb-1">Ödənilən</p>
-                          <p className="text-xl font-black text-blue-400">{fmt(totalPaid)} ₼</p>
+                          <p className="text-xl font-black text-blue-400">{fmt(totalPaid)} {csym}</p>
                         </div>
                       )}
                     </div>
@@ -811,7 +818,7 @@ export default function POS() {
                         ).filter(x => x.value > 0).map(m => (
                           <div key={m.key} className="flex items-center justify-between">
                             <span className="text-sm text-dark-300">{m.label}</span>
-                            <span className={`font-bold text-sm ${m.color}`}>{fmt(m.value)} ₼</span>
+                            <span className={`font-bold text-sm ${m.color}`}>{fmt(m.value)} {csym}</span>
                           </div>
                         ))}
                       </div>
@@ -827,7 +834,7 @@ export default function POS() {
                               <p className="text-xs text-white">{s.customer_name || 'Anonim'}</p>
                               <p className="text-[10px] text-dark-500">{s.time} · #{s.id}</p>
                             </div>
-                            <span className="text-sm font-bold text-primary-400">{fmt(s.total)} ₼</span>
+                            <span className="text-sm font-bold text-primary-400">{fmt(s.total)} {csym}</span>
                           </div>
                         ))}
                       </div>
@@ -908,9 +915,9 @@ export default function POS() {
                     <div key={i} className="flex items-center justify-between px-4 py-3">
                       <div className="flex-1 min-w-0 mr-3">
                         <p className="text-sm text-white font-medium truncate">{item.product_name}</p>
-                        <p className="text-xs text-dark-400">{item.qty} × {fmt(item.unit_price)} ₼</p>
+                        <p className="text-xs text-dark-400">{item.qty} × {fmt(item.unit_price)} {csym}</p>
                       </div>
-                      <span className="text-sm font-bold text-primary-400 flex-shrink-0">{fmt(item.total)} ₼</span>
+                      <span className="text-sm font-bold text-primary-400 flex-shrink-0">{fmt(item.total)} {csym}</span>
                     </div>
                   ))}
                 </div>
@@ -920,28 +927,28 @@ export default function POS() {
               <div className="bg-dark-800 rounded-xl px-4 py-3 space-y-2">
                 <div className="flex justify-between text-sm text-dark-400">
                   <span>Ara cəm:</span>
-                  <span className="text-white">{fmt(lastSale.subtotal)} ₼</span>
+                  <span className="text-white">{fmt(lastSale.subtotal)} {csym}</span>
                 </div>
                 {(lastSale.discount || 0) > 0 && (
                   <div className="flex justify-between text-sm text-emerald-400">
                     <span>Endirim:</span>
-                    <span>−{fmt(lastSale.discount)} ₼</span>
+                    <span>−{fmt(lastSale.discount)} {csym}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-black text-base border-t border-dark-700 pt-2 mt-2">
                   <span className="text-dark-300">YEKUN:</span>
-                  <span className="text-white">{fmt(lastSale.total)} ₼</span>
+                  <span className="text-white">{fmt(lastSale.total)} {csym}</span>
                 </div>
                 {(lastSale.paid_amount || 0) > 0 && (
                   <div className="flex justify-between text-sm text-emerald-400">
                     <span>Ödənilən:</span>
-                    <span className="font-bold">{fmt(lastSale.paid_amount)} ₼</span>
+                    <span className="font-bold">{fmt(lastSale.paid_amount)} {csym}</span>
                   </div>
                 )}
                 {lastSale.change > 0 && (
                   <div className="flex justify-between text-sm bg-emerald-900/20 rounded-lg px-3 py-2 mt-1">
                     <span className="text-emerald-300 font-semibold">💵 Qaytarılacaq:</span>
-                    <span className="text-emerald-300 font-black">{fmt(lastSale.change)} ₼</span>
+                    <span className="text-emerald-300 font-black">{fmt(lastSale.change)} {csym}</span>
                   </div>
                 )}
                 {(() => {
@@ -949,7 +956,7 @@ export default function POS() {
                   return remaining > 0 && lastSale.payment_method !== 'cash' && lastSale.payment_method !== 'card' && lastSale.payment_method !== 'transfer' ? (
                     <div className="flex justify-between text-sm bg-red-900/20 rounded-lg px-3 py-2 mt-1">
                       <span className="text-red-300 font-semibold">⚠ Qalan borc:</span>
-                      <span className="text-red-300 font-black">{fmt(remaining)} ₼</span>
+                      <span className="text-red-300 font-black">{fmt(remaining)} {csym}</span>
                     </div>
                   ) : null;
                 })()}

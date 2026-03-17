@@ -19,6 +19,9 @@ const auditLogsDb = require('../database/audit_logs');
 const licensesDb = require('../database/licenses');
 const appointmentsDb = require('../database/appointments');
 const tasksDb = require('../database/tasks');
+const assetsDb = require('../database/assets');
+const debtsDb = require('../database/debts');
+const financeTransDb = require('../database/finance_transactions');
 const { processSmartInput, createRecordFromParsed, createSaleFromParsed, updateRecordWithPayment } = require('../services/record-service');
 const { parseInventory, parseUniversal } = require('../ai/parser');
 const { createBackup, restoreBackup, listBackups } = require('../services/backup-service');
@@ -930,28 +933,88 @@ function registerHandlers() {
       const now = new Date();
       const start = startDate || `${now.getFullYear()}-01-01`;
       const end = endDate || now.toISOString().split('T')[0];
+      const data = financeTransDb.getFinanceSummary({ startDate: start, endDate: end, userId: userId || null });
+      return { success: true, data };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
 
-      const incomeStats = recordsDb.getAllTimeStats(userId || null);
-      const expenseStats = expensesDb.getExpenseStats(start, end, userId || null);
-      const salesStats = salesDb.getSalesStats(start, end, userId || null);
+  // ─── Finance Transactions ──────────────────────────────────────────────────
+  ipcMain.handle('finance:transactions', (_, filters) => {
+    try { return { success: true, data: financeTransDb.getAllFinanceTransactions(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
 
-      const totalIncome = (incomeStats.revenue || 0) + (salesStats.total_revenue || 0);
-      const totalExpenses = expenseStats.total || 0;
-      const profit = totalIncome - totalExpenses;
+  ipcMain.handle('finance:createTransaction', (_, data) => {
+    try { return { success: true, data: financeTransDb.createFinanceTransaction(data) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
 
-      return {
-        success: true,
-        data: {
-          income: totalIncome,
-          expenses: totalExpenses,
-          profit,
-          salesRevenue: salesStats.total_revenue || 0,
-          serviceRevenue: incomeStats.revenue || 0,
-          expensesByCategory: expenseStats.byCategory || [],
-          monthlyExpenses: expenseStats.monthly || [],
-          debt: incomeStats.debt || 0,
-        }
-      };
+  ipcMain.handle('finance:deleteTransaction', (_, id) => {
+    try { return { success: true, data: financeTransDb.deleteFinanceTransaction(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Assets ────────────────────────────────────────────────────────────────
+  ipcMain.handle('assets:getAll', (_, filters) => {
+    try { return { success: true, data: assetsDb.getAllAssets(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('assets:getOne', (_, id) => {
+    try {
+      const asset = assetsDb.getAssetById(id);
+      if (!asset) return { success: false, error: 'Aktiv tapılmadı' };
+      return { success: true, data: asset };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('assets:create', (_, data) => {
+    try { return { success: true, data: assetsDb.createAsset(data) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('assets:update', (_, id, data) => {
+    try { return { success: true, data: assetsDb.updateAsset(id, data) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('assets:delete', (_, id) => {
+    try { return { success: true, data: assetsDb.deleteAsset(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('assets:categories', () => {
+    try { return { success: true, data: assetsDb.getAssetCategories() }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Debts (unified) ──────────────────────────────────────────────────────
+  ipcMain.handle('debts:getAll', (_, filters) => {
+    try { return { success: true, data: debtsDb.getAllDebts(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('debts:pay', (_, data) => {
+    try { return { success: true, data: debtsDb.payDebt(data) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('debts:payments', (_, filters) => {
+    try { return { success: true, data: debtsDb.getDebtPayments(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('debts:stats', (_, userId) => {
+    try { return { success: true, data: debtsDb.getDebtStats(userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Record Payment ───────────────────────────────────────────────────────
+  ipcMain.handle('records:updatePayment', (_, id, paidAmount, status) => {
+    try {
+      const result = updateRecordWithPayment(id, { paid_amount: paidAmount, payment_status: status });
+      if (!result) return { success: false, error: 'Qeyd tapılmadı' };
+      return { success: true, data: result };
     } catch (e) { return { success: false, error: e.message }; }
   });
 }

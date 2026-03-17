@@ -4,6 +4,8 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
 const EMPTY_FORM = { customer_id: '', brand: '', model: '', plate: '', year: '', notes: '' };
@@ -11,11 +13,13 @@ const EMPTY_FORM = { customer_id: '', brand: '', model: '', plate: '', year: '',
 
 function fmt(n) {
   if (!n) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function Vehicles() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [vehicles, setVehicles] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -213,7 +217,7 @@ export default function Vehicles() {
             <TrendingUp size={14} className="text-emerald-400" />
           </div>
           <p className="text-2xl font-black text-emerald-400">{Number(totalSpent).toFixed(0)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ məcmu</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} məcmu</p>
         </div>
       </div>
 

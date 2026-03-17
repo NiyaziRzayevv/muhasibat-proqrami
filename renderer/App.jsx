@@ -30,9 +30,11 @@ import License from './pages/License';
 import Appointments from './pages/Appointments';
 import Tasks from './pages/Tasks';
 import Analytics from './pages/Analytics';
+import Assets from './pages/Assets';
 import UserWorkspace from './pages/UserWorkspace';
 import NoAccess from './pages/NoAccess';
 import { apiBridge } from './api/bridge';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 export const AppContext = createContext(null);
 
@@ -43,6 +45,7 @@ export function useApp() {
 export default function App() {
   const [settings, setSettings] = useState({});
   const [theme, setTheme] = useState('dark');
+  const [currency, setCurrency] = useState('AZN');
   const [notification, setNotification] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -69,7 +72,13 @@ export default function App() {
 
   useEffect(() => {
     const html = document.documentElement;
-    html.classList.add('dark');
+    if (theme === 'light') {
+      html.classList.remove('dark');
+      html.classList.add('light');
+    } else {
+      html.classList.remove('light');
+      html.classList.add('dark');
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -139,6 +148,7 @@ export default function App() {
       if (res.success) {
         setSettings(res.data);
         setTheme(res.data.theme || 'dark');
+        setCurrency(res.data.currency || 'AZN');
       }
     } catch (e) {
       console.error('Settings load error:', e);
@@ -189,7 +199,7 @@ export default function App() {
   const hasSystemAccess = isAdmin || (userAccess?.hasAccess === true);
 
   const ctx = {
-    settings, showNotification, refreshSettings, theme, setTheme, smartInputRef,
+    settings, showNotification, refreshSettings, theme, setTheme, currency, setCurrency, smartInputRef,
     currentUser, handleLogout, unreadCount, setUnreadCount, loadUnreadCount, isAdmin,
     userAccess, checkAccess, hasSystemAccess, checkLicense,
     hasPermission: (perm) => {
@@ -210,9 +220,11 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <AppContext.Provider value={ctx}>
-        <Login onLogin={handleLogin} />
-      </AppContext.Provider>
+      <LanguageProvider>
+        <AppContext.Provider value={ctx}>
+          <Login onLogin={handleLogin} />
+        </AppContext.Provider>
+      </LanguageProvider>
     );
   }
 
@@ -226,44 +238,50 @@ export default function App() {
 
   if (!hasSystemAccess) {
     return (
-      <AppContext.Provider value={ctx}>
-        <NoAccess />
-      </AppContext.Provider>
+      <LanguageProvider>
+        <AppContext.Provider value={ctx}>
+          <NoAccess />
+        </AppContext.Provider>
+      </LanguageProvider>
     );
   }
 
   if (!licenseOk && !isAdmin) {
     return (
-      <AppContext.Provider value={ctx}>
-        <div className="min-h-screen bg-dark-950 flex flex-col">
-          <div className="flex items-center justify-between px-6 py-3 bg-red-900/30 border-b border-red-800/40">
-            <div className="flex items-center gap-2 text-red-300 text-sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Lisenziya müddəti bitib. Proqramı istifadə etmək üçün lisenziya açarı daxil edin.
+      <LanguageProvider>
+        <AppContext.Provider value={ctx}>
+          <div className="min-h-screen bg-dark-950 flex flex-col">
+            <div className="flex items-center justify-between px-6 py-3 bg-red-900/30 border-b border-red-800/40">
+              <div className="flex items-center gap-2 text-red-300 text-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Lisenziya müddəti bitib. Proqramı istifadə etmək üçün lisenziya açarı daxil edin.
+              </div>
+              <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-800/40 hover:bg-red-900/30">
+                Çıxış
+              </button>
             </div>
-            <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-800/40 hover:bg-red-900/30">
-              Çıxış
-            </button>
+            <div className="flex-1">
+              <License />
+            </div>
           </div>
-          <div className="flex-1">
-            <License />
-          </div>
-        </div>
-      </AppContext.Provider>
+        </AppContext.Provider>
+      </LanguageProvider>
     );
   }
 
   return (
-    <AppContext.Provider value={ctx}>
-      <HashRouter>
-        <AppLayout
-          sidebarCollapsed={sidebarCollapsed}
-          setSidebarCollapsed={setSidebarCollapsed}
-          notification={notification}
-          smartInputRef={smartInputRef}
-        />
-      </HashRouter>
-    </AppContext.Provider>
+    <LanguageProvider>
+      <AppContext.Provider value={ctx}>
+        <HashRouter>
+          <AppLayout
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            notification={notification}
+            smartInputRef={smartInputRef}
+          />
+        </HashRouter>
+      </AppContext.Provider>
+    </LanguageProvider>
   );
 }
 
@@ -327,6 +345,7 @@ function AppLayout({ sidebarCollapsed, setSidebarCollapsed, notification, smartI
               <Route path="/appointments" element={<ErrorBoundary><Appointments /></ErrorBoundary>} />
               <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
               <Route path="/analytics" element={<ErrorBoundary><Analytics /></ErrorBoundary>} />
+              <Route path="/assets" element={<ErrorBoundary><Assets /></ErrorBoundary>} />
               {/* Admin-only pages */}
               <Route path="/users" element={isAdmin ? <ErrorBoundary><Users /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
               <Route path="/audit-log" element={isAdmin ? <ErrorBoundary><AuditLog /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />

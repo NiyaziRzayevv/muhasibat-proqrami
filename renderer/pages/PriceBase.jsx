@@ -3,6 +3,8 @@ import { Search, Plus, Edit3, Trash2, Loader2, Save, Tag, RefreshCw, FileSpreads
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../utils/currency';
 
 const EMPTY_FORM = { brand: '', service_type: '', price: '', notes: '' };
 
@@ -16,7 +18,9 @@ const COMMON_SERVICES = [
 ];
 
 export default function PriceBase() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +111,7 @@ export default function PriceBase() {
       const exportData = prices.map(p => ({
         Marka: p.brand || 'Ümumi',
         'Xidmət növü': p.service_type,
-        'Qiymət (₼)': p.price || '-',
+        [`Qiymət (${csym})`]: p.price || '-',
         Qeyd: p.notes || '-',
       }));
       const result = await window.api.exportExcel(exportData, `qiymet-bazasi-${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -156,7 +160,7 @@ export default function PriceBase() {
             <TrendingUp size={14} className="text-emerald-400" />
           </div>
           <p className="text-2xl font-black text-emerald-400">{avgPrice.toFixed(0)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ orta</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} orta</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1">
@@ -164,7 +168,7 @@ export default function PriceBase() {
             <DollarSign size={14} className="text-amber-400" />
           </div>
           <p className="text-2xl font-black text-amber-400">{maxPrice.toFixed(0)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ maksimum</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} maksimum</p>
         </div>
       </div>
 
@@ -218,7 +222,7 @@ export default function PriceBase() {
                   <thead>
                     <tr>
                       <th>Xidmət növü</th>
-                      <th>Qiymət (₼)</th>
+                      <th>Qiymət ({csym})</th>
                       <th>Qeyd</th>
                       <th className="w-20">Əməliyyat</th>
                     </tr>
@@ -228,7 +232,7 @@ export default function PriceBase() {
                       <tr key={p.id}>
                         <td className="font-medium text-white">{p.service_type}</td>
                         <td className="font-semibold text-emerald-400 text-base">
-                          {p.price ? `${Number(p.price).toFixed(2)} ₼` : <span className="text-dark-500 text-xs">Qiymət yoxdur</span>}
+                          {p.price ? `${Number(p.price).toFixed(2)} ${csym}` : <span className="text-dark-500 text-xs">Qiymət yoxdur</span>}
                         </td>
                         <td className="text-dark-400 text-xs">{p.notes || '—'}</td>
                         <td>
@@ -271,7 +275,7 @@ export default function PriceBase() {
             </datalist>
           </div>
           <div>
-            <label className="label">Qiymət (₼)</label>
+            <label className="label">Qiymət ({csym})</label>
             <input type="number" min="0" step="0.01" className="input-field" placeholder="45.00" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
           </div>
           <div>

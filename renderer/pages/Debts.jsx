@@ -3,113 +3,93 @@ import { CreditCard, RefreshCw, CheckCircle, Loader2, Edit3, Search, Filter, X, 
 import Modal from '../components/Modal';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
-const STATUS_MAP = {
-  odenilib: { label: 'Ödənilib', cls: 'status-odenilib' },
-  gozleyir: { label: 'Gözləyir', cls: 'status-gozleyir' },
-  qismen: { label: 'Qismən', cls: 'status-qismen' },
-  borc: { label: 'Borc', cls: 'status-borc' },
-};
+function getStatusMap(t) {
+  return {
+    odenilib: { label: t('statusPaid'), cls: 'status-odenilib' },
+    gozleyir: { label: t('statusWaiting'), cls: 'status-gozleyir' },
+    qismen: { label: t('statusPartial'), cls: 'status-qismen' },
+    borc: { label: t('statusDebt'), cls: 'status-borc' },
+  };
+}
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function Debts() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const STATUS_MAP = getStatusMap(t);
   const userId = isAdmin ? null : currentUser?.id;
-  const [records, setRecords] = useState([]);
-  const [salesDebts, setSalesDebts] = useState([]);
+  const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payModal, setPayModal] = useState(null);
   const [payAmount, setPayAmount] = useState('');
-  const [payStatus, setPayStatus] = useState('odenilib');
+  const [payMethod, setPayMethod] = useState('cash');
   const [paying, setPaying] = useState(false);
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  function getToken() {
-    try { return localStorage.getItem('auth_token') || ''; } catch { return ''; }
-  }
-
   const loadDebts = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchSales = (status) => window.api?.getSales
-        ? window.api.getSales({ payment_status: status, userId })
-        : apiRequest(`/sales?${new URLSearchParams({ ...(userId ? { userId } : {}), payment_status: status }).toString()}`, { token: getToken() });
-
-      const [recRes, borcRes, qismenRes, gozleyirRes] = await Promise.all([
-        window.api?.getUnpaidRecords
-          ? window.api.getUnpaidRecords(userId)
-          : apiRequest(`/records/unpaid${userId ? `?userId=${userId}` : ''}`, { token: getToken() }),
-        fetchSales('borc'),
-        fetchSales('qismen'),
-        fetchSales('gozleyir'),
-      ]);
-      if (recRes.success) setRecords(recRes.data || []);
-      const allSales = [
-        ...(borcRes.success ? borcRes.data || [] : []),
-        ...(qismenRes.success ? qismenRes.data || [] : []),
-        ...(gozleyirRes.success ? gozleyirRes.data || [] : []),
-      ];
-      const debts = allSales.filter(s => (s.total || 0) > (s.paid_amount || 0));
-      setSalesDebts(debts);
+      const filters = {};
+      if (userId) filters.userId = userId;
+      if (search) filters.search = search;
+      let res;
+      if (window.api?.getDebts) {
+        res = await window.api.getDebts(filters);
+      } else {
+        const params = new URLSearchParams(filters).toString();
+        res = await apiRequest(`/debts?${params}`);
+      }
+      if (res?.success) setDebts(res.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [userId]);
+  }, [userId, search]);
 
   useEffect(() => { loadDebts(); }, [loadDebts]);
 
-  function openPayModal(record) {
-    setPayModal(record);
-    setPayAmount(record.remaining_amount || record.total_price || '');
-    setPayStatus(record.remaining_amount > 0 && record.remaining_amount < record.total_price ? 'qismen' : 'odenilib');
+  function openPayModal(debt) {
+    setPayModal(debt);
+    setPayAmount(debt.remaining_amount || '');
+    setPayMethod('cash');
   }
 
   async function handlePay() {
     setPaying(true);
     try {
-      const totalPrice = payModal.total_price || 0;
-      const newPaid = parseFloat(payAmount) || 0;
-      const prevPaid = payModal.paid_amount || 0;
-      const totalPaid = prevPaid + newPaid;
-      const remaining = Math.max(0, totalPrice - totalPaid);
+      const amount = parseFloat(payAmount) || 0;
+      if (amount <= 0) { showNotification('Məbləğ daxil edin', 'error'); setPaying(false); return; }
 
-      let status = payStatus;
-      if (totalPaid >= totalPrice) status = 'odenilib';
-      else if (totalPaid > 0) status = 'qismen';
+      const payload = {
+        debt_type: payModal.debt_type,
+        debt_id: payModal.debt_id,
+        amount,
+        payment_method: payMethod,
+      };
 
-      const result = payModal?.isSale
-        ? (window.api?.updateSalePayment
-          ? await window.api.updateSalePayment(payModal.id, totalPaid, status)
-          : await apiRequest(`/sales/${payModal.id}/payment`, {
-            method: 'PUT',
-            token: getToken(),
-            body: { paid_amount: totalPaid, payment_status: status },
-          }))
-        : (window.api?.updateRecord
-          ? await window.api.updateRecord(payModal.id, {
-            paid_amount: totalPaid,
-            remaining_amount: remaining,
-            payment_status: status,
-          })
-          : await apiRequest(`/records/${payModal.id}`, {
-            method: 'PUT',
-            token: getToken(),
-            body: { paid_amount: totalPaid, remaining_amount: remaining, payment_status: status },
-          }));
+      let res;
+      if (window.api?.payDebt) {
+        res = await window.api.payDebt(payload);
+      } else {
+        res = await apiRequest('/debts/pay', { method: 'POST', body: payload });
+      }
 
-      if (result.success) {
-        showNotification('Ödəniş qeyd edildi', 'success');
+      if (res?.success) {
+        showNotification(`Ödəniş qeyd edildi: ${amount.toFixed(2)} ${csym}`, 'success');
         setPayModal(null);
         loadDebts();
       } else {
-        showNotification(result.error || 'Xəta', 'error');
+        showNotification(res?.error || 'Xəta', 'error');
       }
     } catch (e) {
       showNotification('Xəta: ' + e.message, 'error');
@@ -118,56 +98,52 @@ export default function Debts() {
     }
   }
 
-  const recordDebt = records.reduce((s, r) => s + (r.remaining_amount || 0), 0);
-  const salesDebt = salesDebts.reduce((s, r) => s + ((r.total || 0) - (r.paid_amount || 0)), 0);
+  const recordDebts = debts.filter(d => d.debt_type === 'record');
+  const saleDebts = debts.filter(d => d.debt_type === 'sale');
+  const recordDebt = recordDebts.reduce((s, d) => s + (d.remaining_amount || 0), 0);
+  const salesDebt = saleDebts.reduce((s, d) => s + (d.remaining_amount || 0), 0);
   const totalDebt = recordDebt + salesDebt;
-  const totalRecords = records.length;
-  const totalSales = salesDebts.length;
+  const totalRecords = recordDebts.length;
+  const totalSales = saleDebts.length;
 
   // Filter logic
-  const filteredRecords = records.filter(r => {
-    if (search && !r.customer_name?.toLowerCase().includes(search.toLowerCase()) && !r.car_brand?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
+  const filtered = debts.filter(d => {
+    if (tab === 'services' && d.debt_type !== 'record') return false;
+    if (tab === 'sales' && d.debt_type !== 'sale') return false;
+    if (dateFrom && d.date < dateFrom) return false;
+    if (dateTo && d.date > dateTo) return false;
     return true;
   });
 
-  const filteredSales = salesDebts.filter(s => {
-    if (search && !s.customer_name?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (dateFrom && s.date < dateFrom) return false;
-    if (dateTo && s.date > dateTo) return false;
-    return true;
-  });
-
-  async function handleExportExcel() {
+  function handleExportExcel() {
     try {
-      const allDebts = [
-        ...filteredRecords.map(r => ({ tip: 'Servis', tarix: r.date, musteri: r.customer_name, umumi: r.total_price, odenilib: r.paid_amount, qaliq: r.remaining_amount })),
-        ...filteredSales.map(s => ({ tip: 'Satış', tarix: s.date, musteri: s.customer_name, umumi: s.total, odenilib: s.paid_amount, qaliq: (s.total || 0) - (s.paid_amount || 0) })),
-      ];
-      if (window.api?.exportExcel) {
-        const result = await window.api.exportExcel(allDebts, `borclar-${new Date().toISOString().split('T')[0]}.xlsx`);
-        if (result.success) {
-          showNotification('Excel hazır oldu', 'success');
-          window.api.showItemInFolder(result.path);
-        }
-        return;
-      }
+      if (!filtered.length) { showNotification('Export üçün məlumat yoxdur', 'error'); return; }
+      const rows = filtered.map(d => ({
+        'Tip': d.debt_type === 'record' ? 'Servis' : 'Satış',
+        'Tarix': d.date,
+        'Müştəri': d.customer_name || '',
+        'Sənəd №': d.ref_number || '',
+        'Təsvir': d.description || '',
+        [`Ümumi (${csym})`]: d.total_amount || 0,
+        [`Ödənilib (${csym})`]: d.paid_amount || 0,
+        [`Qalıq (${csym})`]: d.remaining_amount || 0,
+        'Status': d.payment_status === 'borc' ? 'Borc' : 'Qismən',
+      }));
 
-      const ws = XLSX.utils.json_to_sheet(allDebts);
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const colWidths = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length + 2, ...rows.map(r => String(r[k] || '').length + 2)) }));
+      ws['!cols'] = colWidths;
+      // Total row
+      const totalAll = filtered.reduce((s, d) => s + (d.total_amount || 0), 0);
+      const totalPaid = filtered.reduce((s, d) => s + (d.paid_amount || 0), 0);
+      const totalRem = filtered.reduce((s, d) => s + (d.remaining_amount || 0), 0);
+      XLSX.utils.sheet_add_aoa(ws, [['YEKUN', '', '', '', '', totalAll, totalPaid, totalRem, '']], { origin: -1 });
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Borclar');
-      const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `borclar-${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showNotification('Excel hazır oldu', 'success');
+      const today = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `borclar_${today}.xlsx`);
+      showNotification('Excel export edildi', 'success');
     } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
@@ -266,7 +242,7 @@ export default function Debts() {
                 <th>Tip</th>
                 <th>Tarix</th>
                 <th>Müştəri</th>
-                <th>{tab === 'sales' ? 'Satış #' : 'Aktiv'}</th>
+                <th>Sənəd</th>
                 <th>Ümumi</th>
                 <th>Ödənilib</th>
                 <th>Qalıq</th>
@@ -275,51 +251,35 @@ export default function Debts() {
               </tr>
             </thead>
             <tbody>
-              {(tab === 'all' || tab === 'services') && filteredRecords.map(r => (
-                <tr key={`rec-${r.id}`}>
-                  <td><span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400"><Wrench size={10} className="inline mr-1" />Servis</span></td>
-                  <td className="font-mono text-xs text-dark-300">{r.date}</td>
-                  <td className="text-dark-200">{r.customer_name || '—'}</td>
-                  <td className="font-medium text-white">{[r.car_brand, r.car_model].filter(Boolean).join(' ') || '—'}</td>
-                  <td className="font-semibold text-white">{fmt(r.total_price)}</td>
-                  <td className="text-dark-300">{fmt(r.paid_amount)}</td>
-                  <td className="font-bold text-red-400">{fmt(r.remaining_amount)}</td>
+              {filtered.map(d => (
+                <tr key={d.id}>
                   <td>
-                    <span className={STATUS_MAP[r.payment_status]?.cls || 'status-badge bg-dark-700 text-dark-400'}>
-                      {STATUS_MAP[r.payment_status]?.label || r.payment_status}
+                    {d.debt_type === 'record' ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400"><Wrench size={10} className="inline mr-1" />Servis</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400"><ShoppingCart size={10} className="inline mr-1" />Satış</span>
+                    )}
+                  </td>
+                  <td className="font-mono text-xs text-dark-300">{d.date}</td>
+                  <td className="text-dark-200">{d.customer_name || '—'}</td>
+                  <td className="font-medium text-white">{d.ref_number || d.description || '—'}</td>
+                  <td className="font-semibold text-white">{fmt(d.total_amount)}</td>
+                  <td className="text-dark-300">{fmt(d.paid_amount)}</td>
+                  <td className="font-bold text-red-400">{fmt(d.remaining_amount)}</td>
+                  <td>
+                    <span className={STATUS_MAP[d.payment_status]?.cls || 'status-badge bg-dark-700 text-dark-400'}>
+                      {STATUS_MAP[d.payment_status]?.label || d.payment_status}
                     </span>
                   </td>
                   <td>
-                    <button onClick={() => openPayModal(r)}
+                    <button onClick={() => openPayModal(d)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-900/30 border border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/50 rounded-lg transition-colors">
                       <CheckCircle size={12} /> Ödəniş al
                     </button>
                   </td>
                 </tr>
               ))}
-              {(tab === 'all' || tab === 'sales') && filteredSales.map(s => (
-                <tr key={`sale-${s.id}`}>
-                  <td><span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400"><ShoppingCart size={10} className="inline mr-1" />Satış</span></td>
-                  <td className="font-mono text-xs text-dark-300">{s.date}</td>
-                  <td className="text-dark-200">{s.customer_name || '—'}</td>
-                  <td className="font-medium text-white">#{s.id}</td>
-                  <td className="font-semibold text-white">{fmt(s.total)}</td>
-                  <td className="text-dark-300">{fmt(s.paid_amount)}</td>
-                  <td className="font-bold text-red-400">{fmt((s.total || 0) - (s.paid_amount || 0))}</td>
-                  <td>
-                    <span className={STATUS_MAP[s.payment_status]?.cls || 'status-badge bg-dark-700 text-dark-400'}>
-                      {STATUS_MAP[s.payment_status]?.label || s.payment_status}
-                    </span>
-                  </td>
-                  <td>
-                    <button onClick={() => openPayModal({ ...s, total_price: s.total, remaining_amount: (s.total || 0) - (s.paid_amount || 0), isSale: true })}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-900/30 border border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/50 rounded-lg transition-colors">
-                      <CheckCircle size={12} /> Ödəniş al
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredRecords.length === 0 && filteredSales.length === 0 && (
+              {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="text-center py-16">
                     <div className="empty-state">
@@ -358,12 +318,12 @@ export default function Debts() {
                 <span className="text-white font-medium">{payModal.customer_name || '—'}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-dark-400">Xidmət:</span>
-                <span className="text-white">{payModal.service_type || '—'}</span>
+                <span className="text-dark-400">Tip:</span>
+                <span className="text-white">{payModal.debt_type === 'record' ? 'Servis' : 'Satış'} — {payModal.description || payModal.ref_number || '—'}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-dark-400">Ümumi məbləğ:</span>
-                <span className="text-white font-semibold">{fmt(payModal.total_price)}</span>
+                <span className="text-white font-semibold">{fmt(payModal.total_amount)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-dark-400">Əvvəl ödənilib:</span>
@@ -375,7 +335,7 @@ export default function Debts() {
               </div>
             </div>
             <div>
-              <label className="label">İndi alınan məbləğ (₼)</label>
+              <label className="label">İndi alınan məbləğ ({csym})</label>
               <input
                 type="number"
                 min="0"
@@ -388,11 +348,11 @@ export default function Debts() {
               />
             </div>
             <div>
-              <label className="label">Ödəniş statusu</label>
-              <select className="select-field" value={payStatus} onChange={e => setPayStatus(e.target.value)}>
-                <option value="odenilib">Tamamilə ödənilib</option>
-                <option value="qismen">Qismən ödənilib</option>
-                <option value="borc">Borc qalır</option>
+              <label className="label">Ödəniş üsulu</label>
+              <select className="select-field" value={payMethod} onChange={e => setPayMethod(e.target.value)}>
+                <option value="cash">Nağd</option>
+                <option value="card">Kart</option>
+                <option value="transfer">Transfer</option>
               </select>
             </div>
           </div>

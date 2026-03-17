@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Bell, CheckCheck, Trash2, RefreshCw, Package, AlertTriangle, CreditCard, Shield, Info } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const TYPE_CONFIG = {
-  low_stock: { icon: Package, color: 'text-amber-400 bg-amber-500/10 border-amber-800/30', label: 'Stok' },
-  unpaid_debts: { icon: CreditCard, color: 'text-red-400 bg-red-500/10 border-red-800/30', label: 'Borc' },
-  license: { icon: Shield, color: 'text-purple-400 bg-purple-500/10 border-purple-800/30', label: 'Lisenziya' },
-  warning: { icon: AlertTriangle, color: 'text-amber-400 bg-amber-500/10 border-amber-800/30', label: 'Xəbərdarlıq' },
-  info: { icon: Info, color: 'text-blue-400 bg-blue-500/10 border-blue-800/30', label: 'Məlumat' },
-};
+function getTypeConfig(t) {
+  return {
+    low_stock: { icon: Package, color: 'text-amber-400 bg-amber-500/10 border-amber-800/30', label: t('stock') },
+    unpaid_debts: { icon: CreditCard, color: 'text-red-400 bg-red-500/10 border-red-800/30', label: t('debt') },
+    license: { icon: Shield, color: 'text-purple-400 bg-purple-500/10 border-purple-800/30', label: t('license') },
+    warning: { icon: AlertTriangle, color: 'text-amber-400 bg-amber-500/10 border-amber-800/30', label: t('warning') },
+    info: { icon: Info, color: 'text-blue-400 bg-blue-500/10 border-blue-800/30', label: t('info') },
+  };
+}
 
 export default function Notifications() {
   const { showNotification, currentUser } = useApp();
+  const { t } = useLanguage();
+  const TYPE_CONFIG = getTypeConfig(t);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 

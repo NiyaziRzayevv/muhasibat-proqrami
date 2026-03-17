@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Users, Wrench, ShoppingCart, CreditCard, MessageCircle, RefreshCw, ChevronRight, Phone, FileSpreadsheet, TrendingUp, Calendar, Star } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../utils/currency';
 
-const STATUS_MAP = {
-  odenilib: { label: 'Ödənilib', cls: 'status-odenilib' },
-  gozleyir: { label: 'Gözləyir', cls: 'status-gozleyir' },
-  qismen:   { label: 'Qismən',   cls: 'status-qismen' },
-  borc:     { label: 'Borc',     cls: 'status-borc' },
-};
+function getStatusMap(t) {
+  return {
+    odenilib: { label: t('statusPaid'), cls: 'status-odenilib' },
+    gozleyir: { label: t('statusWaiting'), cls: 'status-gozleyir' },
+    qismen:   { label: t('statusPartial'),   cls: 'status-qismen' },
+    borc:     { label: t('statusDebt'),     cls: 'status-borc' },
+  };
+}
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function CustomerHistory() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const STATUS_MAP = getStatusMap(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');

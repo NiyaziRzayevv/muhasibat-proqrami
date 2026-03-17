@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Lock, LogOut, Clock, Calendar, Infinity } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function NoAccess() {
   const { currentUser, handleLogout, userAccess, checkAccess } = useApp();
+  const { t } = useLanguage();
   const [checking, setChecking] = useState(false);
 
   async function doLogout() {

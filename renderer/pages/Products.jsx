@@ -9,6 +9,8 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
 const UNITS = ['ədəd', 'litr', 'kg', 'metr', 'qutu', 'dəst', 'cüt', 'banka'];
@@ -20,11 +22,13 @@ const EMPTY_FORM = {
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 export default function Products() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -365,7 +369,7 @@ export default function Products() {
             <TrendingUp size={14} className="text-emerald-400" />
           </div>
           <p className="text-2xl font-black text-emerald-400">{Number(totalSellValue).toFixed(0)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ anbar</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} anbar</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1">
@@ -373,7 +377,7 @@ export default function Products() {
             <DollarSign size={14} className="text-blue-400" />
           </div>
           <p className="text-2xl font-black text-blue-400">{Number(totalBuyValue).toFixed(0)}</p>
-          <p className="text-[10px] text-dark-500 mt-0.5">₼ məcmu</p>
+          <p className="text-[10px] text-dark-500 mt-0.5">{csym} məcmu</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center justify-between mb-1">
@@ -431,8 +435,8 @@ export default function Products() {
                 <th>SKU</th>
                 <th>Stok</th>
                 <th>Min Stok</th>
-                <th>Alış ₼</th>
-                <th>Satış ₼</th>
+                <th>Alış {csym}</th>
+                <th>Satış {csym}</th>
                 <th>Mənfəət %</th>
                 <th>Stok dəyəri</th>
                 <th>Təchizatçı</th>
@@ -550,11 +554,11 @@ export default function Products() {
             <input className="input-field" placeholder="1234567890" value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} />
           </div>
           <div>
-            <label className="label">Alış qiyməti (₼)</label>
+            <label className="label">Alış qiyməti ({csym})</label>
             <input type="number" min="0" step="0.01" className="input-field" value={form.buy_price} onChange={e => setForm(f => ({ ...f, buy_price: e.target.value }))} />
           </div>
           <div>
-            <label className="label">Satış qiyməti (₼)</label>
+            <label className="label">Satış qiyməti ({csym})</label>
             <input type="number" min="0" step="0.01" className="input-field" value={form.sell_price} onChange={e => setForm(f => ({ ...f, sell_price: e.target.value }))} />
           </div>
           <div>
@@ -657,7 +661,7 @@ export default function Products() {
                 {importRows.slice(0, 8).map((r, i) => (
                   <p key={i} className="text-xs text-dark-300">
                     {r.name || r.Ad}
-                    {(r.sell_price || r['Satış qiyməti']) ? ` · ${r.sell_price || r['Satış qiyməti']} ₼` : ''}
+                    {(r.sell_price || r['Satış qiyməti']) ? ` · ${r.sell_price || r['Satış qiyməti']} ${csym}` : ''}
                   </p>
                 ))}
                 {importRows.length > 8 && <p className="text-xs text-dark-500">... və {importRows.length - 8} digər</p>}

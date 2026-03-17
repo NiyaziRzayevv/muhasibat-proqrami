@@ -4,11 +4,13 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const EMPTY_FORM = { name: '', phone: '', email: '', address: '', notes: '' };
 
 export default function Suppliers() {
   const { showNotification, currentUser, isAdmin } = useApp();
+  const { t } = useLanguage();
   const userId = isAdmin ? null : currentUser?.id;
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);

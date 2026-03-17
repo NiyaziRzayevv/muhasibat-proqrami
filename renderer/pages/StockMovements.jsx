@@ -3,27 +3,35 @@ import { Search, ArrowDown, ArrowUp, RefreshCw, Filter, X, ArrowLeftRight, FileS
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
-const MOVEMENT_TYPES = [
-  { value: '', label: 'Hamısı' },
-  { value: 'giris', label: 'Giriş' },
-  { value: 'cixis', label: 'Çıxış' },
-  { value: 'satis', label: 'Satış' },
-  { value: 'servis', label: 'Servis' },
-  { value: 'duzeltme', label: 'Düzəliş' },
-];
+function getMovementTypes(t) {
+  return [
+    { value: '', label: t('all') },
+    { value: 'giris', label: t('stockIn') },
+    { value: 'cixis', label: t('stockOut') },
+    { value: 'satis', label: t('smartSale') },
+    { value: 'servis', label: t('service') },
+    { value: 'duzeltme', label: t('stockAdjust') },
+  ];
+}
 
-const TYPE_STYLES = {
-  giris:    { icon: ArrowDown, cls: 'text-emerald-400 bg-emerald-900/20', label: 'Giriş' },
-  cixis:    { icon: ArrowUp,   cls: 'text-red-400 bg-red-900/20',         label: 'Çıxış' },
-  satis:    { icon: ArrowUp,   cls: 'text-blue-400 bg-blue-900/20',       label: 'Satış' },
-  servis:   { icon: ArrowUp,   cls: 'text-purple-400 bg-purple-900/20',   label: 'Servis' },
-  duzeltme: { icon: ArrowLeftRight, cls: 'text-amber-400 bg-amber-900/20', label: 'Düzəliş' },
-};
+function getTypeStyles(t) {
+  return {
+    giris:    { icon: ArrowDown, cls: 'text-emerald-400 bg-emerald-900/20', label: t('stockIn') },
+    cixis:    { icon: ArrowUp,   cls: 'text-red-400 bg-red-900/20',         label: t('stockOut') },
+    satis:    { icon: ArrowUp,   cls: 'text-blue-400 bg-blue-900/20',       label: t('smartSale') },
+    servis:   { icon: ArrowUp,   cls: 'text-purple-400 bg-purple-900/20',   label: t('service') },
+    duzeltme: { icon: ArrowLeftRight, cls: 'text-amber-400 bg-amber-900/20', label: t('stockAdjust') },
+  };
+}
 
 export default function StockMovements() {
   const { showNotification, currentUser, isAdmin } = useApp();
+  const { t } = useLanguage();
+  const MOVEMENT_TYPES = getMovementTypes(t);
+  const TYPE_STYLES = getTypeStyles(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);

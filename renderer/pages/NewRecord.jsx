@@ -4,13 +4,16 @@ import { Sparkles, ClipboardList, Save, Loader2, ChevronLeft } from 'lucide-reac
 import UniversalSmartInput from '../components/UniversalSmartInput';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const PAYMENT_STATUS_OPTIONS = [
-  { value: 'gozleyir', label: 'Gözləyir' },
-  { value: 'odenilib', label: 'Ödənilib' },
-  { value: 'qismen', label: 'Qismən ödənilib' },
-  { value: 'borc', label: 'Borc qalır' },
-];
+function getPaymentStatusOptions(t) {
+  return [
+    { value: 'gozleyir', label: t('statusWaiting') },
+    { value: 'odenilib', label: t('statusPaid') },
+    { value: 'qismen', label: t('statusPartial') },
+    { value: 'borc', label: t('statusDebt') },
+  ];
+}
 
 const EMPTY_FORM = {
   date: new Date().toISOString().split('T')[0],
@@ -25,7 +28,9 @@ const EMPTY_FORM = {
 
 export default function NewRecord() {
   const navigate = useNavigate();
-  const { showNotification, currentUser } = useApp();
+  const { showNotification, currentUser, currency } = useApp();
+  const { t } = useLanguage();
+  const PAYMENT_STATUS_OPTIONS = getPaymentStatusOptions(t);
   const [tab, setTab] = useState('smart');
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
@@ -234,11 +239,11 @@ export default function NewRecord() {
                     <input type="number" min="1" className="input-field" value={form.quantity} onChange={e => setField('quantity', e.target.value)} />
                   </div>
                   <div>
-                    <label className="label">Vahid qiymət (AZN)</label>
+                    <label className="label">{t('unitPrice')} ({currency})</label>
                     <input type="number" min="0" step="0.01" className="input-field" placeholder="0.00" value={form.unit_price} onChange={e => setField('unit_price', e.target.value)} />
                   </div>
                   <div>
-                    <label className="label">Yekun qiymət (AZN)</label>
+                    <label className="label">{t('totalPrice')} ({currency})</label>
                     <input type="number" min="0" step="0.01" className="input-field" placeholder="0.00" value={form.total_price} onChange={e => setField('total_price', e.target.value)} />
                   </div>
                 </div>
@@ -255,7 +260,7 @@ export default function NewRecord() {
                   </div>
                   {form.payment_status === 'qismen' && (
                     <div>
-                      <label className="label">Ödənilən məbləğ (AZN)</label>
+                      <label className="label">{t('paidAmount')} ({currency})</label>
                       <input type="number" min="0" step="0.01" className="input-field" placeholder="0.00" value={form.paid_amount} onChange={e => setField('paid_amount', e.target.value)} />
                     </div>
                   )}

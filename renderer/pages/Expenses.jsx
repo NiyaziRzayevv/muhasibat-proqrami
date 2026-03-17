@@ -6,11 +6,13 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
 const CHART_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-const PAY_METHODS = { cash: 'Nağd', card: 'Kart', transfer: 'Köçürmə' };
+function getPayMethods(t) { return { cash: t('cash'), card: t('card'), transfer: t('transfer') }; }
 const CATEGORY_COLORS = {
   'İcarə': 'bg-purple-500/20 text-purple-400',
   'Maaş': 'bg-blue-500/20 text-blue-400',
@@ -29,7 +31,10 @@ function fmt(n) { return Number(n || 0).toFixed(2); }
 const EMPTY = { date: '', category: 'Digər', description: '', amount: '', payment_method: 'cash', notes: '' };
 
 export default function Expenses() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const PAY_METHODS = getPayMethods(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [expenses, setExpenses] = useState([]);
   const [stats, setStats] = useState(null);
@@ -222,7 +227,7 @@ export default function Expenses() {
           <div className="bg-dark-900 border border-red-800/30 bg-red-900/10 rounded-xl p-4">
             <p className="text-xs text-dark-400 mb-1">Ümumi Xərc</p>
             <p className="text-2xl font-black text-red-400">{fmt(totalExpenses)}</p>
-            <p className="text-[10px] text-dark-500 mt-0.5">₼ məcmu</p>
+            <p className="text-[10px] text-dark-500 mt-0.5">{csym} məcmu</p>
           </div>
           <div className="bg-dark-900 border border-dark-800 rounded-xl p-4">
             <p className="text-xs text-dark-400 mb-1">Ǝməliyyat</p>
@@ -232,12 +237,12 @@ export default function Expenses() {
           <div className="bg-dark-900 border border-dark-800 rounded-xl p-4">
             <p className="text-xs text-dark-400 mb-1">Ort. Xərc</p>
             <p className="text-2xl font-black text-amber-400">{fmt(avgExpense)}</p>
-            <p className="text-[10px] text-dark-500 mt-0.5">₼ orta</p>
+            <p className="text-[10px] text-dark-500 mt-0.5">{csym} orta</p>
           </div>
           <div className="bg-dark-900 border border-dark-800 rounded-xl p-4">
             <p className="text-xs text-dark-400 mb-1">Maks. Xərc</p>
             <p className="text-2xl font-black text-purple-400">{fmt(maxExpense)}</p>
-            <p className="text-[10px] text-dark-500 mt-0.5">₼ maksimum</p>
+            <p className="text-[10px] text-dark-500 mt-0.5">{csym} maksimum</p>
           </div>
         </div>
       </div>
@@ -256,7 +261,7 @@ export default function Expenses() {
                       <Pie data={chartData} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2}>
                         {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
-                      <Tooltip formatter={(v) => `${Number(v).toFixed(2)} ₼`} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }} />
+                      <Tooltip formatter={(v) => `${Number(v).toFixed(2)} ${csym}`} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex-1 space-y-1">
@@ -266,7 +271,7 @@ export default function Expenses() {
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
                           <span className="text-xs text-dark-400 truncate max-w-[100px]">{c.name}</span>
                         </div>
-                        <span className="text-xs font-semibold text-white">{fmt(c.value)} ₼</span>
+                        <span className="text-xs font-semibold text-white">{fmt(c.value)} {csym}</span>
                       </div>
                     ))}
                   </div>
@@ -282,7 +287,7 @@ export default function Expenses() {
                   <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }}
-                    formatter={(v) => [`${Number(v).toFixed(2)} ₼`, 'Xərc']} />
+                    formatter={(v) => [`${Number(v).toFixed(2)} ${csym}`, 'Xərc']} />
                   <Bar dataKey="amount" fill="#ef4444" radius={[3,3,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -356,7 +361,7 @@ export default function Expenses() {
                   </td>
                   <td className="px-4 py-3 text-sm text-dark-300 max-w-xs truncate">{exp.description || '-'}</td>
                   <td className="px-4 py-3 text-sm text-dark-400">{PAY_METHODS[exp.payment_method] || exp.payment_method}</td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-red-400">{fmt(exp.amount)} ₼</td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-red-400">{fmt(exp.amount)} {csym}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={() => openEdit(exp)} className="p-1.5 hover:bg-dark-700 text-dark-400 hover:text-white rounded-lg transition-colors">
@@ -407,7 +412,7 @@ export default function Expenses() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-dark-400 mb-1.5">Məbləğ (₼) *</label>
+                  <label className="block text-xs font-medium text-dark-400 mb-1.5">Məbləğ ({csym}) *</label>
                   <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
                     className="w-full bg-dark-800 border border-dark-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-primary-500"
                     placeholder="0.00" min="0" step="0.01" />

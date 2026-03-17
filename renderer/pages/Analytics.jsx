@@ -8,6 +8,8 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../utils/currency';
 
 const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
 
@@ -20,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <p className="text-xs text-dark-400 mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="text-xs font-semibold" style={{ color: p.color }}>
-          {p.name}: {p.value?.toFixed ? p.value.toFixed(2) : p.value} ₼
+          {p.name}: {p.value?.toFixed ? p.value.toFixed(2) : p.value} {csym}
         </p>
       ))}
     </div>
@@ -28,7 +30,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Analytics() {
-  const { currentUser, isAdmin } = useApp();
+  const { currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('30');
@@ -158,9 +162,9 @@ export default function Analytics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Ümumi Gəlir', value: `${fmt(summary.revenue)} ₼`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-900/20 border-emerald-800/30' },
-          { label: 'Ümumi Xərc', value: `${fmt(summary.expenses)} ₼`, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-900/20 border-red-800/30' },
-          { label: `Mənfəət (${profitMargin}%)`, value: `${fmt(profit)} ₼`, icon: DollarSign, color: profit >= 0 ? 'text-emerald-400' : 'text-red-400', bg: profit >= 0 ? 'bg-emerald-900/20 border-emerald-800/30' : 'bg-red-900/20 border-red-800/30' },
+          { label: 'Ümumi Gəlir', value: `${fmt(summary.revenue)} ${csym}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-900/20 border-emerald-800/30' },
+          { label: 'Ümumi Xərc', value: `${fmt(summary.expenses)} ${csym}`, icon: TrendingDown, color: 'text-red-400', bg: 'bg-red-900/20 border-red-800/30' },
+          { label: `Mənfəət (${profitMargin}%)`, value: `${fmt(profit)} ${csym}`, icon: DollarSign, color: profit >= 0 ? 'text-emerald-400' : 'text-red-400', bg: profit >= 0 ? 'bg-emerald-900/20 border-emerald-800/30' : 'bg-red-900/20 border-red-800/30' },
           { label: 'Satış sayı', value: summary.sales, icon: ShoppingCart, color: 'text-blue-400', bg: 'bg-blue-900/20 border-blue-800/30' },
         ].map((kpi, i) => {
           const Icon = kpi.icon;
@@ -231,7 +235,7 @@ export default function Analytics() {
                         <span className="text-dark-600 font-mono w-4 text-right flex-shrink-0">{i + 1}.</span>
                         {p.name}
                       </span>
-                      <span className="text-xs font-semibold text-white flex-shrink-0">{fmt(p.revenue)} ₼</span>
+                      <span className="text-xs font-semibold text-white flex-shrink-0">{fmt(p.revenue)} {csym}</span>
                     </div>
                     <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
@@ -259,7 +263,7 @@ export default function Analytics() {
                   <Pie data={paymentMethods} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3}>
                     {paymentMethods.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => `${fmt(v)} ₼`} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }} />
+                  <Tooltip formatter={(v) => `${fmt(v)} ${csym}`} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-2">
@@ -274,7 +278,7 @@ export default function Analytics() {
                       </div>
                       <div className="text-right">
                         <span className="text-xs font-semibold text-white">{pct}%</span>
-                        <p className="text-[10px] text-dark-500">{fmt(p.value)} ₼</p>
+                        <p className="text-[10px] text-dark-500">{fmt(p.value)} {csym}</p>
                       </div>
                     </div>
                   );

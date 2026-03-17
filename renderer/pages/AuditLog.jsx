@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Search, Filter, Trash2, X, RefreshCw, Clock, User, FileSpreadsheet, Calendar } from 'lucide-react';
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ACTION_COLORS = {
   LOGIN: 'text-emerald-400 bg-emerald-500/10',
@@ -18,6 +19,7 @@ const ACTION_COLORS = {
 
 export default function AuditLog() {
   const { showNotification } = useApp();
+  const { t } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { User, Clock, CheckCircle, AlertCircle, Calendar, FileText, TrendingUp, Bell, Settings, LogOut } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function UserWorkspace() {
   const { currentUser, showNotification } = useApp();
+  const { t } = useLanguage();
   const [stats, setStats] = useState({ todayTasks: 0, completedTasks: 0, pendingTasks: 0 });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -4,6 +4,9 @@ import {
   ArrowUpRight, ArrowDownRight, Calendar, RefreshCw
 } from 'lucide-react';
 import { useApp } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getCurrencySymbol } from '../utils/currency';
+import { apiBridge } from '../api/bridge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 
 function fmt(n) { return Number(n || 0).toFixed(2); }
@@ -17,16 +20,21 @@ const PRESETS = [
   { label: 'Keçən ay', start: (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return d.toISOString().split('T')[0]; })(), end: (() => { const d = new Date(now.getFullYear(), now.getMonth(), 0); return d.toISOString().split('T')[0]; })() },
 ];
 
-const METHOD_CONFIG = [
-  { key: 'cash',     label: 'Nağd',     color: '#10b981', bg: 'from-emerald-900/40 to-emerald-950/60 border-emerald-700/30' },
-  { key: 'card',     label: 'Kart',     color: '#3b82f6', bg: 'from-blue-900/40 to-blue-950/60 border-blue-700/30' },
-  { key: 'transfer', label: 'Köçürmə', color: '#8b5cf6', bg: 'from-violet-900/40 to-violet-950/60 border-violet-700/30' },
-  { key: 'debt',     label: 'Borc',    color: '#ef4444', bg: 'from-red-900/40 to-red-950/60 border-red-700/30' },
-  { key: 'partial',  label: 'Qismən',  color: '#f59e0b', bg: 'from-amber-900/40 to-amber-950/60 border-amber-700/30' },
-];
+function getMethodConfig(t) {
+  return [
+    { key: 'cash',     label: t('cash'),     color: '#10b981', bg: 'from-emerald-900/40 to-emerald-950/60 border-emerald-700/30' },
+    { key: 'card',     label: t('card'),     color: '#3b82f6', bg: 'from-blue-900/40 to-blue-950/60 border-blue-700/30' },
+    { key: 'transfer', label: t('transfer'), color: '#8b5cf6', bg: 'from-violet-900/40 to-violet-950/60 border-violet-700/30' },
+    { key: 'debt',     label: t('statusDebt'),    color: '#ef4444', bg: 'from-red-900/40 to-red-950/60 border-red-700/30' },
+    { key: 'partial',  label: t('statusPartial'),  color: '#f59e0b', bg: 'from-amber-900/40 to-amber-950/60 border-amber-700/30' },
+  ];
+}
 
 export default function Finance() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const METHOD_CONFIG = getMethodConfig(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [data, setData] = useState(null);
   const [payStats, setPayStats] = useState([]);
@@ -47,15 +55,30 @@ export default function Finance() {
     setLoading(true);
     try {
       const year = new Date().getFullYear();
-      const [res, pres, revRes] = await Promise.all([
-        window.api.getFinanceSummary(startDate, endDate, userId),
-        window.api.getSalesPaymentStats(startDate, endDate, userId),
-        window.api.getMonthlyRevenue(year, userId),
+      const [finRes, revRes] = await Promise.all([
+        apiBridge.getFinanceSummary(startDate, endDate, userId),
+        apiBridge.getMonthlyRevenue(year, userId),
       ]);
-      if (res.success) setData(res.data);
-      else showNotification(res.error || 'Xəta', 'error');
-      if (pres.success) setPayStats(pres.data || []);
-      if (revRes.success) setMonthlyRev(revRes.data || []);
+      if (finRes?.success) {
+        const d = finRes.data;
+        setData({
+          income: d.total_income || 0,
+          serviceRevenue: d.records_income || 0,
+          salesRevenue: d.sales_income || 0,
+          expenses: d.total_expense || 0,
+          profit: d.net_profit || 0,
+          debt: d.total_debt || 0,
+          cashBalance: d.cash_balance || 0,
+          totalPaid: d.total_paid || 0,
+          expensesByCategory: d.expense_by_category || [],
+          recordCount: d.record_count || 0,
+          saleCount: d.sale_count || 0,
+          expenseCount: d.expense_count || 0,
+        });
+      } else {
+        showNotification(finRes?.error || 'Xəta', 'error');
+      }
+      if (revRes?.success) setMonthlyRev(revRes.data || []);
     } catch (e) {
       showNotification('Xəta: ' + e.message, 'error');
     } finally {
@@ -65,25 +88,17 @@ export default function Finance() {
 
   const AZ_MONTHS = ['Yan','Fev','Mar','Apr','May','İyn','İyl','Avq','Sen','Okt','Noy','Dek'];
 
-  const combinedChartData = (() => {
-    const expMap = {};
-    (data?.monthlyExpenses || []).forEach(m => { expMap[m.month] = m.total; });
-    return monthlyRev.map(r => ({
-      name: AZ_MONTHS[(parseInt(r.month) - 1)] || r.month,
-      'Gəlir': Number((r.total || 0).toFixed(2)),
-      'Xərc': Number((expMap[r.month] || 0).toFixed(2)),
-    }));
-  })();
+  const combinedChartData = monthlyRev.map(r => ({
+    name: AZ_MONTHS[(parseInt(r.month) - 1)] || r.month,
+    'Gəlir': Number((r.total || 0).toFixed(2)),
+    'Servis': Number((r.records || 0).toFixed(2)),
+    'Satış': Number((r.sales || 0).toFixed(2)),
+  }));
 
-  const monthlyChartData = data?.monthlyExpenses?.slice().reverse().map(m => ({
-    name: m.month,
-    xərc: m.total,
-  })) || [];
-
-  const pieData = data?.expensesByCategory?.slice(0, 6).map(c => ({
+  const pieData = (data?.expensesByCategory || []).slice(0, 6).map(c => ({
     name: c.category,
     value: c.total,
-  })) || [];
+  }));
 
   return (
     <div className="h-full overflow-y-auto">
@@ -149,7 +164,7 @@ export default function Finance() {
                         ? <ArrowUpRight size={14} className="text-emerald-400" />
                         : <ArrowDownRight size={14} className="text-red-400" />}
                     </div>
-                    <p className="text-2xl font-bold text-white">{fmt(kpi.value)} ₼</p>
+                    <p className="text-2xl font-bold text-white">{fmt(kpi.value)} {csym}</p>
                     <p className="text-xs text-dark-400 mt-1">{kpi.label}</p>
                   </div>
                 );
@@ -162,10 +177,10 @@ export default function Finance() {
                 <div>
                   <p className="text-sm text-dark-400 mb-1">Xalis Mənfəət</p>
                   <p className={`text-4xl font-black ${data.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {data.profit >= 0 ? '+' : ''}{fmt(data.profit)} ₼
+                    {data.profit >= 0 ? '+' : ''}{fmt(data.profit)} {csym}
                   </p>
                   <p className="text-sm text-dark-400 mt-2">
-                    Gəlir: {fmt(data.income)} ₼ — Xərc: {fmt(data.expenses)} ₼
+                    Gəlir: {fmt(data.income)} {csym} — Xərc: {fmt(data.expenses)} {csym}
                   </p>
                 </div>
                 <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${data.profit >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
@@ -195,7 +210,7 @@ export default function Finance() {
                 <TrendingDown size={20} className="text-amber-400 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-amber-400">Ödənilməmiş Borclar</p>
-                  <p className="text-xs text-dark-400">Müştərilərdən alınmalı: <span className="text-amber-400 font-bold">{fmt(data.debt)} ₼</span></p>
+                  <p className="text-xs text-dark-400">Müştərilərdən alınmalı: <span className="text-amber-400 font-bold">{fmt(data.debt)} {csym}</span></p>
                 </div>
               </div>
             )}
@@ -224,9 +239,9 @@ export default function Finance() {
                           <span className="text-xs font-semibold text-white">{mc.label}</span>
                           <span className="text-xs px-2 py-0.5 bg-dark-900/50 rounded-full text-dark-300">{count}</span>
                         </div>
-                        <p className="text-lg font-bold text-white mb-1">{fmt(total)} ₼</p>
+                        <p className="text-lg font-bold text-white mb-1">{fmt(total)} {csym}</p>
                         {unpaid > 0 && (
-                          <p className="text-xs text-red-400">Qalıq: {fmt(unpaid)} ₼</p>
+                          <p className="text-xs text-red-400">Qalıq: {fmt(unpaid)} {csym}</p>
                         )}
                         <div className="mt-2 h-1 bg-dark-900/50 rounded-full">
                           <div className="h-1 rounded-full transition-all duration-700"
@@ -252,10 +267,10 @@ export default function Finance() {
                       <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} />
                       <YAxis tick={{ fill: '#64748b', fontSize: 9 }} />
                       <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px' }}
-                        formatter={(v, name) => [`${v.toFixed(2)} ₼`, name]} />
+                        formatter={(v, name) => [`${v.toFixed(2)} ${csym}`, name]} />
                       <Legend wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }} />
-                      <Bar dataKey="Gəlir" fill="#10b981" radius={[3,3,0,0]} maxBarSize={18} />
-                      <Bar dataKey="Xərc" fill="#ef4444" radius={[3,3,0,0]} maxBarSize={18} />
+                      <Bar dataKey="Servis" fill="#3b82f6" radius={[3,3,0,0]} maxBarSize={18} />
+                      <Bar dataKey="Satış" fill="#10b981" radius={[3,3,0,0]} maxBarSize={18} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -273,7 +288,7 @@ export default function Finance() {
                         <Pie data={pieData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
                           {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                         </Pie>
-                        <Tooltip formatter={(v) => `${fmt(v)} ₼`} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px' }} />
+                        <Tooltip formatter={(v) => `${fmt(v)} ${csym}`} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="flex-1 space-y-1.5">
@@ -283,7 +298,7 @@ export default function Finance() {
                             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                             <span className="text-xs text-dark-400 truncate">{item.name}</span>
                           </div>
-                          <span className="text-xs font-medium text-white flex-shrink-0">{fmt(item.value)} ₼</span>
+                          <span className="text-xs font-medium text-white flex-shrink-0">{fmt(item.value)} {csym}</span>
                         </div>
                       ))}
                     </div>

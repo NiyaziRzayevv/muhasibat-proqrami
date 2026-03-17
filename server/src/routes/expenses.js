@@ -78,6 +78,18 @@ router.post('/', requireAuth, async (req, res, next) => {
     };
 
     const created = await prisma.expense.create({ data });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'create',
+        entityType: 'expense',
+        entityId: created.id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+        newData: { amount: created.amount, category: created.category },
+      }
+    }).catch(() => {});
+
     res.json({ success: true, data: mapExpense(created) });
   } catch (err) { next(err); }
 });
@@ -98,6 +110,18 @@ router.put('/:id', requireAuth, async (req, res, next) => {
     };
 
     const updated = await prisma.expense.update({ where: { id }, data });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'update',
+        entityType: 'expense',
+        entityId: id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+        newData: { amount: updated.amount, category: updated.category },
+      }
+    }).catch(() => {});
+
     res.json({ success: true, data: mapExpense(updated) });
   } catch (err) { next(err); }
 });
@@ -106,6 +130,17 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     await prisma.expense.update({ where: { id }, data: { deletedAt: new Date() } });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'delete',
+        entityType: 'expense',
+        entityId: id,
+        userId: req.user.id,
+        userName: req.user.fullName || req.user.username,
+      }
+    }).catch(() => {});
+
     res.json({ success: true });
   } catch (err) { next(err); }
 });

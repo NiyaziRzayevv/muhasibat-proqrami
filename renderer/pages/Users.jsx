@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users as UsersIcon, Plus, Edit3, Trash2, Shield, CheckCircle, X, Key, Eye, EyeOff, UserCheck, UserX, Clock, Phone, Mail, AlertCircle, Calendar, Infinity, Ban, Zap } from 'lucide-react';
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ROLE_COLORS = {
   admin: 'bg-red-500/20 text-red-400',
@@ -15,6 +16,7 @@ const EMPTY = { username: '', password: '', full_name: '', email: '', role_id: '
 
 export default function Users() {
   const { showNotification, currentUser } = useApp();
+  const { t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);

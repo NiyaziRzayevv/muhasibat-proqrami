@@ -77,6 +77,9 @@ model User {
   stockMovementsCreated StockMovement[] @relation("StockMovementCreatedBy")
   appointmentsCreated Appointment[] @relation("AppointmentCreatedBy")
   tasksCreated Task[] @relation("TaskCreatedBy")
+  assetsCreated Asset[] @relation("AssetCreatedBy")
+  financeTransactions FinanceTransaction[] @relation("FinanceTransactionCreatedBy")
+  debtPayments DebtPayment[] @relation("DebtPaymentCreatedBy")
 
   @@map("users")
 }
@@ -439,4 +442,66 @@ model Task {
   @@index([priority])
   @@index([dueDate])
   @@map("tasks")
+}
+
+model Asset {
+  id          Int       @id @default(autoincrement())
+  name        String
+  category    String    @default("Avadanlıq")
+  serialNumber String?  @map("serial_number")
+  purchaseDate String?  @map("purchase_date")
+  purchasePrice Float?  @map("purchase_price")
+  currentValue  Float?  @map("current_value")
+  location    String?
+  status      String    @default("active")
+  condition   String    @default("yaxşı")
+  notes       String?
+  createdById Int?      @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  createdBy User? @relation("AssetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([category])
+  @@map("assets")
+}
+
+model FinanceTransaction {
+  id            Int       @id @default(autoincrement())
+  date          String
+  type          String
+  category      String?
+  amount        Float     @default(0)
+  description   String?
+  refType       String?   @map("ref_type")
+  refId         Int?      @map("ref_id")
+  paymentMethod String    @default("cash") @map("payment_method")
+  createdById   Int?      @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  createdBy User? @relation("FinanceTransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([type])
+  @@index([refType, refId])
+  @@map("finance_transactions")
+}
+
+model DebtPayment {
+  id            Int       @id @default(autoincrement())
+  debtType      String    @map("debt_type")
+  debtId        Int       @map("debt_id")
+  amount        Float     @default(0)
+  paymentMethod String    @default("cash") @map("payment_method")
+  notes         String?
+  createdById   Int?      @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  createdBy User? @relation("DebtPaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([debtType, debtId])
+  @@index([createdAt])
+  @@map("debt_payments")
 }

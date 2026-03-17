@@ -313,6 +313,60 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
   CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
   CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+
+  CREATE TABLE IF NOT EXISTS assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT DEFAULT 'Avadanlıq',
+    serial_number TEXT,
+    purchase_date TEXT,
+    purchase_price REAL,
+    current_value REAL,
+    location TEXT,
+    status TEXT DEFAULT 'active',
+    condition TEXT DEFAULT 'yaxşı',
+    notes TEXT,
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    deleted_at TEXT,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_assets_status ON assets(status);
+  CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category);
+
+  CREATE TABLE IF NOT EXISTS finance_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    type TEXT NOT NULL,
+    category TEXT,
+    amount REAL DEFAULT 0,
+    description TEXT,
+    ref_type TEXT,
+    ref_id INTEGER,
+    payment_method TEXT DEFAULT 'cash',
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_finance_tx_date ON finance_transactions(date);
+  CREATE INDEX IF NOT EXISTS idx_finance_tx_type ON finance_transactions(type);
+
+  CREATE TABLE IF NOT EXISTS debt_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    debt_type TEXT NOT NULL,
+    debt_id INTEGER NOT NULL,
+    amount REAL DEFAULT 0,
+    payment_method TEXT DEFAULT 'cash',
+    notes TEXT,
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_debt_payments_ref ON debt_payments(debt_type, debt_id);
 `;
 
 module.exports = { SCHEMA };

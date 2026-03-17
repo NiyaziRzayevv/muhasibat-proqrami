@@ -5,8 +5,10 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { useApp } from '../App';
+import { getCurrencySymbol } from '../utils/currency';
 import { apiBridge } from '../api/bridge';
 import { apiRequest } from '../api/http';
+import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -16,7 +18,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 function fmt(n) {
   if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(2)} ₼`;
+  return `${Number(n).toFixed(2)}`;
 }
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -34,7 +36,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Reports() {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t, translations } = useLanguage();
+  const csym = getCurrencySymbol(currency);
   const userId = isAdmin ? null : currentUser?.id;
   const [tab, setTab] = useState('monthly');
   const [year, setYear] = useState(new Date().getFullYear());
@@ -270,7 +274,7 @@ export default function Reports() {
                 <BarChart data={monthlyData} barSize={30}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}₼`} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}${csym}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} />
                   <Bar dataKey="total" name="Gəlir" radius={[4, 4, 0, 0]}>
                     {monthlyData.map((_, i) => (
@@ -454,7 +458,7 @@ export default function Reports() {
                   <BarChart data={monthlySales} barSize={24}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                     <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}₼`} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}${csym}`} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(16,185,129,0.06)' }} />
                     <Bar dataKey="total" name="Satış" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>

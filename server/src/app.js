@@ -28,6 +28,10 @@ const vehiclesRouter = require('./routes/vehicles');
 const notificationsRouter = require('./routes/notifications');
 const appointmentsRouter = require('./routes/appointments');
 const tasksRouter = require('./routes/tasks');
+let assetsRouter, financeRouter, debtsRouter;
+try { assetsRouter = require('./routes/assets'); } catch(e) { console.warn('assets route not found, skipping'); }
+try { financeRouter = require('./routes/finance'); } catch(e) { console.warn('finance route not found, skipping'); }
+try { debtsRouter = require('./routes/debts'); } catch(e) { console.warn('debts route not found, skipping'); }
 
 function createApp() {
   const app = express();
@@ -74,6 +78,9 @@ function createApp() {
   app.use('/notifications', notificationsRouter);
   app.use('/appointments', appointmentsRouter);
   app.use('/tasks', tasksRouter);
+  if (assetsRouter) app.use('/assets', assetsRouter);
+  if (financeRouter) app.use('/finance', financeRouter);
+  if (debtsRouter) app.use('/debts', debtsRouter);
   app.use('/backup', backupRouter);
 
   app.use((err, req, res, _next) => {

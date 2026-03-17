@@ -124,4 +124,68 @@ router.post('/out', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Stock Adjust — set to exact quantity
+router.post('/adjust', requireAuth, async (req, res, next) => {
+  try {
+    const { product_id, productId, new_quantity, newQuantity, note } = req.body || {};
+    const pid = parseInt(product_id || productId);
+    const newQty = parseFloat(new_quantity ?? newQuantity);
+    if (!pid || !Number.isFinite(newQty) || newQty < 0) {
+      return res.status(400).json({ success: false, error: 'validation_error' });
+    }
+
+    const product = await prisma.product.findUnique({ where: { id: pid } });
+    if (!product) return res.status(404).json({ success: false, error: 'Məhsul tapılmadı' });
+
+    const before = product.stockQty || 0;
+    const delta = newQty - before;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.product.update({
+        where: { id: pid },
+        data: { stockQty: newQty },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: pid,
+          movementType: 'duzelis',
+          qty: delta,
+          qtyBefore: before,
+          qtyAfter: newQty,
+          note: note || 'Manual düzəliş',
+          createdById: req.user.id,
+        }
+      });
+
+      return updated;
+    });
+
+    res.json({ success: true, data: { qty_before: before, qty_after: newQty, stock_qty: newQty } });
+  } catch (err) { next(err); }
+});
+
+// Stock Stats
+router.get('/stats', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+    const where = {};
+    if (userId) where.product = { is: { createdById: userId } };
+
+    const movements = await prisma.stockMovement.findMany({ where, include: { product: true } });
+
+    const inQty = movements.filter(m => m.qty > 0).reduce((s, m) => s + m.qty, 0);
+    const outQty = movements.filter(m => m.qty < 0).reduce((s, m) => s + Math.abs(m.qty), 0);
+
+    res.json({
+      success: true,
+      data: {
+        total_movements: movements.length,
+        total_in: inQty,
+        total_out: outQty,
+      }
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

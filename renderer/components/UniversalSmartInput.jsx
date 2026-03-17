@@ -5,14 +5,18 @@ import {
 } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { getCurrencySymbol } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const INTENT_CONFIG = {
-  servis:      { label: 'Servis Qeydi',    icon: Wrench,       color: 'blue',   bg: 'bg-blue-900/20 border-blue-700/40',   text: 'text-blue-400' },
-  stok_giris:  { label: 'Stok Giriş',      icon: ArrowDown,    color: 'emerald',bg: 'bg-emerald-900/20 border-emerald-700/40', text: 'text-emerald-400' },
-  stok_cixis:  { label: 'Stok Çıxış',      icon: ArrowUp,      color: 'red',    bg: 'bg-red-900/20 border-red-700/40',     text: 'text-red-400' },
-  satis:       { label: 'Satış',            icon: ShoppingCart, color: 'purple', bg: 'bg-purple-900/20 border-purple-700/40', text: 'text-purple-400' },
-  musteri:     { label: 'Yeni Müştəri',     icon: Users,        color: 'amber',  bg: 'bg-amber-900/20 border-amber-700/40', text: 'text-amber-400' },
-};
+function getIntentConfig(t) {
+  return {
+    servis:      { label: t('smartServiceRecord'), icon: Wrench,       color: 'blue',   bg: 'bg-blue-900/20 border-blue-700/40',   text: 'text-blue-400' },
+    stok_giris:  { label: t('stockIn'),            icon: ArrowDown,    color: 'emerald',bg: 'bg-emerald-900/20 border-emerald-700/40', text: 'text-emerald-400' },
+    stok_cixis:  { label: t('stockOut'),            icon: ArrowUp,      color: 'red',    bg: 'bg-red-900/20 border-red-700/40',     text: 'text-red-400' },
+    satis:       { label: t('smartSale'),           icon: ShoppingCart, color: 'purple', bg: 'bg-purple-900/20 border-purple-700/40', text: 'text-purple-400' },
+    musteri:     { label: t('smartNewCustomer'),     icon: Users,        color: 'amber',  bg: 'bg-amber-900/20 border-amber-700/40', text: 'text-amber-400' },
+  };
+}
 
 const EXAMPLES = [
   'ekran dəyişmə 50 manat',
@@ -50,7 +54,10 @@ function SelectField({ label, value, onChange, options }) {
 }
 
 export default function UniversalSmartInput({ onDone, compact = false }) {
-  const { showNotification, currentUser, isAdmin } = useApp();
+  const { showNotification, currentUser, isAdmin, currency } = useApp();
+  const { t } = useLanguage();
+  const csym = getCurrencySymbol(currency);
+  const INTENT_CONFIG = getIntentConfig(t);
   const userId = isAdmin ? null : currentUser?.id;
   const [input, setInput] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -100,7 +107,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
           const token = localStorage.getItem('auth_token') || '';
           res = await apiRequest('/parse/universal', { method: 'POST', token, body: { text: input.trim() } });
         } catch (e) {
-          setError('Parse xətası: ' + e.message);
+          setError(t('error') + ': ' + e.message);
           return;
         }
       }
@@ -140,9 +147,9 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         setResult(res);
         setFields(data);
       } else {
-        setError(res.error || 'Başa düşülmədi');
+        setError(res.error || t('smartNotUnderstood'));
       }
-    } catch (e) { setError('Xəta: ' + e.message); }
+    } catch (e) { setError(t('error') + ': ' + e.message); }
     finally { setParsing(false); }
   }, [input, products]);
 
@@ -229,16 +236,16 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             notes: data.notes || null,
           }});
         }
-        if (res.success) { showNotification('Servis qeydi əlavə edildi ✓', 'success'); reset(); onDone?.('records'); }
-        else showNotification(res.error || 'Xəta', 'error');
+        if (res.success) { showNotification(t('smartServiceAdded'), 'success'); reset(); onDone?.('records'); }
+        else showNotification(res.error || t('error'), 'error');
       }
 
       else if (intent === 'stok_giris' || intent === 'stok_cixis') {
         const qty = parseFloat(fields.qty) || 0;
-        if (qty <= 0) { showNotification('Miqdar daxil edin', 'error'); setSaving(false); return; }
+        if (qty <= 0) { showNotification(t('smartEnterQty'), 'error'); setSaving(false); return; }
 
         const productResult = await getOrCreateProduct(fields.product_id, fields.product_name || productSearch, fields.unit);
-        if (!productResult) { showNotification('Məhsul adı daxil edin', 'error'); setSaving(false); return; }
+        if (!productResult) { showNotification(t('smartEnterProduct'), 'error'); setSaving(false); return; }
 
         const { id: pid, created, product } = productResult;
         let res;
@@ -257,24 +264,24 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         if (res.success !== false) {
           const productName = product?.name || fields.product_name || productSearch;
           showNotification(
-            `${created ? `"${productName}" məhsulu yaradıldı. ` : ''}` +
-            (intent === 'stok_giris' ? `Stok artırıldı: +${qty}` : `Stok azaldıldı: -${qty}`),
+            `${created ? `"${productName}" ${t('createdSuccess')}. ` : ''}` +
+            (intent === 'stok_giris' ? `${t('smartStockIncreased')}: +${qty}` : `${t('smartStockDecreased')}: -${qty}`),
             'success'
           );
           reset(); onDone?.('stock-movements');
-        } else showNotification(res.error || 'Xəta', 'error');
+        } else showNotification(res.error || t('error'), 'error');
       }
 
       else if (intent === 'satis') {
         const qty = parseFloat(fields.qty) || 0;
-        if (qty <= 0) { showNotification('Miqdar daxil edin', 'error'); setSaving(false); return; }
+        if (qty <= 0) { showNotification(t('smartEnterQty'), 'error'); setSaving(false); return; }
 
         const effectiveSellPrice = parseFloat(fields.sell_price) || parseFloat(fields.price) || 0;
         const productResult = await getOrCreateProduct(
           fields.product_id, fields.product_name || productSearch,
           fields.unit, fields.buy_price, effectiveSellPrice
         );
-        if (!productResult) { showNotification('Məhsul adı daxil edin', 'error'); setSaving(false); return; }
+        if (!productResult) { showNotification(t('smartEnterProduct'), 'error'); setSaving(false); return; }
 
         const { id: pid, created, product } = productResult;
         const unitPrice = parseFloat(fields.sell_price) || parseFloat(fields.price) || product?.sell_price || 0;
@@ -303,16 +310,16 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         if (res.success) {
           const productName = product?.name || fields.product_name || productSearch;
           showNotification(
-            `${created ? `"${productName}" yaradıldı. ` : ''}` +
-            `Satış qeyd edildi: ${qty} → ${(qty * unitPrice).toFixed(2)} ₼`,
+            `${created ? `"${productName}" ${t('createdSuccess')}. ` : ''}` +
+            `${t('smartSaleRecorded')}: ${qty} → ${(qty * unitPrice).toFixed(2)} ${csym}`,
             'success'
           );
           reset(); onDone?.('sales');
-        } else showNotification(res.error || 'Xəta', 'error');
+        } else showNotification(res.error || t('error'), 'error');
       }
 
       else if (intent === 'musteri') {
-        if (!data.customer_name) { showNotification('Ad daxil edin', 'error'); setSaving(false); return; }
+        if (!data.customer_name) { showNotification(t('smartEnterName'), 'error'); setSaving(false); return; }
         let res;
         if (window.api?.createCustomer) {
           res = await window.api.createCustomer({ name: data.customer_name, phone: data.customer_phone || null, notes: data.notes || null, created_by: userId });
@@ -322,11 +329,11 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             name: data.customer_name, phone: data.customer_phone || null, notes: data.notes || null,
           }});
         }
-        if (res.success) { showNotification('Müştəri əlavə edildi ✓', 'success'); reset(); onDone?.('customers'); }
-        else showNotification(res.error || 'Xəta', 'error');
+        if (res.success) { showNotification(t('smartCustomerAdded'), 'success'); reset(); onDone?.('customers'); }
+        else showNotification(res.error || t('error'), 'error');
       }
 
-    } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
+    } catch (e) { showNotification(t('error') + ': ' + e.message, 'error'); }
     finally { setSaving(false); }
   };
 
@@ -360,7 +367,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             value={input}
             onChange={e => { setInput(e.target.value); if (result) setResult(null); if (error) setError(null); }}
             onKeyDown={handleKey}
-            placeholder={`Məs: "${EXAMPLES[exampleIdx]}" — yazın, Enter basın`}
+            placeholder={`${t('smartExamplePrefix')}: "${EXAMPLES[exampleIdx]}"`}
             data-smart-input="true"
             className="w-full pl-9 pr-4 py-2.5 bg-dark-700 border border-dark-600 rounded-xl text-white
               placeholder-dark-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500
@@ -370,7 +377,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         <button onClick={parseWithAI} disabled={!input.trim() || parsing || saving}
           className="btn-primary shrink-0 py-2.5 px-4">
           {parsing ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
-          {compact ? '' : 'Analiz'}
+          {compact ? '' : t('smartAnalyze')}
         </button>
         {result && (
           <button onClick={reset} className="btn-icon shrink-0"><X size={15} /></button>
@@ -382,7 +389,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         <div className="flex items-center gap-2 px-4 py-2.5 bg-red-900/20 border border-red-800/30 rounded-lg text-red-400 text-sm animate-fade-in">
           <AlertCircle size={14} />
           {error}
-          <span className="text-xs text-red-500 ml-1">— daha ətraflı yazın</span>
+          <span className="text-xs text-red-500 ml-1">— {t('smartWriteMore')}</span>
         </div>
       )}
 
@@ -397,7 +404,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
               {result.usedAI && (
                 <span className="text-[10px] px-1.5 py-0.5 bg-purple-900/50 text-purple-300 border border-purple-700/40 rounded-full">AI</span>
               )}
-              <span className="text-[10px] text-dark-500">{fields.confidence || 0}% əminlik</span>
+              <span className="text-[10px] text-dark-500">{fields.confidence || 0}% {t('smartConfidence')}</span>
             </div>
             <div className="flex items-center gap-2">
               <SelectField label="" value={intent} onChange={v => set('intent', v)}
@@ -410,16 +417,16 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             {/* SERVIS */}
             {intent === 'servis' && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <Field label="Kateqoriya" value={fields.car_brand} onChange={v => set('car_brand', v)} placeholder="Telefon, Elektronika..." />
-                <Field label="Marka / Model" value={fields.car_model} onChange={v => set('car_model', v)} placeholder="Samsung, Apple..." />
-                <Field label="Kod / Seriya" value={fields.car_plate} onChange={v => set('car_plate', v)} placeholder="SN-12345" />
-                <Field label="Müştəri adı" value={fields.customer_name} onChange={v => set('customer_name', v)} />
-                <Field label="Xidmət növü" value={fields.service_type} onChange={v => set('service_type', v)} placeholder="Ekran dəyişmə, Təmir..." />
-                <Field label="Qiymət (₼)" value={fields.price} onChange={v => set('price', v)} type="number" />
-                <Field label="Tarix" value={fields.date} onChange={v => set('date', v)} type="date" />
-                <SelectField label="Ödəniş" value={fields.payment_status || 'gozleyir'} onChange={v => set('payment_status', v)}
-                  options={[{value:'odenilib',label:'Ödənilib'},{value:'gozleyir',label:'Gözləyir'},{value:'qismen',label:'Qismən'},{value:'borc',label:'Borc'}]} />
-                <Field label="Qeyd" value={fields.notes} onChange={v => set('notes', v)} />
+                <Field label={t('category')} value={fields.car_brand} onChange={v => set('car_brand', v)} placeholder="Telefon, Elektronika..." />
+                <Field label={t('brand') + ' / ' + t('model')} value={fields.car_model} onChange={v => set('car_model', v)} placeholder="Samsung, Apple..." />
+                <Field label={t('smartCodeSerial')} value={fields.car_plate} onChange={v => set('car_plate', v)} placeholder="SN-12345" />
+                <Field label={t('customerName')} value={fields.customer_name} onChange={v => set('customer_name', v)} />
+                <Field label={t('serviceType')} value={fields.service_type} onChange={v => set('service_type', v)} />
+                <Field label={`${t('price')} (${t('currency')})`} value={fields.price} onChange={v => set('price', v)} type="number" />
+                <Field label={t('date')} value={fields.date} onChange={v => set('date', v)} type="date" />
+                <SelectField label={t('paymentMethod')} value={fields.payment_status || 'gozleyir'} onChange={v => set('payment_status', v)}
+                  options={[{value:'odenilib',label:t('statusPaid')},{value:'gozleyir',label:t('statusWaiting')},{value:'qismen',label:t('statusPartial')},{value:'borc',label:t('statusDebt')}]} />
+                <Field label={t('notes')} value={fields.notes} onChange={v => set('notes', v)} />
               </div>
             )}
 
@@ -427,13 +434,13 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             {(intent === 'stok_giris' || intent === 'stok_cixis') && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="label text-xs">Məhsul *</label>
+                  <label className="label text-xs">{t('products')} *</label>
                   <div className="relative">
                     <input className="input-field h-8 text-xs" value={productSearch}
                       onChange={e => { setProductSearch(e.target.value); setShowProductDrop(true); set('product_id', ''); }}
                       onFocus={() => setShowProductDrop(true)}
                       onBlur={() => setTimeout(() => setShowProductDrop(false), 180)}
-                      placeholder="Məhsul axtar..." />
+                      placeholder={t('searchProduct')} />
                     {showProductDrop && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-lg shadow-2xl z-50 max-h-40 overflow-y-auto">
                         {filteredProducts.slice(0, 8).map(p => (
@@ -443,24 +450,24 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
                             <span className="text-xs text-dark-400">{p.stock_qty} {p.unit}</span>
                           </button>
                         ))}
-                        {filteredProducts.length === 0 && <p className="text-xs text-dark-500 px-3 py-2">Tapılmadı</p>}
+                        {filteredProducts.length === 0 && <p className="text-xs text-dark-500 px-3 py-2">{t('noResults')}</p>}
                       </div>
                     )}
                   </div>
                   {selectedProduct ? (
                     <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-                      <CheckCircle size={11} /> Seçildi: <span className="font-medium">{selectedProduct.name}</span>
-                      <span className="text-dark-400 ml-1">· Stok: {selectedProduct.stock_qty} {selectedProduct.unit}</span>
+                      <CheckCircle size={11} /> {t('selected')}: <span className="font-medium">{selectedProduct.name}</span>
+                      <span className="text-dark-400 ml-1">· {t('stock')}: {selectedProduct.stock_qty} {selectedProduct.unit}</span>
                     </p>
                   ) : productSearch ? (
                     <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                      <AlertCircle size={11} /> "{productSearch}" adlı məhsul tapılmadı — siyahıdan seçin
+                      <AlertCircle size={11} /> "{productSearch}" {t('noResults')}
                     </p>
                   ) : null}
                 </div>
-                <Field label={`Miqdar (${selectedProduct?.unit || fields.unit || 'ədəd'})`} value={fields.qty} onChange={v => set('qty', v)} type="number" />
-                <Field label="Tarix" value={fields.date} onChange={v => set('date', v)} type="date" />
-                <Field label="Qeyd" value={fields.notes} onChange={v => set('notes', v)} />
+                <Field label={`${t('quantity')} (${selectedProduct?.unit || fields.unit || t('unit')})`} value={fields.qty} onChange={v => set('qty', v)} type="number" />
+                <Field label={t('date')} value={fields.date} onChange={v => set('date', v)} type="date" />
+                <Field label={t('notes')} value={fields.notes} onChange={v => set('notes', v)} />
               </div>
             )}
 
@@ -468,45 +475,45 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             {intent === 'satis' && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="label text-xs">Məhsul *</label>
+                  <label className="label text-xs">{t('products')} *</label>
                   <div className="relative">
                     <input className="input-field h-8 text-xs" value={productSearch}
                       onChange={e => { setProductSearch(e.target.value); setShowProductDrop(true); set('product_id', ''); }}
                       onFocus={() => setShowProductDrop(true)}
                       onBlur={() => setTimeout(() => setShowProductDrop(false), 180)}
-                      placeholder="Məhsul axtar..." />
+                      placeholder={t('searchProduct')} />
                     {showProductDrop && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-lg shadow-2xl z-50 max-h-40 overflow-y-auto">
                         {filteredProducts.slice(0, 8).map(p => (
                           <button key={p.id} onMouseDown={() => { set('product_id', p.id); setProductSearch(p.name); set('sell_price', p.sell_price); setShowProductDrop(false); }}
                             className="w-full flex items-center justify-between px-3 py-2 hover:bg-dark-700 text-left">
                             <span className="text-xs text-white">{p.name}</span>
-                            <span className="text-xs text-emerald-400">{p.sell_price} ₼</span>
+                            <span className="text-xs text-emerald-400">{p.sell_price} {csym}</span>
                           </button>
                         ))}
-                        {filteredProducts.length === 0 && <p className="text-xs text-dark-500 px-3 py-2">Tapılmadı</p>}
+                        {filteredProducts.length === 0 && <p className="text-xs text-dark-500 px-3 py-2">{t('noResults')}</p>}
                       </div>
                     )}
                   </div>
                   {selectedProduct ? (
                     <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-                      <CheckCircle size={11} /> Seçildi: <span className="font-medium">{selectedProduct.name}</span>
-                      <span className="text-dark-400 ml-1">· {selectedProduct.sell_price} ₼</span>
+                      <CheckCircle size={11} /> {t('selected')}: <span className="font-medium">{selectedProduct.name}</span>
+                      <span className="text-dark-400 ml-1">· {selectedProduct.sell_price} {csym}</span>
                     </p>
                   ) : productSearch ? (
                     <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                      <AlertCircle size={11} /> "{productSearch}" tapılmadı — siyahıdan seçin
+                      <AlertCircle size={11} /> "{productSearch}" {t('noResults')}
                     </p>
                   ) : null}
                 </div>
-                <Field label="Miqdar" value={fields.qty} onChange={v => set('qty', v)} type="number" />
-                <Field label="Satış qiyməti (₼)" value={fields.sell_price} onChange={v => set('sell_price', v)} type="number" />
-                <Field label="Müştəri adı" value={fields.customer_name} onChange={v => set('customer_name', v)} />
-                <Field label="Tarix" value={fields.date} onChange={v => set('date', v)} type="date" />
+                <Field label={t('quantity')} value={fields.qty} onChange={v => set('qty', v)} type="number" />
+                <Field label={`${t('sellPrice')} (${t('currency')})`} value={fields.sell_price} onChange={v => set('sell_price', v)} type="number" />
+                <Field label={t('customerName')} value={fields.customer_name} onChange={v => set('customer_name', v)} />
+                <Field label={t('date')} value={fields.date} onChange={v => set('date', v)} type="date" />
                 {fields.qty && fields.sell_price && (
                   <div className="col-span-3 px-3 py-2 bg-emerald-900/20 border border-emerald-800/30 rounded-lg">
                     <p className="text-xs text-emerald-400 font-semibold">
-                      Yekun: {(parseFloat(fields.qty || 0) * parseFloat(fields.sell_price || 0)).toFixed(2)} ₼
+                      {t('total')}: {(parseFloat(fields.qty || 0) * parseFloat(fields.sell_price || 0)).toFixed(2)} {csym}
                     </p>
                   </div>
                 )}
@@ -516,19 +523,19 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
             {/* MÜŞTƏRİ */}
             {intent === 'musteri' && (
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Ad Soyad *" value={fields.customer_name} onChange={v => set('customer_name', v)} placeholder="Əli Həsənov" />
-                <Field label="Telefon" value={fields.customer_phone} onChange={v => set('customer_phone', v)} placeholder="055 123 45 67" />
-                <Field label="Qeyd" value={fields.notes} onChange={v => set('notes', v)} />
+                <Field label={`${t('fullName')} *`} value={fields.customer_name} onChange={v => set('customer_name', v)} />
+                <Field label={t('phone')} value={fields.customer_phone} onChange={v => set('customer_phone', v)} placeholder="055 123 45 67" />
+                <Field label={t('notes')} value={fields.notes} onChange={v => set('notes', v)} />
               </div>
             )}
           </div>
 
           {/* Action buttons */}
           <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/5">
-            <button onClick={reset} className="btn-secondary text-xs py-1.5 px-3">Ləğv et</button>
+            <button onClick={reset} className="btn-secondary text-xs py-1.5 px-3">{t('cancel')}</button>
             <button onClick={handleConfirm} disabled={saving} className="btn-primary text-xs py-1.5 px-4">
               {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-              Təsdiqlə &amp; Yadda Saxla
+              {t('smartConfirmSave')}
             </button>
           </div>
         </div>

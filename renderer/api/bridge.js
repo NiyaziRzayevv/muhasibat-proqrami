@@ -258,8 +258,28 @@ function _buildRemoteProxy() {
     getOverdueTasks: (userId) => _remoteCall('/tasks/overdue', { query: userId ? { userId } : {} }),
     getTaskStats: (userId) => _remoteCall('/tasks/stats', { query: userId ? { userId } : {} }),
 
-    // Finance
-    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/stats/sales', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    // Record Payment
+    updateRecordPayment: (id, paidAmount, status) => _remoteCall(`/records/${id}/payment`, { method: 'PUT', body: { paid_amount: paidAmount, payment_status: status } }),
+
+    // Assets
+    getAssets: (filters) => _remoteCall('/assets', { query: filters }),
+    getAsset: (id) => _remoteCall(`/assets/${id}`),
+    createAsset: (data) => _remoteCall('/assets', { method: 'POST', body: data }),
+    updateAsset: (id, data) => _remoteCall(`/assets/${id}`, { method: 'PUT', body: data }),
+    deleteAsset: (id) => _remoteCall(`/assets/${id}`, { method: 'DELETE' }),
+    getAssetCategories: () => _remoteCall('/assets/meta/categories'),
+
+    // Debts (unified)
+    getDebts: (filters) => _remoteCall('/debts', { query: filters }),
+    payDebt: (data) => _remoteCall('/debts/pay', { method: 'POST', body: data }),
+    getDebtPayments: (filters) => _remoteCall('/debts/payments', { query: filters }),
+    getDebtStatsUnified: (userId) => _remoteCall('/debts/stats', { query: userId ? { userId } : {} }),
+
+    // Finance (enhanced)
+    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/finance/summary', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getFinanceTransactions: (filters) => _remoteCall('/finance/transactions', { query: filters }),
+    createFinanceTransaction: (data) => _remoteCall('/finance/transactions', { method: 'POST', body: data }),
+    deleteFinanceTransaction: (id) => _remoteCall(`/finance/transactions/${id}`, { method: 'DELETE' }),
 
     // Backup (not available in remote mode)
     createBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
@@ -838,5 +858,125 @@ export const apiBridge = {
       return await r.json();
     }
     return await window.api.getTaskStats(userId);
+  }),
+
+  // ─── Finance ──────────────────────────────────────────────────────────
+  getFinanceSummary: (startDate, endDate, userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams({ ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) }).toString();
+      const r = await fetch(`${resolveBaseUrl()}/finance/summary?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getFinanceSummary(startDate, endDate, userId);
+  }),
+
+  getFinanceTransactions: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/finance/transactions?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getFinanceTransactions(filters);
+  }),
+
+  createFinanceTransaction: (data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/finance/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.createFinanceTransaction(data);
+  }),
+
+  // ─── Debts (unified) ─────────────────────────────────────────────────
+  getDebts: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/debts?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getDebts(filters);
+  }),
+
+  payDebt: (data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/debts/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.payDebt(data);
+  }),
+
+  getDebtPayments: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/debts/payments?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getDebtPayments(filters);
+  }),
+
+  // ─── Assets ───────────────────────────────────────────────────────────
+  getAssets: (filters) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams(filters || {}).toString();
+      const r = await fetch(`${resolveBaseUrl()}/assets?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.getAssets(filters);
+  }),
+
+  createAsset: (data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/assets`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.createAsset(data);
+  }),
+
+  updateAsset: (id, data) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/assets/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
+      return await r.json();
+    }
+    return await window.api.updateAsset(id, data);
+  }),
+
+  deleteAsset: (id) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/assets/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    return await window.api.deleteAsset(id);
+  }),
+
+  // ─── Record Payment ──────────────────────────────────────────────────
+  updateRecordPayment: (id, paidAmount, status) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const r = await fetch(`${resolveBaseUrl()}/records/${id}/payment`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ paid_amount: paidAmount, payment_status: status }) });
+      return await r.json();
+    }
+    return await window.api.updateRecordPayment(id, paidAmount, status);
+  }),
+
+  // ─── Sales Payment Stats ─────────────────────────────────────────────
+  getSalesPaymentStats: (startDate, endDate, userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      const params = new URLSearchParams({ ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) }).toString();
+      const r = await fetch(`${resolveBaseUrl()}/sales/payment-stats?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      return await r.json();
+    }
+    if (window.api?.getSalesPaymentStats) return await window.api.getSalesPaymentStats(startDate, endDate, userId);
+    return { success: true, data: [] };
   }),
 };

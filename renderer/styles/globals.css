@@ -228,6 +228,225 @@
   }
 }
 
+/* ===== LIGHT MODE OVERRIDES ===== */
+.light {
+  --bg-body: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-input: #f8fafc;
+  --bg-table-head: #f1f5f9;
+  --border-color: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-hover: #94a3b8;
+}
+
+.light body,
+.light #root {
+  background-color: var(--bg-body) !important;
+  color: var(--text-primary) !important;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
+
+/* Cards */
+.light .card,
+.light .card-hover,
+.light .card-pro {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+.light .card-hover:hover {
+  border-color: var(--border-hover) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Buttons */
+.light .btn-secondary {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+.light .btn-secondary:hover {
+  background: #f1f5f9 !important;
+  border-color: var(--border-hover) !important;
+}
+.light .btn-icon {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+.light .btn-icon:hover {
+  background: #f1f5f9 !important;
+  color: var(--text-primary) !important;
+}
+.light .btn-danger {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Inputs */
+.light .input-field,
+.light .select-field {
+  background: var(--bg-input) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+.light .input-field::placeholder {
+  color: var(--text-faint) !important;
+}
+.light .input-field:focus,
+.light .select-field:focus {
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Labels */
+.light .label {
+  color: var(--text-secondary) !important;
+}
+
+/* Tables */
+.light .table-container {
+  border-color: var(--border-color) !important;
+}
+.light .data-table thead tr {
+  background: var(--bg-table-head) !important;
+  border-color: var(--border-color) !important;
+}
+.light .data-table th {
+  color: var(--text-muted) !important;
+}
+.light .data-table tbody tr {
+  border-color: #f1f5f9 !important;
+}
+.light .data-table tbody tr:hover {
+  background: #f8fafc !important;
+}
+.light .data-table td {
+  color: var(--text-secondary) !important;
+}
+
+/* Modal */
+.light .modal-overlay {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+.light .modal-content {
+  background: #ffffff !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Page elements */
+.light .page-title {
+  color: var(--text-primary) !important;
+}
+.light .page-subtitle {
+  color: var(--text-muted) !important;
+}
+
+/* General bg overrides for dark-* utility classes */
+.light [class*="bg-dark-950"],
+.light [class*="bg-dark-900"] {
+  background-color: var(--bg-body) !important;
+}
+.light [class*="bg-dark-850"],
+.light [class*="bg-dark-800"] {
+  background-color: var(--bg-card) !important;
+}
+.light [class*="bg-dark-700"] {
+  background-color: #f1f5f9 !important;
+}
+.light [class*="bg-dark-600"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Text color overrides */
+.light .text-white {
+  color: var(--text-primary) !important;
+}
+.light [class*="text-dark-100"],
+.light [class*="text-dark-200"] {
+  color: var(--text-secondary) !important;
+}
+.light [class*="text-dark-300"] {
+  color: var(--text-secondary) !important;
+}
+.light [class*="text-dark-400"] {
+  color: var(--text-muted) !important;
+}
+.light [class*="text-dark-500"],
+.light [class*="text-dark-600"] {
+  color: var(--text-faint) !important;
+}
+
+/* Border overrides */
+.light [class*="border-dark-700"],
+.light [class*="border-dark-600"] {
+  border-color: var(--border-color) !important;
+}
+.light [class*="border-dark-800"],
+.light [class*="border-dark-500"] {
+  border-color: var(--border-color) !important;
+}
+
+/* Sidebar */
+.light aside,
+.light nav {
+  background: var(--bg-sidebar) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Divider */
+.light .divider {
+  border-color: var(--border-color) !important;
+}
+
+/* Glass effects */
+.light .glass {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: var(--border-color) !important;
+}
+.light .glass-dark {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Status badges - keep colored but lighter in light mode */
+.light .status-odenilib { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; }
+.light .status-gozleyir { background: rgba(245, 158, 11, 0.1) !important; border-color: rgba(245, 158, 11, 0.3) !important; }
+.light .status-qismen { background: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.3) !important; }
+.light .status-borc { background: rgba(239, 68, 68, 0.1) !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+
+/* Focus ring offset */
+.light .btn-primary { --tw-ring-offset-color: #ffffff !important; }
+.light .btn-secondary { --tw-ring-offset-color: #ffffff !important; }
+
+/* Empty state */
+.light .empty-state { color: var(--text-muted) !important; }
+
+/* Tooltip */
+.light .tooltip {
+  background: var(--text-primary) !important;
+  color: #ffffff !important;
+}
+
+/* Loading spinner */
+.light .loading-spinner {
+  border-color: var(--border-color) !important;
+  border-top-color: #3b82f6 !important;
+}
+
 @layer utilities {
   .text-gradient {
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
