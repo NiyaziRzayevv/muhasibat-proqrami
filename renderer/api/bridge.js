@@ -116,6 +116,8 @@ function _buildRemoteProxy() {
     getMonthlyRevenue: (year, userId) => _remoteCall(`/stats/monthly-revenue/${year}`, { query: userId ? { userId } : {} }),
     getYearlyRevenue: (userId) => _remoteCall('/stats/yearly-revenue', { query: userId ? { userId } : {} }),
     getCustomerCount: (userId) => _remoteCall('/stats/customers/count', { query: userId ? { userId } : {} }),
+    getFinanceStats: (startDate, endDate, userId) => _remoteCall('/stats/finance', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
+    getDashboardStats: (userId) => _remoteCall('/stats/dashboard', { query: userId ? { userId } : {} }),
 
     // Customers
     getCustomers: (search, userId) => _remoteCall('/customers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
@@ -124,6 +126,7 @@ function _buildRemoteProxy() {
     updateCustomer: (id, data) => _remoteCall(`/customers/${id}`, { method: 'PUT', body: data }),
     deleteCustomer: (id) => _remoteCall(`/customers/${id}`, { method: 'DELETE' }),
     getCustomerRecords: (id) => _remoteCall(`/customers/${id}/records`),
+    getCustomerHistory: (id) => _remoteCall(`/customers/${id}/history`),
 
     // Vehicles
     getVehicles: (search, userId) => _remoteCall('/vehicles', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),

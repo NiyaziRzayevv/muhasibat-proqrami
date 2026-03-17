@@ -207,4 +207,21 @@ router.get('/notifications/unread', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/finance', requireAuth, async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+    const data = await statsService.getFinanceStats(startDate, endDate, userId);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+router.get('/dashboard', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+    const data = await statsService.getDashboardStats(userId);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

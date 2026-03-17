@@ -126,27 +126,16 @@ router.post('/', requireAuth, async (req, res, next) => {
     const paymentStatus = body.payment_status ?? body.paymentStatus ?? ((paidAmount >= total) ? 'odenilib' : 'gozleyir');
 
     const created = await prisma.$transaction(async (tx) => {
+      // Pre-check stock availability
       for (const it of normalizedItems) {
         if (!it.productId) continue;
         const p = await tx.product.findUnique({ where: { id: parseInt(it.productId) } });
         if (!p) throw new Error('Məhsul tapılmadı');
-        const before = p.stockQty || 0;
-        const after = before - Math.abs(it.qty);
+        const after = (p.stockQty || 0) - Math.abs(it.qty);
         if (after < 0) throw new Error('Stok kifayət etmir');
-        await tx.product.update({ where: { id: p.id }, data: { stockQty: after } });
-        await tx.stockMovement.create({
-          data: {
-            productId: p.id,
-            movementType: 'satis',
-            qty: -Math.abs(it.qty),
-            qtyBefore: before,
-            qtyAfter: after,
-            note: 'Satış',
-            createdById: req.user.id,
-          }
-        });
       }
 
+      // Create sale first so we have the sale ID for stock movement references
       const sale = await tx.sale.create({
         data: {
           date,
@@ -173,6 +162,28 @@ router.post('/', requireAuth, async (req, res, next) => {
         },
         include: { items: true },
       });
+
+      // Reduce stock and create stock movements with sale reference
+      for (const it of normalizedItems) {
+        if (!it.productId) continue;
+        const p = await tx.product.findUnique({ where: { id: parseInt(it.productId) } });
+        const before = p.stockQty || 0;
+        const after = before - Math.abs(it.qty);
+        await tx.product.update({ where: { id: p.id }, data: { stockQty: after } });
+        await tx.stockMovement.create({
+          data: {
+            productId: p.id,
+            movementType: 'satis',
+            qty: -Math.abs(it.qty),
+            qtyBefore: before,
+            qtyAfter: after,
+            refType: 'sale',
+            refId: sale.id,
+            note: `Satış #${sale.id}`,
+            createdById: req.user.id,
+          }
+        });
+      }
 
       return sale;
     });

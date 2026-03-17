@@ -119,6 +119,107 @@ router.put('/:id', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/:id/records', requireAuth, async (req, res, next) => {
+  try {
+    const customerId = parseInt(req.params.id);
+    const records = await prisma.record.findMany({
+      where: { customerId },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
+    });
+    const mapped = records.map(r => ({
+      ...r,
+      customer_id: r.customerId,
+      vehicle_id: r.vehicleId,
+      car_brand: r.carBrand,
+      car_model: r.carModel,
+      car_plate: r.carPlate,
+      customer_name: r.customerName,
+      service_type: r.serviceType,
+      total_price: r.totalPrice,
+      unit_price: r.unitPrice,
+      paid_amount: r.paidAmount,
+      remaining_amount: r.remainingAmount,
+      payment_status: r.paymentStatus,
+      created_by_id: r.createdById,
+    }));
+    res.json({ success: true, data: mapped });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/history', requireAuth, async (req, res, next) => {
+  try {
+    const customerId = parseInt(req.params.id);
+
+    const [records, sales, appointments] = await Promise.all([
+      prisma.record.findMany({
+        where: { customerId },
+        orderBy: { date: 'desc' },
+      }),
+      prisma.sale.findMany({
+        where: { customerId },
+        include: { items: true },
+        orderBy: { date: 'desc' },
+      }),
+      prisma.appointment.findMany({
+        where: { customerId },
+        orderBy: { date: 'desc' },
+      }),
+    ]);
+
+    const timeline = [
+      ...records.map(r => ({
+        type: 'record',
+        id: r.id,
+        date: r.date,
+        time: r.time,
+        description: r.serviceType || 'Servis',
+        amount: r.totalPrice || 0,
+        paid: r.paidAmount || 0,
+        remaining: r.remainingAmount || 0,
+        status: r.paymentStatus,
+      })),
+      ...sales.map(s => ({
+        type: 'sale',
+        id: s.id,
+        date: s.date,
+        time: s.time,
+        description: (s.items || []).map(i => i.productName).filter(Boolean).join(', ') || 'Satış',
+        amount: s.total || 0,
+        paid: s.paidAmount || 0,
+        remaining: Math.max(0, (s.total || 0) - (s.paidAmount || 0)),
+        status: s.paymentStatus,
+        item_count: (s.items || []).length,
+      })),
+      ...appointments.map(a => ({
+        type: 'appointment',
+        id: a.id,
+        date: a.date,
+        time: a.time,
+        description: a.title || 'Randevu',
+        status: a.status,
+      })),
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const totalSpent = records.reduce((s, r) => s + (r.totalPrice || 0), 0) + sales.reduce((s, r) => s + (r.total || 0), 0);
+    const totalPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0) + sales.reduce((s, r) => s + (r.paidAmount || 0), 0);
+    const totalDebt = totalSpent - totalPaid;
+
+    res.json({
+      success: true,
+      data: {
+        timeline,
+        summary: {
+          total_visits: records.length + sales.length,
+          total_spent: totalSpent,
+          total_paid: totalPaid,
+          total_debt: totalDebt,
+          appointment_count: appointments.length,
+        },
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
     await prisma.customer.delete({ where: { id: parseInt(req.params.id) } });

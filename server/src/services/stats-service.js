@@ -3,14 +3,24 @@ const { prisma } = require('../prisma');
 async function getTodayStats(userId = null) {
   const today = new Date().toISOString().split('T')[0];
   
-  const where = { date: today };
-  if (userId) where.createdById = userId;
+  const recWhere = { date: today };
+  const saleWhere = { date: today };
+  const expWhere = { date: today, deletedAt: null };
+  if (userId) { recWhere.createdById = userId; saleWhere.createdById = userId; expWhere.userId = userId; }
 
-  const records = await prisma.record.findMany({ where });
-  
-  const totalRevenue = records.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-  const totalPaid = records.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
-  const recordCount = records.length;
+  const [records, sales, expenses] = await Promise.all([
+    prisma.record.findMany({ where: recWhere }),
+    prisma.sale.findMany({ where: saleWhere }),
+    prisma.expense.findMany({ where: expWhere }),
+  ]);
+
+  const recRevenue = records.reduce((s, r) => s + (r.totalPrice || 0), 0);
+  const recPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const saleRevenue = sales.reduce((s, r) => s + (r.total || 0), 0);
+  const salePaid = sales.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const totalRevenue = recRevenue + saleRevenue;
+  const totalPaid = recPaid + salePaid;
+  const totalExpense = expenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   return {
     revenue: totalRevenue,
@@ -18,9 +28,15 @@ async function getTodayStats(userId = null) {
     total_amount: totalRevenue,
     total_revenue: totalRevenue,
     total_paid: totalPaid,
-    count: recordCount,
-    record_count: recordCount,
-    debt: totalRevenue - totalPaid
+    count: records.length + sales.length,
+    record_count: records.length,
+    sale_count: sales.length,
+    expense_total: totalExpense,
+    expense_count: expenses.length,
+    profit: totalRevenue - totalExpense,
+    debt: totalRevenue - totalPaid,
+    records_revenue: recRevenue,
+    sales_revenue: saleRevenue,
   };
 }
 
@@ -29,16 +45,25 @@ async function getMonthStats(year, month, userId = null) {
   const startDate = `${year}-${monthStr}-01`;
   const endDate = `${year}-${monthStr}-31`;
 
-  const where = {
-    date: { gte: startDate, lte: endDate }
-  };
-  if (userId) where.createdById = userId;
+  const dateFilter = { gte: startDate, lte: endDate };
+  const recWhere = { date: dateFilter };
+  const saleWhere = { date: dateFilter };
+  const expWhere = { date: dateFilter, deletedAt: null };
+  if (userId) { recWhere.createdById = userId; saleWhere.createdById = userId; expWhere.userId = userId; }
 
-  const records = await prisma.record.findMany({ where });
+  const [records, sales, expenses] = await Promise.all([
+    prisma.record.findMany({ where: recWhere }),
+    prisma.sale.findMany({ where: saleWhere }),
+    prisma.expense.findMany({ where: expWhere }),
+  ]);
 
-  const totalRevenue = records.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-  const totalPaid = records.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
-  const recordCount = records.length;
+  const recRevenue = records.reduce((s, r) => s + (r.totalPrice || 0), 0);
+  const recPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const saleRevenue = sales.reduce((s, r) => s + (r.total || 0), 0);
+  const salePaid = sales.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const totalRevenue = recRevenue + saleRevenue;
+  const totalPaid = recPaid + salePaid;
+  const totalExpense = expenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   return {
     revenue: totalRevenue,
@@ -46,21 +71,37 @@ async function getMonthStats(year, month, userId = null) {
     total_amount: totalRevenue,
     total_revenue: totalRevenue,
     total_paid: totalPaid,
-    count: recordCount,
-    record_count: recordCount,
-    debt: totalRevenue - totalPaid
+    count: records.length + sales.length,
+    record_count: records.length,
+    sale_count: sales.length,
+    expense_total: totalExpense,
+    expense_count: expenses.length,
+    profit: totalRevenue - totalExpense,
+    debt: totalRevenue - totalPaid,
+    records_revenue: recRevenue,
+    sales_revenue: saleRevenue,
   };
 }
 
 async function getAllTimeStats(userId = null) {
-  const where = {};
-  if (userId) where.createdById = userId;
+  const recWhere = {};
+  const saleWhere = {};
+  const expWhere = { deletedAt: null };
+  if (userId) { recWhere.createdById = userId; saleWhere.createdById = userId; expWhere.userId = userId; }
 
-  const records = await prisma.record.findMany({ where });
+  const [records, sales, expenses] = await Promise.all([
+    prisma.record.findMany({ where: recWhere }),
+    prisma.sale.findMany({ where: saleWhere }),
+    prisma.expense.findMany({ where: expWhere }),
+  ]);
 
-  const totalRevenue = records.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-  const totalPaid = records.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
-  const recordCount = records.length;
+  const recRevenue = records.reduce((s, r) => s + (r.totalPrice || 0), 0);
+  const recPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const saleRevenue = sales.reduce((s, r) => s + (r.total || 0), 0);
+  const salePaid = sales.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const totalRevenue = recRevenue + saleRevenue;
+  const totalPaid = recPaid + salePaid;
+  const totalExpense = expenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   return {
     revenue: totalRevenue,
@@ -68,9 +109,15 @@ async function getAllTimeStats(userId = null) {
     total_amount: totalRevenue,
     total_revenue: totalRevenue,
     total_paid: totalPaid,
-    count: recordCount,
-    record_count: recordCount,
-    debt: totalRevenue - totalPaid
+    count: records.length + sales.length,
+    record_count: records.length,
+    sale_count: sales.length,
+    expense_total: totalExpense,
+    expense_count: expenses.length,
+    profit: totalRevenue - totalExpense,
+    debt: totalRevenue - totalPaid,
+    records_revenue: recRevenue,
+    sales_revenue: saleRevenue,
   };
 }
 
@@ -344,6 +391,121 @@ async function getUnreadNotificationCount(userId = null) {
   return await prisma.notification.count({ where });
 }
 
+async function getFinanceStats(startDate, endDate, userId = null) {
+  const dateFilter = {};
+  if (startDate) dateFilter.gte = startDate;
+  if (endDate) dateFilter.lte = endDate;
+  const hasDate = Object.keys(dateFilter).length > 0;
+
+  const recWhere = hasDate ? { date: dateFilter } : {};
+  const saleWhere = hasDate ? { date: dateFilter } : {};
+  const expWhere = { deletedAt: null, ...(hasDate ? { date: dateFilter } : {}) };
+  if (userId) { recWhere.createdById = userId; saleWhere.createdById = userId; expWhere.userId = userId; }
+
+  const [records, sales, expenses] = await Promise.all([
+    prisma.record.findMany({ where: recWhere }),
+    prisma.sale.findMany({ where: saleWhere }),
+    prisma.expense.findMany({ where: expWhere }),
+  ]);
+
+  const recRevenue = records.reduce((s, r) => s + (r.totalPrice || 0), 0);
+  const recPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const saleRevenue = sales.reduce((s, r) => s + (r.total || 0), 0);
+  const salePaid = sales.reduce((s, r) => s + (r.paidAmount || 0), 0);
+  const totalIncome = recRevenue + saleRevenue;
+  const totalPaid = recPaid + salePaid;
+  const totalExpense = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalDebt = totalIncome - totalPaid;
+  const netProfit = totalIncome - totalExpense;
+
+  // Expense by category
+  const expByCat = {};
+  for (const e of expenses) {
+    const cat = e.category || 'Digər';
+    if (!expByCat[cat]) expByCat[cat] = { category: cat, total: 0, count: 0 };
+    expByCat[cat].total += e.amount || 0;
+    expByCat[cat].count++;
+  }
+
+  return {
+    total_income: totalIncome,
+    records_income: recRevenue,
+    sales_income: saleRevenue,
+    total_paid: totalPaid,
+    total_expense: totalExpense,
+    total_debt: totalDebt,
+    receivable: totalDebt,
+    net_profit: netProfit,
+    record_count: records.length,
+    sale_count: sales.length,
+    expense_count: expenses.length,
+    expense_by_category: Object.values(expByCat).sort((a, b) => b.total - a.total),
+  };
+}
+
+async function getDashboardStats(userId = null) {
+  const today = new Date().toISOString().split('T')[0];
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth() + 1;
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  const [
+    todayStats,
+    monthStats,
+    allTimeStats,
+    debtStats,
+    customerCount,
+    productStats,
+    lowStock,
+    upcomingAppointments,
+    activeTasks,
+    overdueTasks,
+    unreadNotifs,
+  ] = await Promise.all([
+    getTodayStats(userId),
+    getMonthStats(year, month, userId),
+    getAllTimeStats(userId),
+    getDebtStats(userId),
+    getCustomerCount(userId),
+    getProductStats(userId),
+    getLowStockProducts(userId),
+    prisma.appointment.findMany({
+      where: { date: { gte: today, lte: tomorrow }, status: { in: ['pending', 'confirmed'] } },
+      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+      take: 10,
+    }),
+    prisma.task.findMany({
+      where: { status: { not: 'done' }, ...(userId ? { createdById: userId } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
+    prisma.task.count({
+      where: { status: { not: 'done' }, dueDate: { not: null, lt: today }, ...(userId ? { createdById: userId } : {}) },
+    }),
+    getUnreadNotificationCount(userId),
+  ]);
+
+  return {
+    today: todayStats,
+    month: monthStats,
+    allTime: allTimeStats,
+    debt: debtStats,
+    customer_count: customerCount,
+    products: productStats,
+    low_stock: lowStock,
+    upcoming_appointments: upcomingAppointments.map(a => ({
+      id: a.id, title: a.title, date: a.date, time: a.time,
+      customer_name: a.customerName, status: a.status,
+    })),
+    active_tasks: activeTasks.map(t => ({
+      id: t.id, title: t.title, status: t.status, priority: t.priority,
+      due_date: t.dueDate,
+    })),
+    overdue_task_count: overdueTasks,
+    unread_notifications: unreadNotifs,
+  };
+}
+
 module.exports = {
   getTodayStats,
   getMonthStats,
@@ -360,5 +522,7 @@ module.exports = {
   getDebtStats,
   getProductStats,
   getExpenseStats,
-  getUnreadNotificationCount
+  getUnreadNotificationCount,
+  getFinanceStats,
+  getDashboardStats,
 };
