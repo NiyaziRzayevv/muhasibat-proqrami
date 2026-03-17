@@ -5,7 +5,7 @@ import { apiBridge } from '../api/bridge';
 import { apiRequest } from '../api/http';
 
 export default function License() {
-  const { showNotification, checkLicense } = useApp();
+  const { showNotification, checkLicense, isAdmin } = useApp();
   const [license, setLicense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -225,7 +225,8 @@ export default function License() {
           </div>
         </div>
 
-        {/* Demo Key Generator (Admin) */}
+        {/* Demo Key Generator (Admin only) */}
+        {isAdmin && (
         <div className="bg-dark-900/50 border border-dark-800/50 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -254,6 +255,7 @@ export default function License() {
           )}
           <p className="text-xs text-dark-600 mt-2">Bu açar demo/test üçündür</p>
         </div>
+        )}
       </div>
     </div>
   );

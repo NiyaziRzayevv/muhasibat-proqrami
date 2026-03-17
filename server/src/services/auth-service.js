@@ -19,6 +19,12 @@ async function login(username, password) {
     if (user.approvalStatus === 'pending') return { success: false, error: 'pending', isPending: true };
     if (user.approvalStatus === 'rejected') return { success: false, error: 'Qeydiyyatınız rədd edilib' };
     if (user.approvalStatus !== 'approved') return { success: false, error: 'Hesab təsdiqlənməyib' };
+
+    // Check access expiry
+    if (!user.accessType) return { success: false, error: 'access_denied', message: 'Giriş icazəniz yoxdur. Admin ilə əlaqə saxlayın.' };
+    if (user.accessType !== 'lifetime' && user.accessExpiresAt && user.accessExpiresAt < new Date()) {
+      return { success: false, error: 'access_expired', message: 'Giriş müddətiniz bitib. Admin ilə əlaqə saxlayın.' };
+    }
   } else if (user.approvalStatus !== 'approved') {
     await prisma.user.update({ where: { id: user.id }, data: { approvalStatus: 'approved' } });
   }

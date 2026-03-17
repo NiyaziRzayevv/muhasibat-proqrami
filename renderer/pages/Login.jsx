@@ -51,7 +51,7 @@ export default function Login({ onLogin, onPending }) {
       } else if (res.isPending) {
         setMode('pending');
       } else {
-        setError(res.error || 'Giriş uğursuz oldu');
+        setError(res.message || res.error || 'Giriş uğursuz oldu');
       }
     } catch (e) {
       setError('Giriş xətası: ' + e.message);
