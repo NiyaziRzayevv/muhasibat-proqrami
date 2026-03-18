@@ -2,9 +2,14 @@ let prisma;
 
 try {
   const { PrismaClient } = require('@prisma/client');
+  // Append connection pool params if not already present
+  let dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl && !dbUrl.includes('connection_limit')) {
+    dbUrl += (dbUrl.includes('?') ? '&' : '?') + 'connection_limit=15&pool_timeout=20';
+  }
   prisma = new PrismaClient({
     datasources: {
-      db: { url: process.env.DATABASE_URL }
+      db: { url: dbUrl }
     },
     log: ['warn', 'error'],
   });
