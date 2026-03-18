@@ -62,11 +62,7 @@ export default function App() {
 
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.role_name === 'admin' || currentUser.username === 'admin') {
-        setLicenseOk(true);
-      } else {
-        checkLicense();
-      }
+      setLicenseOk(true);
     }
   }, [currentUser]);
 
