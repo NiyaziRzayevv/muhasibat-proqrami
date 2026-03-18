@@ -10,14 +10,26 @@ router.get('/', requireAuth, async (req, res, next) => {
     const { userId, search, type } = req.query;
     const userFilter = userId ? { createdById: parseInt(userId) } : {};
 
+    const recWhere = { ...userFilter, remainingAmount: { gt: 0 } };
+    const saleWhere = { ...userFilter, paymentStatus: { in: ['gozleyir', 'qismen', 'borc'] } };
+    if (search) {
+      const s = search.toLowerCase();
+      recWhere.OR = [
+        { customerName: { contains: s, mode: 'insensitive' } },
+        { carPlate: { contains: s, mode: 'insensitive' } },
+        { serviceType: { contains: s, mode: 'insensitive' } },
+      ];
+      saleWhere.customerName = { contains: s, mode: 'insensitive' };
+    }
+
     const [records, sales] = await Promise.all([
       (!type || type === 'record') ? prisma.record.findMany({
-        where: { ...userFilter },
+        where: recWhere,
         include: { customer: true },
         orderBy: [{ date: 'desc' }, { id: 'desc' }],
       }) : Promise.resolve([]),
       (!type || type === 'sale') ? prisma.sale.findMany({
-        where: { ...userFilter },
+        where: saleWhere,
         include: { items: true },
         orderBy: [{ date: 'desc' }, { id: 'desc' }],
       }) : Promise.resolve([]),
@@ -30,14 +42,6 @@ router.get('/', requireAuth, async (req, res, next) => {
       const paid = r.paidAmount || 0;
       const remaining = Math.max(0, total - paid);
       if (remaining <= 0) continue;
-
-      if (search) {
-        const s = search.toLowerCase();
-        const match = (r.customerName || '').toLowerCase().includes(s) ||
-          (r.carPlate || '').toLowerCase().includes(s) ||
-          (r.serviceType || '').toLowerCase().includes(s);
-        if (!match) continue;
-      }
 
       debts.push({
         id: `record_${r.id}`,
@@ -63,12 +67,6 @@ router.get('/', requireAuth, async (req, res, next) => {
       const paid = s.paidAmount || 0;
       const remaining = Math.max(0, total - paid);
       if (remaining <= 0) continue;
-
-      if (search) {
-        const q = search.toLowerCase();
-        const match = (s.customerName || '').toLowerCase().includes(q);
-        if (!match) continue;
-      }
 
       debts.push({
         id: `sale_${s.id}`,
@@ -238,14 +236,19 @@ router.get('/stats', requireAuth, async (req, res, next) => {
     const userId = req.query.userId ? parseInt(req.query.userId) : null;
     const userFilter = userId ? { createdById: userId } : {};
 
-    const [records, sales] = await Promise.all([
-      prisma.record.findMany({ where: userFilter }),
-      prisma.sale.findMany({ where: userFilter }),
+    const [recAgg, saleAgg, recDebtCount, saleDebtCount] = await Promise.all([
+      prisma.record.aggregate({ where: userFilter, _sum: { totalPrice: true, paidAmount: true } }),
+      prisma.sale.aggregate({ where: userFilter, _sum: { total: true, paidAmount: true } }),
+      prisma.record.count({ where: { ...userFilter, remainingAmount: { gt: 0 } } }),
+      prisma.sale.count({ where: { ...userFilter, paymentStatus: { in: ['gozleyir', 'qismen', 'borc'] } } }),
     ]);
 
-    const recordDebt = records.reduce((s, r) => s + Math.max(0, (r.totalPrice || 0) - (r.paidAmount || 0)), 0);
-    const saleDebt = sales.reduce((s, x) => s + Math.max(0, (x.total || 0) - (x.paidAmount || 0)), 0);
-    const totalPaid = records.reduce((s, r) => s + (r.paidAmount || 0), 0) + sales.reduce((s, x) => s + (x.paidAmount || 0), 0);
+    const recTotal = recAgg._sum.totalPrice || 0;
+    const recPaid = recAgg._sum.paidAmount || 0;
+    const saleTotal = saleAgg._sum.total || 0;
+    const salePaid = saleAgg._sum.paidAmount || 0;
+    const recordDebt = Math.max(0, recTotal - recPaid);
+    const saleDebt = Math.max(0, saleTotal - salePaid);
 
     res.json({
       success: true,
@@ -253,9 +256,9 @@ router.get('/stats', requireAuth, async (req, res, next) => {
         total_debt: recordDebt + saleDebt,
         record_debt: recordDebt,
         sale_debt: saleDebt,
-        total_paid: totalPaid,
-        record_count: records.filter(r => (r.totalPrice || 0) > (r.paidAmount || 0)).length,
-        sale_count: sales.filter(s => (s.total || 0) > (s.paidAmount || 0)).length,
+        total_paid: recPaid + salePaid,
+        record_count: recDebtCount,
+        sale_count: saleDebtCount,
       }
     });
   } catch (err) { next(err); }

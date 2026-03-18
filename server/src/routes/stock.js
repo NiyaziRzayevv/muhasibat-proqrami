@@ -172,17 +172,21 @@ router.get('/stats', requireAuth, async (req, res, next) => {
     const where = {};
     if (userId) where.product = { is: { createdById: userId } };
 
-    const movements = await prisma.stockMovement.findMany({ where, include: { product: true } });
+    const inWhere = { ...where, qty: { gt: 0 } };
+    const outWhere = { ...where, qty: { lt: 0 } };
 
-    const inQty = movements.filter(m => m.qty > 0).reduce((s, m) => s + m.qty, 0);
-    const outQty = movements.filter(m => m.qty < 0).reduce((s, m) => s + Math.abs(m.qty), 0);
+    const [totalCount, inAgg, outAgg] = await Promise.all([
+      prisma.stockMovement.count({ where }),
+      prisma.stockMovement.aggregate({ where: inWhere, _sum: { qty: true } }),
+      prisma.stockMovement.aggregate({ where: outWhere, _sum: { qty: true } }),
+    ]);
 
     res.json({
       success: true,
       data: {
-        total_movements: movements.length,
-        total_in: inQty,
-        total_out: outQty,
+        total_movements: totalCount,
+        total_in: inAgg._sum.qty || 0,
+        total_out: Math.abs(outAgg._sum.qty || 0),
       }
     });
   } catch (err) { next(err); }

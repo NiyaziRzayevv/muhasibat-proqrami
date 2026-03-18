@@ -65,66 +65,42 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const [ts, ms, as_, svcs, brands, chart, recent, customers, lowStock, stockVal, sales, monthlyRev, yearlyRev, debt, prodStats, todayExp, monthExp, lic, notifCount] = await Promise.all([
-        apiBridge.getTodayStats(userId),
-        apiBridge.getMonthStats(now.getFullYear(), now.getMonth() + 1, userId),
-        apiBridge.getAllTimeStats(userId),
-        apiBridge.getTopServices(8, userId),
-        apiBridge.getTopBrands(8, userId),
-        apiBridge.getMonthlyChart(now.getFullYear(), userId),
+      const [dashRes, recentRes, licRes] = await Promise.all([
+        apiBridge.getDashboardStats(userId),
         apiBridge.getRecords({ limit: 8, offset: 0, orderBy: 'date', orderDir: 'desc', userId }),
-        apiBridge.getCustomers('', userId),
-        apiBridge.getLowStockProducts(userId),
-        apiBridge.getStockValue(userId),
-        apiBridge.getSalesStats(today, today, userId),
-        apiBridge.getMonthlyRevenue(now.getFullYear(), userId),
-        apiBridge.getYearlyRevenue(userId),
-        apiBridge.getDebtStats(userId),
-        apiBridge.getProductStats(userId),
-        apiBridge.getExpenseStats(today, today, userId),
-        apiBridge.getExpenseStats(monthStart, today, userId),
         apiBridge.getLicenseStatus(),
-        apiBridge.getUnreadCount(userId),
       ]);
 
-      if (ts.success) setTodayStats(ts.data);
-      if (ms.success) setMonthStats(ms.data);
-      if (as_.success) setAllStats(as_.data);
-      if (svcs.success) setTopServices(svcs.data);
-      if (brands.success) setTopBrands(brands.data);
-      if (chart.success) {
-        const chartData = chart.data.map(d => ({
-          name: MONTHS_SHORT[parseInt(d.month) - 1],
-          total: d.total,
-          count: d.count,
-        }));
-        setMonthlyChart(chartData);
+      if (dashRes.success) {
+        const d = dashRes.data;
+        setTodayStats(d.today);
+        setMonthStats(d.month);
+        setAllStats(d.allTime);
+        setTopServices(d.top_services || []);
+        setTopBrands(d.top_brands || []);
+        if (d.monthly_chart) {
+          setMonthlyChart(d.monthly_chart.map(c => ({
+            name: MONTHS_SHORT[parseInt(c.month) - 1],
+            total: c.total,
+            count: c.count,
+          })));
+        }
+        setCustomerCount(d.customer_count || 0);
+        setLowStockProducts(d.low_stock || []);
+        setStockValue(d.stock_value);
+        setTodaySales(d.today_sales);
+        setMonthlyRevenue(d.monthly_revenue || []);
+        setDebtStats(d.debt);
+        setProductStats(d.products);
+        setTodayExpenses(d.today_expenses);
+        setMonthExpenses(d.month_expenses);
+        setUnreadNotifs(d.unread_notifications || 0);
+        setUpcomingAppointments(d.upcoming_appointments || []);
+        setActiveTasks(d.active_tasks || []);
+        setTaskStats(d.task_stats);
       }
-      if (recent.success) setRecentRecords(recent.data);
-      if (customers.success) setCustomerCount(Array.isArray(customers.data) ? customers.data.length : (customers.data || 0));
-      if (lowStock.success) setLowStockProducts(lowStock.data);
-      if (stockVal.success) setStockValue(stockVal.data);
-      if (sales.success) setTodaySales(sales.data);
-      if (monthlyRev.success) setMonthlyRevenue(monthlyRev.data);
-      if (yearlyRev.success) setYearlyRevenue(yearlyRev.data);
-      if (debt.success) setDebtStats(debt.data);
-      if (prodStats.success) setProductStats(prodStats.data);
-      if (todayExp.success) setTodayExpenses(todayExp.data);
-      if (monthExp.success) setMonthExpenses(monthExp.data);
-      if (lic.success) setLicenseStatus(lic.data);
-      if (notifCount.success) setUnreadNotifs(notifCount.data || 0);
-
-      const [apptRes, taskRes, taskStRes] = await Promise.all([
-        apiBridge.getUpcomingAppointments(3, userId),
-        apiBridge.getActiveTasks(userId),
-        apiBridge.getTaskStats(userId),
-      ]);
-      if (apptRes.success) setUpcomingAppointments(apptRes.data || []);
-      if (taskRes.success) setActiveTasks(taskRes.data || []);
-      if (taskStRes.success) setTaskStats(taskStRes.data);
+      if (recentRes.success) setRecentRecords(recentRes.data);
+      if (licRes.success) setLicenseStatus(licRes.data);
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {

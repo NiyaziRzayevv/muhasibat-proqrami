@@ -34,9 +34,12 @@ router.get('/', requireAuth, async (req, res, next) => {
       ];
     }
 
+    const { limit, offset } = req.query;
     const items = await prisma.expense.findMany({
       where,
       orderBy: { date: 'desc' },
+      take: limit ? parseInt(limit) : 200,
+      skip: offset ? parseInt(offset) : 0,
     });
 
     res.json({ success: true, data: items.map(mapExpense) });

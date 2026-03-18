@@ -47,4 +47,17 @@ async function deactivateUser(userId) {
   return updated;
 }
 
-module.exports = { createUser, updateUser, deactivateUser };
+async function deleteUser(userId) {
+  if (userId === 1) throw new Error('Admin istifadəçi silinə bilməz');
+
+  await prisma.$transaction(async (tx) => {
+    await tx.session.deleteMany({ where: { userId } });
+    await tx.passwordReset.deleteMany({ where: { userId } });
+    await tx.notification.deleteMany({ where: { userId } });
+    await tx.user.delete({ where: { id: userId } });
+  });
+
+  return { deleted: true };
+}
+
+module.exports = { createUser, updateUser, deactivateUser, deleteUser };

@@ -107,7 +107,12 @@ router.put('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
 
 router.delete('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   const params = z.object({ id: z.coerce.number().int().positive() }).parse(req.params);
-  await adminUsersService.deactivateUser(params.id);
+  const force = req.query.force === 'true';
+  if (force) {
+    await adminUsersService.deleteUser(params.id);
+  } else {
+    await adminUsersService.deactivateUser(params.id);
+  }
 
   await auditService.logAction({
     action: 'DELETE_USER',
