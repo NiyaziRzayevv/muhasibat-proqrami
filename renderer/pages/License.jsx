@@ -195,69 +195,14 @@ export default function License() {
           <p className="text-xs text-dark-500 mt-2">Lisenziya açarı alarkən bu ID-ni bildirin</p>
         </div>
 
-        {/* Activate */}
+        {/* Info */}
         <div className="bg-dark-900 border border-dark-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <Key size={16} className="text-primary-400" />
-            <h3 className="text-sm font-semibold text-white">Lisenziya Aktivasiyası</h3>
+            <h3 className="text-sm font-semibold text-white">Lisenziya Məlumatı</h3>
           </div>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={licenseKey}
-              onChange={e => setLicenseKey(e.target.value.toUpperCase())}
-              className="w-full bg-dark-800 border border-dark-700 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all uppercase"
-              placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
-              maxLength={23}
-            />
-            <button
-              onClick={handleActivate}
-              disabled={activating || !licenseKey.trim()}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/20"
-            >
-              {activating ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Shield size={18} />
-                  Aktivasiya et
-                </>
-              )}
-            </button>
-          </div>
+          <p className="text-dark-400 text-sm">Lisenziya admin tərəfindən idarə olunur. Lisenziya almaq üçün admin ilə əlaqə saxlayın.</p>
         </div>
-
-        {/* Demo Key Generator (Admin only) */}
-        {isAdmin && (
-        <div className="bg-dark-900/50 border border-dark-800/50 rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <RefreshCw size={16} className="text-dark-500" />
-              <h3 className="text-sm font-semibold text-dark-400">Demo Açar Generator (Admin)</h3>
-            </div>
-            <button
-              onClick={handleGenerateKey}
-              className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
-            >
-              Yeni açar yarat
-            </button>
-          </div>
-          {generatedKey && (
-            <div className="flex items-center gap-3">
-              <code className="flex-1 bg-dark-800 text-emerald-400 px-4 py-2 rounded-xl text-sm font-mono">
-                {generatedKey}
-              </code>
-              <button
-                onClick={() => copyToClipboard(generatedKey)}
-                className="p-2 bg-dark-800 hover:bg-dark-700 text-dark-400 hover:text-white rounded-lg transition-colors"
-              >
-                <Copy size={16} />
-              </button>
-            </div>
-          )}
-          <p className="text-xs text-dark-600 mt-2">Bu açar demo/test üçündür</p>
-        </div>
-        )}
       </div>
     </div>
   );
