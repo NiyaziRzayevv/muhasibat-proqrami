@@ -224,7 +224,7 @@ export default function Debts() {
           <div className="card p-4 border border-amber-800/30 bg-amber-900/10">
             <p className="text-xs text-dark-400">Gözləyən</p>
             <p className="text-xl font-bold text-amber-400 mt-1">
-              {fmt(records.filter(r => r.payment_status === 'gozleyir').reduce((s, r) => s + (r.remaining_amount || 0), 0))}
+              {fmt(recordDebts.filter(r => r.payment_status === 'gozleyir').reduce((s, r) => s + (r.remaining_amount || 0), 0))}
             </p>
           </div>
         </div>

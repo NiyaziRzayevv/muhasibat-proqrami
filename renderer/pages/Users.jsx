@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users as UsersIcon, Plus, Edit3, Trash2, Shield, CheckCircle, X, Key, Eye, EyeOff, UserCheck, UserX, Clock, Phone, Mail, AlertCircle, Calendar, Infinity, Ban, Zap } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit3, Trash2, Shield, CheckCircle, X, Key, Eye, EyeOff, UserCheck, UserX, Clock, Phone, Mail, AlertCircle, Calendar, Infinity, Ban, Zap, XCircle } from 'lucide-react';
 import { useApp } from '../App';
 import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,6 +32,9 @@ export default function Users() {
   const [grantingAccess, setGrantingAccess] = useState(null);
   const [accessModal, setAccessModal] = useState(null); // { user }
   const [customAccess, setCustomAccess] = useState({ value: '', unit: 'hour' });
+  const [licenseModal, setLicenseModal] = useState(null); // { user }
+  const [grantingLicense, setGrantingLicense] = useState(null);
+  const [licenseForm, setLicenseForm] = useState({ type: 'pro', days: 365 });
 
   useEffect(() => { loadAll(); }, [activeTab]);
 
@@ -90,8 +93,50 @@ export default function Users() {
     } catch (e) { showNotification('Xəta: ' + e.message, 'error'); }
   }
 
+  async function handleGrantLicense(userId) {
+    setGrantingLicense(userId);
+    try {
+      const res = await apiBridge.grantLicense(userId, licenseForm.type, licenseForm.days);
+      if (res.success) {
+        showNotification(`Lisenziya verildi: ${res.data.licenseKey}`, 'success');
+        setLicenseModal(null);
+        await loadAll();
+      } else { 
+        showNotification(res.error || 'Xəta', 'error'); 
+      }
+    } catch (e) { 
+      showNotification('Xəta: ' + e.message, 'error'); 
+    } finally { 
+      setGrantingLicense(null); 
+    }
+  }
+
+  async function handleRevokeLicense(userId) {
+    if (!confirm('Lisenziya ləğv edilsin?')) return;
+    setGrantingLicense(userId);
+    try {
+      const res = await apiBridge.revokeLicense(userId);
+      if (res.success) {
+        showNotification('Lisenziya ləğv edildi', 'success');
+        await loadAll();
+      } else { 
+        showNotification(res.error || 'Xəta', 'error'); 
+      }
+    } catch (e) { 
+      showNotification('Xəta: ' + e.message, 'error'); 
+    } finally { 
+      setGrantingLicense(null); 
+    }
+  }
+
   function getAccessBadge(user) {
     if (user.username === 'admin' || user.role_name === 'admin') return null;
+    if (user.access_type === 'licensed') {
+      const exp = user.access_expires_at ? new Date(user.access_expires_at) : null;
+      if (exp && exp < new Date()) return { label: 'Lisenziya bitib', cls: 'bg-red-500/20 text-red-400', Icon: Ban };
+      const days = exp ? Math.ceil((exp - new Date()) / 86400000) : 0;
+      return { label: `Lisenziya (${days}g)`, cls: 'bg-emerald-500/20 text-emerald-400', Icon: Shield };
+    }
     if (!user.access_type) return { label: 'İcazəsiz', cls: 'bg-red-500/20 text-red-400', Icon: Ban };
     if (user.access_type === 'lifetime') return { label: 'Ömürlük', cls: 'bg-amber-500/20 text-amber-400', Icon: Infinity };
     if (user.access_type === 'custom') {
@@ -346,10 +391,22 @@ export default function Users() {
                         <Key size={12} /> İcazə Ver
                       </button>
                     )}
+                    {user.username !== 'admin' && (
+                      <button onClick={() => setLicenseModal({ user })}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg text-xs font-medium transition-colors">
+                        <Shield size={12} /> Lisenziya Ver
+                      </button>
+                    )}
                     {user.username !== 'admin' && user.access_type && (
                       <button onClick={() => handleRevokeAccess(user.id)}
                         className="p-2 hover:bg-red-900/30 text-dark-500 hover:text-red-400 rounded-lg transition-colors" title="Girişi ləğv et">
                         <Ban size={14} />
+                      </button>
+                    )}
+                    {user.username !== 'admin' && user.access_type === 'licensed' && (
+                      <button onClick={() => handleRevokeLicense(user.id)}
+                        className="p-2 hover:bg-red-900/30 text-dark-500 hover:text-red-400 rounded-lg transition-colors" title="Lisenziyanı ləğv et">
+                        <XCircle size={14} />
                       </button>
                     )}
                     <button onClick={() => handleToggleActive(user)} title={user.is_active ? 'Deaktiv et' : 'Aktiv et'}
@@ -585,6 +642,68 @@ export default function Users() {
             <button onClick={() => setAccessModal(null)} className="w-full bg-dark-800 hover:bg-dark-700 text-dark-300 font-medium py-2.5 rounded-xl transition-colors text-sm">
               İmtina
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* License Grant Modal */}
+      {licenseModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-900 border border-dark-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-white">Lisenziya Ver</h2>
+                <p className="text-dark-500 text-xs mt-0.5">@{licenseModal.user.username}</p>
+              </div>
+              <button onClick={() => setLicenseModal(null)} className="text-dark-400 hover:text-white transition-colors"><X size={18} /></button>
+            </div>
+            
+            <div className="space-y-4 mb-5">
+              <div>
+                <label className="block text-xs font-medium text-dark-400 mb-2">Lisenziya Növü</label>
+                <select
+                  value={licenseForm.type}
+                  onChange={e => setLicenseForm({ ...licenseForm, type: e.target.value })}
+                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                >
+                  <option value="pro">PRO</option>
+                  <option value="trial">Trial</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-dark-400 mb-2">Müddət (gün)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="3650"
+                  value={licenseForm.days}
+                  onChange={e => setLicenseForm({ ...licenseForm, days: parseInt(e.target.value) || 365 })}
+                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => handleGrantLicense(licenseModal.user.id)}
+                disabled={grantingLicense !== null}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              >
+                {grantingLicense === licenseModal.user.id ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Shield size={18} />
+                    Lisenziya Ver
+                  </>
+                )}
+              </button>
+              
+              <button onClick={() => setLicenseModal(null)} className="w-full bg-dark-800 hover:bg-dark-700 text-dark-300 font-medium py-2.5 rounded-xl transition-colors text-sm">
+                İmtina
+              </button>
+            </div>
           </div>
         </div>
       )}

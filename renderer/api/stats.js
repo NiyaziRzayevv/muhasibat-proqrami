@@ -95,8 +95,9 @@ export async function apiGetUnreadCount(token, userId = null) {
   return apiRequest(`/stats/notifications/unread${params}`, { token });
 }
 
-export async function apiGetLicenseStatus(token) {
-  return apiRequest('/licenses/status', { token });
+export async function apiGetLicenseStatus(token, machineId = null) {
+  const params = machineId ? `?machine_id=${machineId}` : '';
+  return apiRequest(`/licenses/status${params}`, { token });
 }
 
 export async function apiGetRecords(token, filters = {}) {

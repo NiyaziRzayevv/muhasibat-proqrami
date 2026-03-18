@@ -6,6 +6,7 @@ import {
   apiResetPassword,
   apiVerify,
 } from './auth';
+import { apiRequest } from './http';
 import {
   apiApproveUser,
   apiCheckAccess,
@@ -237,6 +238,8 @@ function _buildRemoteProxy() {
     getLicenseStatus: () => _remoteCall('/licenses/status'),
     activateLicense: (key) => _remoteCall('/licenses/activate', { method: 'POST', body: { license_key: key } }),
     generateLicenseKey: () => _remoteCall('/licenses/admin/generate-key', { method: 'POST' }),
+    grantLicense: (userId, licenseType = 'pro', days = 365) => _remoteCall('/licenses/grant', { method: 'POST', body: { userId, licenseType, days } }),
+    revokeLicense: (userId) => _remoteCall('/licenses/revoke', { method: 'POST', body: { userId } }),
     getMachineId: () => Promise.resolve({ success: true, data: 'remote-client' }),
 
     // Appointments
@@ -731,9 +734,37 @@ export const apiBridge = {
     if (hasRemote()) {
       const token = getToken();
       if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetLicenseStatus(token);
+      
+      // Get machine ID for remote mode
+      let machineId = null;
+      try {
+        const machRes = await window.api.getMachineId();
+        if (machRes.success) machineId = machRes.data;
+      } catch (e) {
+        // Ignore machine ID errors
+      }
+      
+      return await apiGetLicenseStatus(token, machineId);
     }
     return await window.api.getLicenseStatus();
+  }),
+
+  grantLicense: (userId, licenseType = 'pro', days = 365) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      if (!token) return { success: false, error: 'unauthorized' };
+      return await apiRequest('/licenses/grant', { method: 'POST', token, body: { userId, licenseType, days } });
+    }
+    return await window.api.grantLicense(userId, licenseType, days);
+  }),
+
+  revokeLicense: (userId) => safeCall(async () => {
+    if (hasRemote()) {
+      const token = getToken();
+      if (!token) return { success: false, error: 'unauthorized' };
+      return await apiRequest('/licenses/revoke', { method: 'POST', token, body: { userId } });
+    }
+    return await window.api.revokeLicense(userId);
   }),
 
   getUnreadCount: (userId) => safeCall(async () => {

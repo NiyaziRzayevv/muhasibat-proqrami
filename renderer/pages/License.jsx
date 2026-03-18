@@ -49,7 +49,7 @@ export default function License() {
         res = await window.api.activateLicense(licenseKey.trim().toUpperCase());
       } else {
         const token = localStorage.getItem('auth_token') || '';
-        res = await apiRequest('/licenses/activate', { method: 'POST', token, body: { license_key: licenseKey.trim().toUpperCase() } });
+        res = await apiRequest('/licenses/activate', { method: 'POST', token, body: { license_key: licenseKey.trim().toUpperCase(), machine_id: machineId } });
       }
       if (res.success) {
         showNotification('Lisenziya uğurla aktivləşdirildi!', 'success');
