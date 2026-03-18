@@ -46,7 +46,7 @@ import {
   apiGetCustomers,
 } from './stats';
 
-const SERVER_URL = 'https://smartqeyd-api.onrender.com';
+const SERVER_URL = 'https://muhasibat-proqrami-production.up.railway.app';
 
 function resolveBaseUrl() {
   return SERVER_URL;

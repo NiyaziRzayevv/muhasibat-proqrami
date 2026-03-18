@@ -1,4 +1,4 @@
-const SERVER_URL = 'https://smartqeyd-api.onrender.com';
+const SERVER_URL = 'https://muhasibat-proqrami-production.up.railway.app';
 
 export async function apiRequest(path, { method = 'GET', token, body } = {}) {
   let base = SERVER_URL;
