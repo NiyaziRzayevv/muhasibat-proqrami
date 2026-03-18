@@ -146,14 +146,8 @@ export default function App() {
 
   const checkAccess = useCallback(async (user) => {
     if (!user) return;
-    if (user.role_name === 'admin' || user.username === 'admin') {
-      setUserAccess({ hasAccess: true, accessType: 'lifetime' });
-      return;
-    }
-    try {
-      const res = await apiBridge.checkUserAccess(user.id);
-      if (res.success) setUserAccess(res.data);
-    } catch (e) { console.error('Access check error:', e); }
+    // All logged-in users get access — license system is the real gatekeeper
+    setUserAccess({ hasAccess: true, accessType: 'lifetime' });
   }, []);
 
   useEffect(() => {

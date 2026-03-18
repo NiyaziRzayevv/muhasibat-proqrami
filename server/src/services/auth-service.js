@@ -16,14 +16,10 @@ async function login(username, password) {
 
   const isAdmin = user.username === 'admin' || user.role?.name === 'admin';
   if (!isAdmin) {
-    if (user.approvalStatus === 'pending') return { success: false, error: 'pending', isPending: true };
     if (user.approvalStatus === 'rejected') return { success: false, error: 'Qeydiyyatınız rədd edilib' };
-    if (user.approvalStatus !== 'approved') return { success: false, error: 'Hesab təsdiqlənməyib' };
-
-    // Check access expiry
-    if (!user.accessType) return { success: false, error: 'access_denied', message: 'Giriş icazəniz yoxdur. Admin ilə əlaqə saxlayın.' };
-    if (user.accessType !== 'lifetime' && user.accessExpiresAt && user.accessExpiresAt < new Date()) {
-      return { success: false, error: 'access_expired', message: 'Giriş müddətiniz bitib. Admin ilə əlaqə saxlayın.' };
+    // Auto-approve pending users on login
+    if (user.approvalStatus === 'pending') {
+      await prisma.user.update({ where: { id: user.id }, data: { approvalStatus: 'approved' } });
     }
   } else if (user.approvalStatus !== 'approved') {
     await prisma.user.update({ where: { id: user.id }, data: { approvalStatus: 'approved' } });
@@ -72,12 +68,17 @@ async function register(data) {
       phone: data.phone || null,
       roleId: defaultRole.id,
       isActive: true,
-      approvalStatus: 'pending',
+      approvalStatus: 'approved',
     },
     include: { role: true },
   });
 
-  return { success: true, data: presentUser(created) };
+  // Auto-login: create session token
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 60 * 60 * 1000);
+  await prisma.session.create({ data: { userId: created.id, token, expiresAt } });
+
+  return { success: true, data: { ...presentUser(created), token } };
 }
 
 async function requestPasswordReset(username, phone, email) {

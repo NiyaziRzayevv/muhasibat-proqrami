@@ -50,8 +50,6 @@ export default function Login({ onLogin, onPending }) {
         localStorage.setItem('auth_token', res.data.token);
         localStorage.setItem('auth_user', JSON.stringify(res.data));
         onLogin(res.data);
-      } else if (res.isPending) {
-        setMode('pending');
       } else {
         setError(res.message || res.error || t('loginFailed'));
       }
@@ -86,9 +84,14 @@ export default function Login({ onLogin, onPending }) {
         phone: phone.trim() || null,
         email: email.trim() || null,
       });
-      if (res.success) {
-        setMode('pending');
+      if (res.success && res.data?.token) {
+        // Auto-login after registration
+        localStorage.setItem('auth_token', res.data.token);
+        localStorage.setItem('auth_user', JSON.stringify(res.data));
+        onLogin(res.data);
+      } else if (res.success) {
         setSuccess(t('registerSuccess'));
+        setMode('login');
       } else {
         setError(res.error || t('registerFailed'));
       }
@@ -164,39 +167,6 @@ export default function Login({ onLogin, onPending }) {
     }
   }
 
-  // Pending approval screen
-  if (mode === 'pending') {
-    return (
-      <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Clock size={40} className="text-amber-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-3">{t('pendingApproval')}</h1>
-          <p className="text-dark-400 mb-6">
-            {t('pendingApprovalText')}
-          </p>
-          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-6 mb-6">
-            <div className="flex items-center gap-3 text-left">
-              <div className="w-10 h-10 bg-primary-900/40 rounded-full flex items-center justify-center shrink-0">
-                <User size={18} className="text-primary-400" />
-              </div>
-              <div>
-                <p className="font-medium text-white">{fullName || username}</p>
-                <p className="text-xs text-dark-400">@{username}</p>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => { setMode('login'); resetForm(); }}
-            className="flex items-center justify-center gap-2 text-primary-400 hover:text-primary-300 transition-colors mx-auto"
-          >
-            <ArrowLeft size={16} /> {t('backToLogin')}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen bg-dark-950 overflow-y-auto p-4">
@@ -435,7 +405,7 @@ export default function Login({ onLogin, onPending }) {
               </button>
 
               <p className="text-xs text-dark-500 text-center mt-3">
-                {t('pendingApprovalText')}
+                Qeydiyyatdan sonra lisenziya kodu tələb olunacaq
               </p>
             </form>
           ) : (
