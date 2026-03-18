@@ -2,7 +2,12 @@ let prisma;
 
 try {
   const { PrismaClient } = require('@prisma/client');
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({
+    datasources: {
+      db: { url: process.env.DATABASE_URL }
+    },
+    log: ['warn', 'error'],
+  });
   console.log('[prisma] PrismaClient initialized successfully');
 } catch (err) {
   console.error('[prisma] FAILED to initialize PrismaClient:', err.message);
