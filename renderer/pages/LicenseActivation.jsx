@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Copy, CheckCircle, Clock, Shield, AlertTriangle, Loader2, Monitor } from 'lucide-react';
+import { Key, Copy, CheckCircle, Clock, Shield, AlertTriangle, Loader2, Monitor, Phone, LogOut } from 'lucide-react';
+import { useApp } from '../App';
 
 export default function LicenseActivation({ onActivated }) {
+  const { currentUser, handleLogout, showNotification } = useApp();
   const [deviceId, setDeviceId] = useState('');
   const [licenseKey, setLicenseKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
     loadDeviceId();
@@ -53,29 +54,11 @@ export default function LicenseActivation({ onActivated }) {
     }
   }
 
-  async function handleDemo() {
-    setDemoLoading(true);
-    setError('');
-    try {
-      const res = await window.api.activateDemo();
-      if (res.success) {
-        setSuccess('Demo rejim aktivdir (10 dəqiqə)');
-        setTimeout(() => onActivated?.(), 800);
-      } else {
-        setError(res.error || 'Demo aktivasiya uğursuz');
-      }
-    } catch (e) {
-      setError('Xəta: ' + e.message);
-    } finally {
-      setDemoLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-950 via-dark-900 to-dark-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 mb-4 shadow-lg shadow-primary-500/20">
             <Shield size={32} className="text-white" />
           </div>
@@ -83,10 +66,38 @@ export default function LicenseActivation({ onActivated }) {
           <p className="text-dark-400 text-sm mt-1">Lisenziya Aktivasiyası</p>
         </div>
 
+        {/* Logged in user info */}
+        {currentUser && (
+          <div className="flex items-center justify-between bg-dark-900/60 border border-dark-800/50 rounded-xl px-4 py-2.5 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-primary-500/20 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-primary-400">{(currentUser.full_name || currentUser.username || '?')[0].toUpperCase()}</span>
+              </div>
+              <span className="text-sm text-dark-300">{currentUser.full_name || currentUser.username}</span>
+            </div>
+            <button onClick={handleLogout} className="text-dark-500 hover:text-red-400 transition-colors" title="Çıxış">
+              <LogOut size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Card */}
         <div className="bg-dark-900/80 backdrop-blur border border-dark-800/60 rounded-2xl p-6 shadow-2xl">
+
+          {/* Contact info banner */}
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-5">
+            <p className="text-amber-300 text-sm font-medium mb-1">Lisenziya açarı almaq üçün:</p>
+            <div className="flex items-center gap-2">
+              <Phone size={14} className="text-amber-400" />
+              <a href="tel:+994556115900" className="text-amber-400 font-bold text-lg tracking-wide hover:text-amber-300 transition-colors">
+                055 611 59 00
+              </a>
+            </div>
+            <p className="text-amber-500/60 text-xs mt-1">Bu nömrə ilə əlaqə saxlayın və ya aşağıda lisenziya açarınızı daxil edin</p>
+          </div>
+
           {/* Device ID */}
-          <div className="mb-6">
+          <div className="mb-5">
             <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
               <Monitor size={14} />
               Cihaz ID
@@ -108,7 +119,7 @@ export default function LicenseActivation({ onActivated }) {
               </button>
             </div>
             <p className="text-[11px] text-dark-500 mt-1.5">
-              Bu ID-ni admin-ə göndərin lisenziya açarı almaq üçün
+              Bu ID-ni lisenziya almaq üçün bizə göndərin
             </p>
           </div>
 
@@ -157,31 +168,11 @@ export default function LicenseActivation({ onActivated }) {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-dark-800" />
-            <span className="text-dark-500 text-xs">və ya</span>
-            <div className="flex-1 h-px bg-dark-800" />
-          </div>
-
-          {/* Demo Button */}
-          <button
-            onClick={handleDemo}
-            disabled={demoLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dark-700/60 text-dark-300 text-sm hover:bg-dark-800/50 hover:text-white transition-all disabled:opacity-50"
-          >
-            {demoLoading ? (
-              <><Loader2 size={14} className="animate-spin" /> Demo yüklənir...</>
-            ) : (
-              <><Clock size={14} /> Demo istifadə et (10 dəqiqə)</>
-            )}
-          </button>
         </div>
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.3.0 · SmartQeyd Sistemi
+          v1.3.1 · SmartQeyd Sistemi
         </p>
       </div>
     </div>

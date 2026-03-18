@@ -34,6 +34,7 @@ import Analytics from './pages/Analytics';
 import Assets from './pages/Assets';
 import UserWorkspace from './pages/UserWorkspace';
 import NoAccess from './pages/NoAccess';
+import UpdateNotification from './components/UpdateNotification';
 import { apiBridge } from './api/bridge';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -59,19 +60,17 @@ export default function App() {
   const smartInputRef = useRef(null);
 
   useEffect(() => {
-    checkLicenseFirst();
+    checkAuth();
     loadSettings();
   }, []);
 
-  // License check is the FIRST thing - before any auth
-  async function checkLicenseFirst() {
+  // Check license after user logs in
+  async function checkLicenseAfterLogin() {
     try {
       const res = await window.api.getLicenseStatus();
       if (res.success && res.data.valid) {
         setLicenseOk(true);
         setLicenseInfo(res.data.license || res.data);
-        // After license OK, check auth
-        await checkAuth();
       } else {
         setLicenseOk(false);
         setLicenseInfo(res.data || null);
@@ -131,6 +130,8 @@ export default function App() {
         if (res.success) {
           setCurrentUser(res.data);
           await checkAccess(res.data);
+          // User logged in — now check license
+          await checkLicenseAfterLogin();
         } else {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
@@ -212,6 +213,8 @@ export default function App() {
   async function handleLogin(user) {
     setCurrentUser(user);
     await checkAccess(user);
+    // After login, check license
+    await checkLicenseAfterLogin();
   }
 
   async function handleLogout() {
@@ -247,27 +250,7 @@ export default function App() {
     }
   };
 
-  // 1. Loading state
-  if (!licenseChecked) {
-    return (
-      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // 2. License NOT valid → show activation screen
-  if (!licenseOk) {
-    return (
-      <LanguageProvider>
-        <LicenseActivation onActivated={() => {
-          checkLicenseFirst();
-        }} />
-      </LanguageProvider>
-    );
-  }
-
-  // 3. License OK but auth not checked yet
+  // 1. Auth loading
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-dark-950 flex items-center justify-center">
@@ -276,12 +259,34 @@ export default function App() {
     );
   }
 
-  // 4. No user logged in → show login
+  // 2. No user logged in → show login (login FIRST, license AFTER)
   if (!currentUser) {
     return (
       <LanguageProvider>
         <AppContext.Provider value={ctx}>
           <Login onLogin={handleLogin} />
+        </AppContext.Provider>
+      </LanguageProvider>
+    );
+  }
+
+  // 3. User logged in, license check in progress
+  if (!licenseChecked) {
+    return (
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 4. License NOT valid → show license activation screen
+  if (!licenseOk) {
+    return (
+      <LanguageProvider>
+        <AppContext.Provider value={ctx}>
+          <LicenseActivation onActivated={() => {
+            checkLicenseAfterLogin();
+          }} />
         </AppContext.Provider>
       </LanguageProvider>
     );
@@ -309,6 +314,7 @@ export default function App() {
   return (
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
+        <UpdateNotification />
         <HashRouter>
           <AppLayout
             sidebarCollapsed={sidebarCollapsed}

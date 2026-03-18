@@ -839,6 +839,14 @@ function registerHandlers() {
     catch (e) { return { success: false, error: e.message }; }
   });
 
+  ipcMain.handle('license:generate', (_, deviceId, durationType, durationValue) => {
+    try {
+      const result = licenseService.generateLicenseForDevice(deviceId, durationType, durationValue);
+      try { auditLogsDb.logAction({ action: 'LICENSE_GENERATED', entity_type: 'licenses', user_name: 'admin', new_data: { deviceId, durationType, durationValue } }); } catch {}
+      return { success: true, data: result };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
   // ─── Appointments ─────────────────────────────────────────────────────────
   ipcMain.handle('appointments:list', (_, filters) => {
     try { return { success: true, data: appointmentsDb.getAllAppointments(filters || {}) }; }

@@ -180,6 +180,7 @@ contextBridge.exposeInMainWorld('api', {
   activateDemo: () => ipcRenderer.invoke('license:demo'),
   getDeviceId: () => ipcRenderer.invoke('license:deviceId'),
   deactivateLicense: () => ipcRenderer.invoke('license:deactivate'),
+  generateLicense: (deviceId, durationType, durationValue) => ipcRenderer.invoke('license:generate', deviceId, durationType, durationValue),
 
   // Appointments
   getAppointments: (filters) => ipcRenderer.invoke('appointments:list', filters),

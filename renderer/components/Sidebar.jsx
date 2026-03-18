@@ -161,7 +161,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         </div>
         {!collapsed && (
           <div className="text-center mt-1">
-            <p className="text-[10px] text-primary-400/80 font-medium">v1.3.0</p>
+            <p className="text-[10px] text-primary-400/80 font-medium">v1.3.1</p>
           </div>
         )}
         <button

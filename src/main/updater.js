@@ -70,19 +70,11 @@ function initAutoUpdater(win) {
 
   autoUpdater.on('update-downloaded', (info) => {
     logger.info('UPDATER', `Update downloaded: v${info.version}`);
-    sendToRenderer('updater:status', { status: 'downloaded', version: info.version });
-
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Yeniləmə hazırdır',
-      message: `SmartQeyd v${info.version} yükləndi.\n\nProqramı indi yenidən başladıb yeniləmək istəyirsiniz?`,
-      buttons: ['İndi yenilə', 'Sonra'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(({ response }) => {
-      if (response === 0) {
-        autoUpdater.quitAndInstall(false, true);
-      }
+    sendToRenderer('updater:status', {
+      status: 'downloaded',
+      version: info.version,
+      releaseNotes: info.releaseNotes || '',
+      releaseDate: info.releaseDate,
     });
   });
 

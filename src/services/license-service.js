@@ -357,6 +357,79 @@ function getLicenseStatus() {
   return validateLicenseFull();
 }
 
+// ─── RSA PRIVATE KEY (for admin license generation) ─────────────────────────
+const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDHVEsI8k4GyQBT
+8QFsMA8GC1LWL4j+Dwigq95IaNzSuorhtklH1SmyXG6N0k2PUdbgCEqak4e/52fE
+LccjpxEbGZokVGKHQ8ILRjs5LzBoGzygXd6B2iyk9KcRexXrQTbm9kJg5X2RHVSL
+nkSDazYOkF8os4fpSwwr/FSifsD2MLDGC7rHWL0PzHYjTlGaumjx89wQc+77nUT6
+qp1v2mfVIx8n1wtS5KQfBNzUEdQ8A+cRHXPh7hqKj+ocdoOpEV7YcG2Agf2zSl5z
+ZVfGtvvyM14dGGyEXxBr8IUWZECAuraYYdkp30enFA6gQsVXFC2PyTv8mm9zfjV/
+8e65hO6JAgMBAAECggEAAwHbzvL+593M9jc+3v+7nkr58TbO4YxfBDOLmzqPyFMd
+qMmcAewuoJ0B4vxfBLBGpmMhowLiS6wlVeGd7UUGPkss1ur6AJHuYcapupNibtOo
+XsADzSA6R7PUOHCLtFyrxCDHgBg+RHv1jFSzMmth6abWdLH+tS+Xa6t3KGtypFQx
+aXYQycH8+6NJggxJKYyEusLYeBQnWDD/LLwo+U2es3lInVHQKKrsOXFiaWk+11Zt
+iv+i7WW1YMleORZUjsg3MbSHxBMssngnV9YRR0aHN33KqpIJe/h2RnK3UWkLYnwc
+ScpIbzArGiJLMtfyzol80rdrNhM7jqzKXv7dGhOGjQKBgQDk6DMLn2+IIZOuzKRh
+9HICuJ7NkKF7Wmw1bNH+pDM7b5eRRLup/ACDdhICreYDzormAtwqVugBAfG3ONWi
+OkmUzJqkn8I26zxqQc3RVkGiBc2wrKwzfObxNxpY7kasoOT7OJnqDt7Q7md2fKkN
+ymhnyUJNdx/N3/aDVOInfnua7QKBgQDe6+X0Ix1AKR6Gpyyh9CszFL3Kv5y/RbUC
+79KceY2rXn5kPXx6ZOp/tzmz0XdJYhNY2J0XTiTnXt6JP4dXFFlefQ0if80794n0
++Rt57DQ8mLORxWxF+Qx64oEuIWteh97aRnQurREWprTsQArz0LBW+QRkyAi9bu7s
+7pwE3g3CjQKBgB8e6oG0BWfOmNN1AwxGPZHdI8ny1eF9Y6THzK0ACe8UttiLLbBo
+kHFPBhfTKKhv1jZ7QQ+IjTZF22T7lx/dKM/QGV40UiVBSg9wLtk9DuNGQra4YxkE
+7CjzQuPAUV966Ga3RUWrC+P/5ZUYUauMTzF9DUSW434L6unkCnMwIQHpAoGBAIIR
+hE/puSR5mY0Zt+obTKV2YbMOEEhuRMqc4fdY2Td3YCne0mWbwlOYtftcqcxQhFdf
+tHEnsFKrwQ612aMOhYKjVmmdxkNKEN22B7kg/+2nb4cLeTxur0B4LsWazEoQ3w/e
+8eVWJ9VemcwLJhjS2EE29MBVEvxs4M2v/6q7Ya31AoGBAMDEofEXDiNBD6zF2hdn
+q7jlRo9TJcboV776QxyfJLutfDAW6g7jfcLzzKYJslHJWMqBdOxJPYtWEKEfXdrI
+E/SHbNnnP2+NCNNtiMx96aSzOVacDSQBoPaMzK9JyE8kGhRARKYo6TEUD9A5B0Pk
+ZAKoq0RdNrwisxik1w59h3V9
+-----END PRIVATE KEY-----`;
+
+// ─── Admin: Generate License Key ────────────────────────────────────────────
+// durationType: 'minutes' | 'hours' | 'days' | 'months' | 'lifetime'
+// durationValue: number (ignored for lifetime)
+function generateLicenseForDevice(deviceId, durationType, durationValue) {
+  let expiresAt = null;
+  let type = 'timed';
+
+  if (durationType === 'lifetime') {
+    type = 'lifetime';
+    expiresAt = null;
+  } else {
+    const now = Date.now();
+    const ms = {
+      minutes: durationValue * 60 * 1000,
+      hours: durationValue * 60 * 60 * 1000,
+      days: durationValue * 24 * 60 * 60 * 1000,
+      months: durationValue * 30 * 24 * 60 * 60 * 1000,
+    }[durationType] || durationValue * 24 * 60 * 60 * 1000;
+
+    expiresAt = new Date(now + ms).toISOString();
+  }
+
+  const license = {
+    licenseId: crypto.randomUUID(),
+    product: 'SmartQeyd',
+    deviceId: deviceId.toUpperCase(),
+    type,
+    expiresAt,
+    maxRuns: null,
+    issuedAt: new Date().toISOString(),
+  };
+
+  // Sign with private key
+  const sign = crypto.createSign('SHA256');
+  sign.update(JSON.stringify(license));
+  sign.end();
+  const signature = sign.sign(PRIVATE_KEY, 'base64');
+
+  const licenseKey = Buffer.from(JSON.stringify(license)).toString('base64') + '.' + signature;
+
+  return { license, signature, licenseKey };
+}
+
 module.exports = {
   generateDeviceId,
   validateLicense: validateLicenseFull,
@@ -366,5 +439,6 @@ module.exports = {
   deleteLicense,
   saveLicense,
   loadLicense,
+  generateLicenseForDevice,
   PUBLIC_KEY,
 };
