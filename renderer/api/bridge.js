@@ -46,19 +46,10 @@ import {
   apiGetCustomers,
 } from './stats';
 
+const SERVER_URL = 'https://smartqeyd-api.onrender.com';
+
 function resolveBaseUrl() {
-  try {
-    const v = localStorage.getItem('api_base_url') || '';
-    if (v) return v;
-  } catch {}
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) return envUrl;
-  try {
-    if (typeof window !== 'undefined' && window.location?.hostname) {
-      return `${window.location.protocol}//${window.location.hostname}:3001`;
-    }
-  } catch {}
-  return '';
+  return SERVER_URL;
 }
 
 let _originalWindowApi = null;
@@ -339,48 +330,22 @@ function _syncWindowApi(remoteEnabled) {
   } catch {}
 }
 
-// On load, sync window.api state with stored remote config
+// Always use remote server
 try {
-  const storedRemote = localStorage.getItem('use_remote') === 'true';
-  const storedUrl = localStorage.getItem('api_base_url') || '';
-  if (storedRemote && storedUrl) {
-    _syncWindowApi(true);
-  }
+  _syncWindowApi(true);
 } catch {}
 
 function hasRemote() {
-  try {
-    const localEnabled = localStorage.getItem('use_remote');
-    const enabled = localEnabled === 'true' || import.meta.env.VITE_USE_REMOTE === 'true';
-    const base = resolveBaseUrl();
-    if (enabled && !!base) return true;
-    // Auto-detect: if running in browser (no original window.api), use remote if URL exists
-    if (!_originalWindowApi && !window.api && !!base) return true;
-    return false;
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 function getRemoteConfig() {
-  try {
-    const explicitEnabled = (localStorage.getItem('use_remote') === 'true') || (import.meta.env.VITE_USE_REMOTE === 'true');
-    const baseUrl = resolveBaseUrl();
-    const enabled = explicitEnabled || (!_originalWindowApi && !window.api && !!baseUrl);
-    return { enabled, baseUrl };
-  } catch {
-    return { enabled: false, baseUrl: '' };
-  }
+  return { enabled: true, baseUrl: SERVER_URL };
 }
 
 function setRemoteConfig({ enabled, baseUrl }) {
-  try {
-    localStorage.setItem('use_remote', enabled ? 'true' : 'false');
-    if (baseUrl !== undefined) localStorage.setItem('api_base_url', String(baseUrl || ''));
-  } catch {
-  }
-  // When remote is enabled, hide window.api so pages use apiRequest() fallback
-  _syncWindowApi(enabled);
+  // Always remote - no local mode
+  _syncWindowApi(true);
 }
 
 function getToken() {

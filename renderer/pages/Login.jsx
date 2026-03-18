@@ -225,37 +225,6 @@ export default function Login({ onLogin, onPending }) {
 
         {/* Card */}
         <div className="bg-dark-900 border border-dark-800 rounded-2xl p-8 shadow-2xl">
-          <div className="bg-dark-800/50 border border-dark-700 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-dark-300">Server</span>
-              <label className="flex items-center gap-2 text-xs text-dark-400 select-none">
-                <input
-                  type="checkbox"
-                  checked={remoteEnabled}
-                  onChange={(e) => updateRemoteConfig(e.target.checked, serverUrl)}
-                  className="accent-primary-600"
-                />
-                Mərkəzi server
-              </label>
-            </div>
-            {remoteEnabled && (
-            <input
-              type="text"
-              value={serverUrl}
-              onChange={(e) => {
-                const v = e.target.value;
-                setServerUrl(v);
-                apiBridge.setRemoteConfig({ enabled: remoteEnabled, baseUrl: v });
-              }}
-              className="w-full bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-white text-sm placeholder-dark-500 focus:outline-none focus:border-primary-500"
-              placeholder="http://SERVER-IP:3001"
-            />
-            )}
-            {!remoteEnabled && window.api && (
-              <p className="text-xs text-dark-500">Lokal rejim — məlumatlar bu kompüterdə saxlanılır</p>
-            )}
-          </div>
-
           {/* Tabs */}
           <div className="flex bg-dark-800 rounded-xl p-1 mb-6">
             <button

@@ -1,15 +1,7 @@
+const SERVER_URL = 'https://smartqeyd-api.onrender.com';
+
 export async function apiRequest(path, { method = 'GET', token, body } = {}) {
-  let base = '';
-  try { base = localStorage.getItem('api_base_url') || ''; } catch {}
-  if (!base) base = import.meta.env.VITE_API_URL;
-  if (!base) {
-    try {
-      if (typeof window !== 'undefined' && window.location?.hostname) {
-        base = `${window.location.protocol}//${window.location.hostname}:3001`;
-      }
-    } catch {}
-  }
-  if (!base) throw new Error('API base URL is not set');
+  let base = SERVER_URL;
 
   if (base.endsWith('/')) base = base.slice(0, -1);
 
