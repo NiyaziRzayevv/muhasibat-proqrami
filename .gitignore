@@ -35,3 +35,8 @@ electron-builder-cache/
 
 # Installer output
 installer/
+
+# License keys (sensitive)
+tools/rsa_private.pem
+tools/rsa_public.pem
+*.lic

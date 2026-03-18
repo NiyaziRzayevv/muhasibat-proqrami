@@ -1,360 +1,8 @@
-import {
-  apiLogin,
-  apiLogout,
-  apiRegister,
-  apiRequestPasswordReset,
-  apiResetPassword,
-  apiVerify,
-} from './auth';
-import { apiRequest } from './http';
-import {
-  apiApproveUser,
-  apiCheckAccess,
-  apiGetPendingUsers,
-  apiGetUsers,
-  apiGrantAccess,
-  apiMyAccess,
-  apiRejectUser,
-  apiRevokeAccess,
-  apiCreateUser,
-  apiUpdateUser,
-  apiDeleteUser,
-} from './users';
-import { apiGetRoles, apiUpdateRolePermissions } from './roles';
-import { apiClearAuditLogs, apiGetAuditLogs } from './audit';
-import {
-  apiGetTodayStats,
-  apiGetMonthStats,
-  apiGetAllTimeStats,
-  apiGetTopServices,
-  apiGetTopBrands,
-  apiGetMonthlyChart,
-  apiGetCustomerCount,
-  apiGetLowStockProducts,
-  apiGetStockValue,
-  apiGetTopSellingProducts,
-  apiGetMonthlySalesChart,
-  apiGetSalesStats,
-  apiGetMonthlyRevenue,
-  apiGetYearlyRevenue,
-  apiGetDebtStats,
-  apiGetProductStats,
-  apiGetExpenseStats,
-  apiGetUnreadCount,
-  apiGetLicenseStatus,
-  apiGetRecords,
-  apiGetCustomers,
-} from './stats';
-
-const SERVER_URL = 'https://muhasibat-proqrami-production.up.railway.app';
-
-function resolveBaseUrl() {
-  return SERVER_URL;
-}
-
-let _originalWindowApi = null;
-
-function _getToken() {
-  try { return localStorage.getItem('auth_token') || ''; } catch { return ''; }
-}
-
-function _remoteCall(path, opts = {}) {
-  const base = resolveBaseUrl();
-  if (!base) return Promise.resolve({ success: false, error: 'No server URL' });
-  const token = _getToken();
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const fetchOpts = { method: opts.method || 'GET', headers };
-  if (opts.body !== undefined) fetchOpts.body = JSON.stringify(opts.body);
-  let url = `${base}${path}`;
-  if (opts.query) {
-    const cleaned = {};
-    for (const [k, v] of Object.entries(opts.query)) {
-      if (v !== null && v !== undefined && v !== '') cleaned[k] = v;
-    }
-    const qs = new URLSearchParams(cleaned).toString();
-    if (qs) url += `?${qs}`;
-  }
-  return fetch(url, fetchOpts).then(r => r.json()).catch(e => ({ success: false, error: e.message }));
-}
-
-function _buildRemoteProxy() {
-  return {
-    // Records
-    getRecords: (filters) => _remoteCall('/records', { query: filters }),
-    getRecord: (id) => _remoteCall(`/records/${id}`),
-    createRecord: (data) => _remoteCall('/records', { method: 'POST', body: data }),
-    updateRecord: (id, data) => _remoteCall(`/records/${id}`, { method: 'PUT', body: data }),
-    deleteRecord: (id) => _remoteCall(`/records/${id}`, { method: 'DELETE' }),
-    deleteMultipleRecords: (ids) => _remoteCall('/records/bulk-delete', { method: 'POST', body: { ids } }),
-
-    // Smart input parsing
-    parseInput: (text) => _remoteCall('/parse/input', { method: 'POST', body: { text } }),
-    parseInventory: (text) => _remoteCall('/parse/inventory', { method: 'POST', body: { text } }),
-    parseUniversal: (text) => _remoteCall('/parse/universal', { method: 'POST', body: { text } }),
-    createFromParsed: (parsed, overrides) => _remoteCall('/records', { method: 'POST', body: { ...parsed, ...overrides } }),
-    createSaleFromParsed: (parsed, overrides) => _remoteCall('/sales', { method: 'POST', body: { ...parsed, ...overrides } }),
-
-    // Stats
-    getTodayStats: (userId) => _remoteCall('/stats/today', { query: userId ? { userId } : {} }),
-    getMonthStats: (year, month, userId) => _remoteCall(`/stats/month/${year}/${month}`, { query: userId ? { userId } : {} }),
-    getAllTimeStats: (userId) => _remoteCall('/stats/all-time', { query: userId ? { userId } : {} }),
-    getTopServices: (limit, userId) => _remoteCall('/stats/top-services', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
-    getTopBrands: (limit, userId) => _remoteCall('/stats/top-brands', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
-    getMonthlyChart: (year, userId) => _remoteCall(`/stats/monthly-chart/${year}`, { query: userId ? { userId } : {} }),
-    getUnpaidRecords: (userId) => _remoteCall('/records/unpaid', { query: userId ? { userId } : {} }),
-    getDebtStats: (userId) => _remoteCall('/stats/debt', { query: userId ? { userId } : {} }),
-    getProductStats: (userId) => _remoteCall('/stats/products', { query: userId ? { userId } : {} }),
-    getMonthlyRevenue: (year, userId) => _remoteCall(`/stats/monthly-revenue/${year}`, { query: userId ? { userId } : {} }),
-    getYearlyRevenue: (userId) => _remoteCall('/stats/yearly-revenue', { query: userId ? { userId } : {} }),
-    getCustomerCount: (userId) => _remoteCall('/stats/customers/count', { query: userId ? { userId } : {} }),
-    getFinanceStats: (startDate, endDate, userId) => _remoteCall('/stats/finance', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    getDashboardStats: (userId) => _remoteCall('/stats/dashboard', { query: userId ? { userId } : {} }),
-
-    // Customers
-    getCustomers: (search, userId) => _remoteCall('/customers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
-    getCustomer: (id) => _remoteCall(`/customers/${id}`),
-    createCustomer: (data) => _remoteCall('/customers', { method: 'POST', body: data }),
-    updateCustomer: (id, data) => _remoteCall(`/customers/${id}`, { method: 'PUT', body: data }),
-    deleteCustomer: (id) => _remoteCall(`/customers/${id}`, { method: 'DELETE' }),
-    getCustomerRecords: (id) => _remoteCall(`/customers/${id}/records`),
-    getCustomerHistory: (id) => _remoteCall(`/customers/${id}/history`),
-
-    // Vehicles
-    getVehicles: (search, userId) => _remoteCall('/vehicles', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
-    getVehicle: (id) => _remoteCall(`/vehicles/${id}`),
-    createVehicle: (data) => _remoteCall('/vehicles', { method: 'POST', body: data }),
-    updateVehicle: (id, data) => _remoteCall(`/vehicles/${id}`, { method: 'PUT', body: data }),
-    deleteVehicle: (id) => _remoteCall(`/vehicles/${id}`, { method: 'DELETE' }),
-
-    // Prices
-    getPrices: (search, userId) => _remoteCall('/records/prices', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
-    createPrice: (data) => _remoteCall('/records/prices', { method: 'POST', body: data }),
-    updatePrice: (id, data) => _remoteCall(`/records/prices/${id}`, { method: 'PUT', body: data }),
-    deletePrice: (id) => _remoteCall(`/records/prices/${id}`, { method: 'DELETE' }),
-
-    // Settings
-    getSettings: () => _remoteCall('/settings'),
-    saveSettings: (data) => _remoteCall('/settings', { method: 'PUT', body: data }),
-
-    // Categories
-    getCategories: (userId) => _remoteCall('/categories', { query: userId ? { userId } : {} }),
-    createCategory: (data) => _remoteCall('/categories', { method: 'POST', body: data }),
-    updateCategory: (id, data) => _remoteCall(`/categories/${id}`, { method: 'PUT', body: data }),
-    deleteCategory: (id) => _remoteCall(`/categories/${id}`, { method: 'DELETE' }),
-
-    // Suppliers
-    getSuppliers: (search, userId) => _remoteCall('/suppliers', { query: { ...(search ? { search } : {}), ...(userId ? { userId } : {}) } }),
-    createSupplier: (data) => _remoteCall('/suppliers', { method: 'POST', body: data }),
-    updateSupplier: (id, data) => _remoteCall(`/suppliers/${id}`, { method: 'PUT', body: data }),
-    deleteSupplier: (id) => _remoteCall(`/suppliers/${id}`, { method: 'DELETE' }),
-    getSupplierProducts: (id) => _remoteCall(`/suppliers/${id}/products`),
-
-    // Products
-    getProducts: (filters) => _remoteCall('/products', { query: filters }),
-    getProduct: (id) => _remoteCall(`/products/${id}`),
-    createProduct: (data) => _remoteCall('/products', { method: 'POST', body: data }),
-    updateProduct: (id, data) => _remoteCall(`/products/${id}`, { method: 'PUT', body: data }),
-    deleteProduct: (id) => _remoteCall(`/products/${id}`, { method: 'DELETE' }),
-    getLowStockProducts: (userId) => _remoteCall('/stats/low-stock', { query: userId ? { userId } : {} }),
-    getStockValue: (userId) => _remoteCall('/stats/stock-value', { query: userId ? { userId } : {} }),
-    importProductsFromExcel: (rows, createdBy) => _remoteCall('/products/import', { method: 'POST', body: { rows, createdBy } }),
-
-    // Stock Movements
-    stockIn: (productId, qty, note, createdBy) => _remoteCall('/stock/in', { method: 'POST', body: { productId, quantity: qty, note, createdBy } }),
-    stockOut: (productId, qty, note, createdBy) => _remoteCall('/stock/out', { method: 'POST', body: { productId, quantity: qty, note, createdBy } }),
-    stockAdjust: (productId, newQty, note, createdBy) => _remoteCall('/stock/adjust', { method: 'POST', body: { productId, newQuantity: newQty, note, createdBy } }),
-    getStockMovements: (filters) => _remoteCall('/stock/movements', { query: filters }),
-    getStockStats: (userId) => _remoteCall('/stock/stats', { query: userId ? { userId } : {} }),
-
-    // Sales
-    getSales: (filters) => _remoteCall('/sales', { query: filters }),
-    getSale: (id) => _remoteCall(`/sales/${id}`),
-    createSale: (data) => _remoteCall('/sales', { method: 'POST', body: data }),
-    updateSalePayment: (id, paidAmount, status) => _remoteCall(`/sales/${id}/payment`, { method: 'PUT', body: { paidAmount, status } }),
-    deleteSale: (id) => _remoteCall(`/sales/${id}`, { method: 'DELETE' }),
-    getSalesStats: (startDate, endDate, userId) => _remoteCall('/stats/sales', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    getTopSellingProducts: (limit, userId) => _remoteCall('/stats/top-selling-products', { query: { limit: limit || 5, ...(userId ? { userId } : {}) } }),
-    getMonthlySalesChart: (year, userId) => _remoteCall(`/stats/monthly-sales-chart/${year}`, { query: userId ? { userId } : {} }),
-    getSalesPaymentStats: (startDate, endDate, userId) => _remoteCall('/sales/payment-stats', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    generateSaleReceipt: (id) => _remoteCall(`/sales/${id}/receipt`),
-
-    // Auth
-    login: (username, password) => _remoteCall('/auth/login', { method: 'POST', body: { username, password } }),
-    logout: (token) => _remoteCall('/auth/logout', { method: 'POST', body: { token } }),
-    verifyToken: (token) => _remoteCall('/auth/verify', { method: 'POST', body: { token } }),
-    register: (data) => _remoteCall('/auth/register', { method: 'POST', body: data }),
-    requestPasswordReset: (username, phone, email) => _remoteCall('/auth/request-password-reset', { method: 'POST', body: { username, phone, email } }),
-    resetPassword: (token, newPassword) => _remoteCall('/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
-
-    // Users
-    getUsers: () => _remoteCall('/users'),
-    createUser: (data) => _remoteCall('/users', { method: 'POST', body: data }),
-    updateUser: (id, data) => _remoteCall(`/users/${id}`, { method: 'PUT', body: data }),
-    deleteUser: (id) => _remoteCall(`/users/${id}`, { method: 'DELETE' }),
-    getPendingUsers: () => _remoteCall('/users/pending'),
-    approveUser: (userId) => _remoteCall(`/users/${userId}/approve`, { method: 'POST' }),
-    rejectUser: (userId) => _remoteCall(`/users/${userId}/reject`, { method: 'POST' }),
-    grantAccess: (userId, accessType, grantedById, customDuration) => _remoteCall(`/users/${userId}/access`, { method: 'POST', body: { accessType, customDuration } }),
-    revokeAccess: (userId) => _remoteCall(`/users/${userId}/access`, { method: 'DELETE' }),
-    checkUserAccess: (userId) => _remoteCall(`/users/${userId}/access`),
-
-    // Roles
-    getRoles: () => _remoteCall('/roles'),
-    updateRolePermissions: (id, permissions) => _remoteCall(`/roles/${id}/permissions`, { method: 'PUT', body: { permissions } }),
-
-    // Expenses
-    getExpenses: (filters) => _remoteCall('/expenses', { query: filters }),
-    createExpense: (data) => _remoteCall('/expenses', { method: 'POST', body: data }),
-    updateExpense: (id, data) => _remoteCall(`/expenses/${id}`, { method: 'PUT', body: data }),
-    deleteExpense: (id) => _remoteCall(`/expenses/${id}`, { method: 'DELETE' }),
-    getExpenseStats: (startDate, endDate, userId) => _remoteCall('/stats/expenses', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    getExpenseCategories: () => _remoteCall('/expenses/categories'),
-
-    // Notifications
-    getNotifications: (userId, limit) => _remoteCall('/notifications', { query: { ...(userId ? { userId } : {}), ...(limit ? { limit } : {}) } }),
-    getUnreadCount: (userId) => _remoteCall('/stats/notifications/unread', { query: userId ? { userId } : {} }),
-    createNotification: (data) => _remoteCall('/notifications', { method: 'POST', body: data }),
-    markNotificationRead: (id) => _remoteCall(`/notifications/${id}/read`, { method: 'PUT' }),
-    markAllNotificationsRead: () => _remoteCall('/notifications/read-all', { method: 'PUT' }),
-    deleteNotification: (id) => _remoteCall(`/notifications/${id}`, { method: 'DELETE' }),
-    checkSystemNotifications: (userId) => _remoteCall('/notifications/check', { method: 'POST', body: { userId } }),
-
-    // Audit Logs
-    getAuditLogs: (filters) => _remoteCall('/audit', { query: filters }),
-    logAuditAction: (data) => _remoteCall('/audit', { method: 'POST', body: data }),
-    clearAuditLogs: (daysOld) => _remoteCall('/audit/clear', { method: 'POST', body: { daysOld } }),
-
-    // License
-    getLicenseStatus: () => _remoteCall('/licenses/status'),
-    activateLicense: (key) => _remoteCall('/licenses/activate', { method: 'POST', body: { license_key: key } }),
-    generateLicenseKey: () => _remoteCall('/licenses/admin/generate-key', { method: 'POST' }),
-    grantLicense: (userId, licenseType = 'pro', days = 365) => _remoteCall('/licenses/grant', { method: 'POST', body: { userId, licenseType, days } }),
-    revokeLicense: (userId) => _remoteCall('/licenses/revoke', { method: 'POST', body: { userId } }),
-    getMachineId: () => Promise.resolve({ success: true, data: 'remote-client' }),
-
-    // Appointments
-    getAppointments: (filters) => _remoteCall('/appointments', { query: filters }),
-    getAppointment: (id) => _remoteCall(`/appointments/${id}`),
-    createAppointment: (data) => _remoteCall('/appointments', { method: 'POST', body: data }),
-    updateAppointment: (id, data) => _remoteCall(`/appointments/${id}`, { method: 'PUT', body: data }),
-    deleteAppointment: (id) => _remoteCall(`/appointments/${id}`, { method: 'DELETE' }),
-    getUpcomingAppointments: (days, userId) => _remoteCall('/appointments/upcoming', { query: { days: days || 3, ...(userId ? { userId } : {}) } }),
-    getCustomerAppointments: (customerId) => _remoteCall(`/appointments/customer/${customerId}`),
-
-    // Tasks
-    getTasks: (filters) => _remoteCall('/tasks', { query: filters }),
-    getTask: (id) => _remoteCall(`/tasks/${id}`),
-    createTask: (data) => _remoteCall('/tasks', { method: 'POST', body: data }),
-    updateTask: (id, data) => _remoteCall(`/tasks/${id}`, { method: 'PUT', body: data }),
-    deleteTask: (id) => _remoteCall(`/tasks/${id}`, { method: 'DELETE' }),
-    getActiveTasks: (userId) => _remoteCall('/tasks/active', { query: userId ? { userId } : {} }),
-    getOverdueTasks: (userId) => _remoteCall('/tasks/overdue', { query: userId ? { userId } : {} }),
-    getTaskStats: (userId) => _remoteCall('/tasks/stats', { query: userId ? { userId } : {} }),
-
-    // Record Payment
-    updateRecordPayment: (id, paidAmount, status) => _remoteCall(`/records/${id}/payment`, { method: 'PUT', body: { paid_amount: paidAmount, payment_status: status } }),
-
-    // Assets
-    getAssets: (filters) => _remoteCall('/assets', { query: filters }),
-    getAsset: (id) => _remoteCall(`/assets/${id}`),
-    createAsset: (data) => _remoteCall('/assets', { method: 'POST', body: data }),
-    updateAsset: (id, data) => _remoteCall(`/assets/${id}`, { method: 'PUT', body: data }),
-    deleteAsset: (id) => _remoteCall(`/assets/${id}`, { method: 'DELETE' }),
-    getAssetCategories: () => _remoteCall('/assets/meta/categories'),
-
-    // Debts (unified)
-    getDebts: (filters) => _remoteCall('/debts', { query: filters }),
-    payDebt: (data) => _remoteCall('/debts/pay', { method: 'POST', body: data }),
-    getDebtPayments: (filters) => _remoteCall('/debts/payments', { query: filters }),
-    getDebtStatsUnified: (userId) => _remoteCall('/debts/stats', { query: userId ? { userId } : {} }),
-
-    // Finance (enhanced)
-    getFinanceSummary: (startDate, endDate, userId) => _remoteCall('/finance/summary', { query: { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) } }),
-    getFinanceTransactions: (filters) => _remoteCall('/finance/transactions', { query: filters }),
-    createFinanceTransaction: (data) => _remoteCall('/finance/transactions', { method: 'POST', body: data }),
-    deleteFinanceTransaction: (id) => _remoteCall(`/finance/transactions/${id}`, { method: 'DELETE' }),
-
-    // Backup (not available in remote mode)
-    createBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
-    restoreBackup: () => Promise.resolve({ success: false, error: 'Backup yalnız lokal rejimde mümkündür' }),
-    listBackups: () => Promise.resolve({ success: true, data: [] }),
-    getDbPath: () => Promise.resolve({ success: true, data: 'Remote server rejimi' }),
-
-    // Export (not available in remote mode — handled by browser-side export)
-    exportExcel: null,
-    exportPdf: null,
-    exportDailyPdf: null,
-    exportCustomersExcel: null,
-
-    // File dialogs (not available in remote mode)
-    openFileDialog: null,
-    openFolderDialog: null,
-    openPath: null,
-    showItemInFolder: null,
-    openExternal: null,
-
-    // Logging
-    getLogPath: () => Promise.resolve({ success: false }),
-    openLogFolder: () => Promise.resolve({ success: false }),
-
-    // Telegram
-    sendTelegramMessage: () => Promise.resolve({ success: false, error: 'Remote rejimde dəstəklənmir' }),
-    sendTelegramReport: () => Promise.resolve({ success: false, error: 'Remote rejimde dəstəklənmir' }),
-
-    // Seed
-    seedData: () => Promise.resolve({ success: false }),
-
-    // Auto-Update (keep from original if available)
-    checkForUpdate: () => _originalWindowApi?.checkForUpdate?.() || Promise.resolve({ success: false }),
-    getAppVersion: () => _originalWindowApi?.getAppVersion?.() || Promise.resolve({ success: true, data: { version: 'remote' } }),
-    downloadUpdate: () => _originalWindowApi?.downloadUpdate?.() || Promise.resolve({ success: false }),
-    installUpdate: () => _originalWindowApi?.installUpdate?.(),
-    onUpdaterStatus: (cb) => _originalWindowApi?.onUpdaterStatus?.(cb) || (() => {}),
-  };
-}
-
-function _syncWindowApi(remoteEnabled) {
-  try {
-    if (remoteEnabled) {
-      if (window.api && !_originalWindowApi) {
-        _originalWindowApi = window.api;
-      }
-      window.api = _buildRemoteProxy();
-    } else {
-      if (_originalWindowApi) {
-        window.api = _originalWindowApi;
-        _originalWindowApi = null;
-      }
-    }
-  } catch {}
-}
-
-// Always use remote server
-try {
-  _syncWindowApi(true);
-} catch {}
-
-function hasRemote() {
-  return true;
-}
-
-function getRemoteConfig() {
-  return { enabled: true, baseUrl: SERVER_URL };
-}
-
-function setRemoteConfig({ enabled, baseUrl }) {
-  // Always remote - no local mode
-  _syncWindowApi(true);
-}
-
-function getToken() {
-  try {
-    return localStorage.getItem('auth_token') || '';
-  } catch {
-    return '';
-  }
-}
+/**
+ * SmartQeyd API Bridge - Offline Only
+ * All calls go directly to window.api (Electron IPC → local SQLite)
+ * No server/remote dependencies
+ */
 
 async function safeCall(fn) {
   try {
@@ -365,614 +13,241 @@ async function safeCall(fn) {
 }
 
 export const apiBridge = {
-  getRemoteConfig,
-  setRemoteConfig,
-
-  login: (username, password) => safeCall(async () => {
-    if (hasRemote()) return await apiLogin(username, password);
-    return await window.api.login(username, password);
-  }),
-
-  verifyToken: (token) => safeCall(async () => {
-    if (hasRemote()) return await apiVerify(token);
-    return await window.api.verifyToken(token);
-  }),
-
-  logout: (token) => safeCall(async () => {
-    if (hasRemote()) return await apiLogout(token);
-    return await window.api.logout(token);
-  }),
-
-  register: (data) => safeCall(async () => {
-    if (hasRemote()) return await apiRegister(data);
-    return await window.api.register(data);
-  }),
-
-  requestPasswordReset: (username, phone, email) => safeCall(async () => {
-    if (hasRemote()) return await apiRequestPasswordReset(username, phone, email);
-    return await window.api.requestPasswordReset(username, phone, email);
-  }),
-
-  resetPassword: (token, newPassword) => safeCall(async () => {
-    if (hasRemote()) return await apiResetPassword(token, newPassword);
-    return await window.api.resetPassword(token, newPassword);
-  }),
-
-  checkUserAccess: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiMyAccess(token);
-    }
-    return await window.api.checkUserAccess(userId);
-  }),
-
-  getUsers: () => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetUsers(token);
-    }
-    return await window.api.getUsers();
-  }),
-
-  createUser: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiCreateUser(token, data);
-    }
-    return await window.api.createUser(data);
-  }),
-
-  updateUser: (id, data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiUpdateUser(token, id, data);
-    }
-    return await window.api.updateUser(id, data);
-  }),
-
-  deleteUser: (id) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiDeleteUser(token, id);
-    }
-    return await window.api.deleteUser(id);
-  }),
-
-  getRoles: () => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetRoles(token);
-    }
-    return await window.api.getRoles();
-  }),
-
-  updateRolePermissions: (id, permissions) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiUpdateRolePermissions(token, id, permissions);
-    }
-    return await window.api.updateRolePermissions(id, permissions);
-  }),
-
-  getPendingUsers: () => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetPendingUsers(token);
-    }
-    return await window.api.getPendingUsers();
-  }),
-
-  approveUser: (userId, approvedById) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiApproveUser(token, userId);
-    }
-    return await window.api.approveUser(userId, approvedById);
-  }),
-
-  rejectUser: (userId, approvedById) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiRejectUser(token, userId);
-    }
-    return await window.api.rejectUser(userId, approvedById);
-  }),
-
-  grantAccess: (userId, accessType, grantedById, customDuration) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGrantAccess(token, userId, accessType, customDuration);
-    }
-    return await window.api.grantAccess(userId, accessType, grantedById, customDuration);
-  }),
-
-  revokeAccess: (userId, adminId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiRevokeAccess(token, userId);
-    }
-    return await window.api.revokeAccess(userId, adminId);
-  }),
-
-  checkAccessAdmin: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiCheckAccess(token, userId);
-    }
-    return await window.api.checkUserAccess(userId);
-  }),
-
-  getAuditLogs: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetAuditLogs(token, filters || {});
-    }
-    return await window.api.getAuditLogs(filters || {});
-  }),
-
-  clearAuditLogs: (daysOld) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiClearAuditLogs(token, daysOld);
-    }
-    return await window.api.clearAuditLogs(daysOld);
-  }),
-
-  getTodayStats: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetTodayStats(token, userId);
-    }
-    return await window.api.getTodayStats(userId);
-  }),
-
-  getMonthStats: (year, month, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetMonthStats(token, year, month, userId);
-    }
-    return await window.api.getMonthStats(year, month, userId);
-  }),
-
-  getAllTimeStats: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetAllTimeStats(token, userId);
-    }
-    return await window.api.getAllTimeStats(userId);
-  }),
-
-  getTopServices: (limit, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetTopServices(token, limit, userId);
-    }
-    return await window.api.getTopServices(limit, userId);
-  }),
-
-  getTopBrands: (limit, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetTopBrands(token, limit, userId);
-    }
-    return await window.api.getTopBrands(limit, userId);
-  }),
-
-  getMonthlyChart: (year, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetMonthlyChart(token, year, userId);
-    }
-    return await window.api.getMonthlyChart(year, userId);
-  }),
-
-  getRecords: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetRecords(token, filters);
-    }
-    return await window.api.getRecords(filters);
-  }),
-
-  getCustomers: (search, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetCustomers(token, search, userId);
-    }
-    return await window.api.getCustomers(search, userId);
-  }),
-
-  getLowStockProducts: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetLowStockProducts(token, userId);
-    }
-    return await window.api.getLowStockProducts(userId);
-  }),
-
-  getStockValue: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetStockValue(token, userId);
-    }
-    return await window.api.getStockValue(userId);
-  }),
-
-  getTopSellingProducts: (limit, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetTopSellingProducts(token, limit, userId);
-    }
-    return await window.api.getTopSellingProducts(limit, userId);
-  }),
-
-  getMonthlySalesChart: (year, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetMonthlySalesChart(token, year, userId);
-    }
-    return await window.api.getMonthlySalesChart(year, userId);
-  }),
-
-  getSalesStats: (startDate, endDate, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetSalesStats(token, startDate, endDate, userId);
-    }
-    return await window.api.getSalesStats(startDate, endDate, userId);
-  }),
-
-  getMonthlyRevenue: (year, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetMonthlyRevenue(token, year, userId);
-    }
-    return await window.api.getMonthlyRevenue(year, userId);
-  }),
-
-  getYearlyRevenue: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetYearlyRevenue(token, userId);
-    }
-    return await window.api.getYearlyRevenue(userId);
-  }),
-
-  getDebtStats: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetDebtStats(token, userId);
-    }
-    return await window.api.getDebtStats(userId);
-  }),
-
-  getProductStats: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetProductStats(token, userId);
-    }
-    return await window.api.getProductStats(userId);
-  }),
-
-  getExpenseStats: (startDate, endDate, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetExpenseStats(token, startDate, endDate, userId);
-    }
-    return await window.api.getExpenseStats(startDate, endDate, userId);
-  }),
-
-  getLicenseStatus: () => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      
-      // Get machine ID for remote mode
-      let machineId = null;
-      try {
-        const machRes = await window.api.getMachineId();
-        if (machRes.success) machineId = machRes.data;
-      } catch (e) {
-        // Ignore machine ID errors
-      }
-      
-      return await apiGetLicenseStatus(token, machineId);
-    }
-    return await window.api.getLicenseStatus();
-  }),
-
-  grantLicense: (userId, licenseType = 'pro', days = 365) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiRequest('/licenses/grant', { method: 'POST', token, body: { userId, licenseType, days } });
-    }
-    return await window.api.grantLicense(userId, licenseType, days);
-  }),
-
-  revokeLicense: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiRequest('/licenses/revoke', { method: 'POST', token, body: { userId } });
-    }
-    return await window.api.revokeLicense(userId);
-  }),
-
-  getUnreadCount: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      if (!token) return { success: false, error: 'unauthorized' };
-      return await apiGetUnreadCount(token, userId);
-    }
-    return await window.api.getUnreadCount(userId);
-  }),
-
-  // ─── Appointments ───────────────────────────────────────────────────────
-  getAppointments: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/appointments?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getAppointments(filters);
-  }),
-
-  createAppointment: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/appointments`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.createAppointment(data);
-  }),
-
-  updateAppointment: (id, data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/appointments/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.updateAppointment(id, data);
-  }),
-
-  deleteAppointment: (id) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/appointments/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.deleteAppointment(id);
-  }),
-
-  getUpcomingAppointments: (days, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams({ days: days || 3, ...(userId ? { userId } : {}) }).toString();
-      const r = await fetch(`${resolveBaseUrl()}/appointments/upcoming?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getUpcomingAppointments(days, userId);
-  }),
-
-  getCustomerAppointments: (customerId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/appointments/customer/${customerId}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getCustomerAppointments(customerId);
-  }),
-
-  // ─── Tasks ──────────────────────────────────────────────────────────────
-  getTasks: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/tasks?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getTasks(filters);
-  }),
-
-  createTask: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.createTask(data);
-  }),
-
-  updateTask: (id, data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.updateTask(id, data);
-  }),
-
-  deleteTask: (id) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/tasks/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.deleteTask(id);
-  }),
-
-  getActiveTasks: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = userId ? `?userId=${userId}` : '';
-      const r = await fetch(`${resolveBaseUrl()}/tasks/active${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getActiveTasks(userId);
-  }),
-
-  getTaskStats: (userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = userId ? `?userId=${userId}` : '';
-      const r = await fetch(`${resolveBaseUrl()}/tasks/stats${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getTaskStats(userId);
-  }),
-
-  // ─── Finance ──────────────────────────────────────────────────────────
-  getFinanceSummary: (startDate, endDate, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams({ ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) }).toString();
-      const r = await fetch(`${resolveBaseUrl()}/finance/summary?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getFinanceSummary(startDate, endDate, userId);
-  }),
-
-  getFinanceTransactions: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/finance/transactions?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getFinanceTransactions(filters);
-  }),
-
-  createFinanceTransaction: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/finance/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.createFinanceTransaction(data);
-  }),
-
-  // ─── Debts (unified) ─────────────────────────────────────────────────
-  getDebts: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/debts?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getDebts(filters);
-  }),
-
-  payDebt: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/debts/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.payDebt(data);
-  }),
-
-  getDebtPayments: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/debts/payments?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getDebtPayments(filters);
-  }),
-
-  // ─── Assets ───────────────────────────────────────────────────────────
-  getAssets: (filters) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams(filters || {}).toString();
-      const r = await fetch(`${resolveBaseUrl()}/assets?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.getAssets(filters);
-  }),
-
-  createAsset: (data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/assets`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.createAsset(data);
-  }),
-
-  updateAsset: (id, data) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/assets/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(data) });
-      return await r.json();
-    }
-    return await window.api.updateAsset(id, data);
-  }),
-
-  deleteAsset: (id) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/assets/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    return await window.api.deleteAsset(id);
-  }),
-
-  // ─── Record Payment ──────────────────────────────────────────────────
-  updateRecordPayment: (id, paidAmount, status) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const r = await fetch(`${resolveBaseUrl()}/records/${id}/payment`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ paid_amount: paidAmount, payment_status: status }) });
-      return await r.json();
-    }
-    return await window.api.updateRecordPayment(id, paidAmount, status);
-  }),
-
-  // ─── Sales Payment Stats ─────────────────────────────────────────────
-  getSalesPaymentStats: (startDate, endDate, userId) => safeCall(async () => {
-    if (hasRemote()) {
-      const token = getToken();
-      const params = new URLSearchParams({ ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}), ...(userId ? { userId } : {}) }).toString();
-      const r = await fetch(`${resolveBaseUrl()}/sales/payment-stats?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      return await r.json();
-    }
-    if (window.api?.getSalesPaymentStats) return await window.api.getSalesPaymentStats(startDate, endDate, userId);
+  // ─── License ─────────────────────────────────────────────────────────────
+  getLicenseStatus: () => safeCall(() => window.api.getLicenseStatus()),
+  activateLicense: (key) => safeCall(() => window.api.activateLicense(key)),
+  activateDemo: () => safeCall(() => window.api.activateDemo()),
+  getDeviceId: () => safeCall(() => window.api.getDeviceId()),
+  deactivateLicense: () => safeCall(() => window.api.deactivateLicense()),
+
+  // ─── Records ─────────────────────────────────────────────────────────────
+  getRecords: (filters) => safeCall(() => window.api.getRecords(filters)),
+  getRecord: (id) => safeCall(() => window.api.getRecord(id)),
+  createRecord: (data) => safeCall(() => window.api.createRecord(data)),
+  updateRecord: (id, data) => safeCall(() => window.api.updateRecord(id, data)),
+  deleteRecord: (id) => safeCall(() => window.api.deleteRecord(id)),
+  deleteMultipleRecords: (ids) => safeCall(() => window.api.deleteMultipleRecords(ids)),
+  updateRecordPayment: (id, paidAmount, status) => safeCall(() => window.api.updateRecordPayment(id, paidAmount, status)),
+
+  // ─── Smart Parser ────────────────────────────────────────────────────────
+  parseInput: (text) => safeCall(() => window.api.parseInput(text)),
+  parseInventory: (text) => safeCall(() => window.api.parseInventory(text)),
+  parseUniversal: (text) => safeCall(() => window.api.parseUniversal(text)),
+  createFromParsed: (parsed, overrides) => safeCall(() => window.api.createFromParsed(parsed, overrides)),
+  createSaleFromParsed: (parsed, overrides) => safeCall(() => window.api.createSaleFromParsed(parsed, overrides)),
+
+  // ─── Stats ───────────────────────────────────────────────────────────────
+  getTodayStats: (userId) => safeCall(() => window.api.getTodayStats(userId)),
+  getMonthStats: (year, month, userId) => safeCall(() => window.api.getMonthStats(year, month, userId)),
+  getAllTimeStats: (userId) => safeCall(() => window.api.getAllTimeStats(userId)),
+  getTopServices: (limit, userId) => safeCall(() => window.api.getTopServices(limit, userId)),
+  getTopBrands: (limit, userId) => safeCall(() => window.api.getTopBrands(limit, userId)),
+  getMonthlyChart: (year, userId) => safeCall(() => window.api.getMonthlyChart(year, userId)),
+  getUnpaidRecords: (userId) => safeCall(() => window.api.getUnpaidRecords(userId)),
+  getDebtStats: (userId) => safeCall(() => window.api.getDebtStats(userId)),
+  getProductStats: (userId) => safeCall(() => window.api.getProductStats(userId)),
+  getMonthlyRevenue: (year, userId) => safeCall(() => window.api.getMonthlyRevenue(year, userId)),
+  getYearlyRevenue: (userId) => safeCall(() => window.api.getYearlyRevenue(userId)),
+
+  // ─── Customers ───────────────────────────────────────────────────────────
+  getCustomers: (search, userId) => safeCall(() => window.api.getCustomers(search, userId)),
+  getCustomer: (id) => safeCall(() => window.api.getCustomer(id)),
+  createCustomer: (data) => safeCall(() => window.api.createCustomer(data)),
+  updateCustomer: (id, data) => safeCall(() => window.api.updateCustomer(id, data)),
+  deleteCustomer: (id) => safeCall(() => window.api.deleteCustomer(id)),
+  getCustomerRecords: (id) => safeCall(() => window.api.getCustomerRecords(id)),
+
+  // ─── Vehicles ────────────────────────────────────────────────────────────
+  getVehicles: (search, userId) => safeCall(() => window.api.getVehicles(search, userId)),
+  getVehicle: (id) => safeCall(() => window.api.getVehicle(id)),
+  createVehicle: (data) => safeCall(() => window.api.createVehicle(data)),
+  updateVehicle: (id, data) => safeCall(() => window.api.updateVehicle(id, data)),
+  deleteVehicle: (id) => safeCall(() => window.api.deleteVehicle(id)),
+
+  // ─── Prices ──────────────────────────────────────────────────────────────
+  getPrices: (search, userId) => safeCall(() => window.api.getPrices(search, userId)),
+  createPrice: (data) => safeCall(() => window.api.createPrice(data)),
+  updatePrice: (id, data) => safeCall(() => window.api.updatePrice(id, data)),
+  deletePrice: (id) => safeCall(() => window.api.deletePrice(id)),
+
+  // ─── Settings ────────────────────────────────────────────────────────────
+  getSettings: () => safeCall(() => window.api.getSettings()),
+  saveSettings: (data) => safeCall(() => window.api.saveSettings(data)),
+
+  // ─── Categories ──────────────────────────────────────────────────────────
+  getCategories: (userId) => safeCall(() => window.api.getCategories(userId)),
+  createCategory: (data) => safeCall(() => window.api.createCategory(data)),
+  updateCategory: (id, data) => safeCall(() => window.api.updateCategory(id, data)),
+  deleteCategory: (id) => safeCall(() => window.api.deleteCategory(id)),
+
+  // ─── Suppliers ───────────────────────────────────────────────────────────
+  getSuppliers: (search, userId) => safeCall(() => window.api.getSuppliers(search, userId)),
+  createSupplier: (data) => safeCall(() => window.api.createSupplier(data)),
+  updateSupplier: (id, data) => safeCall(() => window.api.updateSupplier(id, data)),
+  deleteSupplier: (id) => safeCall(() => window.api.deleteSupplier(id)),
+  getSupplierProducts: (id) => safeCall(() => window.api.getSupplierProducts(id)),
+
+  // ─── Products ────────────────────────────────────────────────────────────
+  getProducts: (filters) => safeCall(() => window.api.getProducts(filters)),
+  getProduct: (id) => safeCall(() => window.api.getProduct(id)),
+  createProduct: (data) => safeCall(() => window.api.createProduct(data)),
+  updateProduct: (id, data) => safeCall(() => window.api.updateProduct(id, data)),
+  deleteProduct: (id) => safeCall(() => window.api.deleteProduct(id)),
+  getLowStockProducts: (userId) => safeCall(() => window.api.getLowStockProducts(userId)),
+  getStockValue: (userId) => safeCall(() => window.api.getStockValue(userId)),
+  importProductsFromExcel: (rows, createdBy) => safeCall(() => window.api.importProductsFromExcel(rows, createdBy)),
+
+  // ─── Stock Movements ─────────────────────────────────────────────────────
+  stockIn: (productId, qty, note, createdBy) => safeCall(() => window.api.stockIn(productId, qty, note, createdBy)),
+  stockOut: (productId, qty, note, createdBy) => safeCall(() => window.api.stockOut(productId, qty, note, createdBy)),
+  stockAdjust: (productId, newQty, note, createdBy) => safeCall(() => window.api.stockAdjust(productId, newQty, note, createdBy)),
+  getStockMovements: (filters) => safeCall(() => window.api.getStockMovements(filters)),
+  getStockStats: (userId) => safeCall(() => window.api.getStockStats(userId)),
+
+  // ─── Sales ───────────────────────────────────────────────────────────────
+  getSales: (filters) => safeCall(() => window.api.getSales(filters)),
+  getSale: (id) => safeCall(() => window.api.getSale(id)),
+  createSale: (data) => safeCall(() => window.api.createSale(data)),
+  updateSalePayment: (id, paidAmount, status) => safeCall(() => window.api.updateSalePayment(id, paidAmount, status)),
+  deleteSale: (id) => safeCall(() => window.api.deleteSale(id)),
+  getSalesStats: (startDate, endDate, userId) => safeCall(() => window.api.getSalesStats(startDate, endDate, userId)),
+  getTopSellingProducts: (limit, userId) => safeCall(() => window.api.getTopSellingProducts(limit, userId)),
+  getMonthlySalesChart: (year, userId) => safeCall(() => window.api.getMonthlySalesChart(year, userId)),
+  getSalesPaymentStats: (startDate, endDate, userId) => safeCall(() => {
+    if (window.api?.getSalesPaymentStats) return window.api.getSalesPaymentStats(startDate, endDate, userId);
     return { success: true, data: [] };
   }),
+  generateSaleReceipt: (id) => safeCall(() => window.api.generateSaleReceipt(id)),
+
+  // ─── Users (local, no auth needed) ───────────────────────────────────────
+  getUsers: () => safeCall(() => window.api.getUsers()),
+  createUser: (data) => safeCall(() => window.api.createUser(data)),
+  updateUser: (id, data) => safeCall(() => window.api.updateUser(id, data)),
+  deleteUser: (id) => safeCall(() => window.api.deleteUser(id)),
+  getPendingUsers: () => safeCall(() => window.api.getPendingUsers()),
+  approveUser: (userId, approvedById) => safeCall(() => window.api.approveUser(userId, approvedById)),
+  rejectUser: (userId, approvedById) => safeCall(() => window.api.rejectUser(userId, approvedById)),
+  grantAccess: (userId, accessType, grantedById, customDuration) => safeCall(() => window.api.grantAccess(userId, accessType, grantedById, customDuration)),
+  revokeAccess: (userId, adminId) => safeCall(() => window.api.revokeAccess(userId, adminId)),
+  checkUserAccess: (userId) => safeCall(() => window.api.checkUserAccess(userId)),
+
+  // ─── Roles ───────────────────────────────────────────────────────────────
+  getRoles: () => safeCall(() => window.api.getRoles()),
+  updateRolePermissions: (id, permissions) => safeCall(() => window.api.updateRolePermissions(id, permissions)),
+
+  // ─── Expenses ────────────────────────────────────────────────────────────
+  getExpenses: (filters) => safeCall(() => window.api.getExpenses(filters)),
+  createExpense: (data) => safeCall(() => window.api.createExpense(data)),
+  updateExpense: (id, data) => safeCall(() => window.api.updateExpense(id, data)),
+  deleteExpense: (id) => safeCall(() => window.api.deleteExpense(id)),
+  getExpenseStats: (startDate, endDate, userId) => safeCall(() => window.api.getExpenseStats(startDate, endDate, userId)),
+  getExpenseCategories: () => safeCall(() => window.api.getExpenseCategories()),
+
+  // ─── Notifications ───────────────────────────────────────────────────────
+  getNotifications: (userId, limit) => safeCall(() => window.api.getNotifications(userId, limit)),
+  getUnreadCount: (userId) => safeCall(() => window.api.getUnreadCount(userId)),
+  createNotification: (data) => safeCall(() => window.api.createNotification(data)),
+  markNotificationRead: (id) => safeCall(() => window.api.markNotificationRead(id)),
+  markAllNotificationsRead: () => safeCall(() => window.api.markAllNotificationsRead()),
+  deleteNotification: (id) => safeCall(() => window.api.deleteNotification(id)),
+  checkSystemNotifications: (userId) => safeCall(() => window.api.checkSystemNotifications(userId)),
+
+  // ─── Audit Logs ──────────────────────────────────────────────────────────
+  getAuditLogs: (filters) => safeCall(() => window.api.getAuditLogs(filters)),
+  logAuditAction: (data) => safeCall(() => window.api.logAuditAction(data)),
+  clearAuditLogs: (daysOld) => safeCall(() => window.api.clearAuditLogs(daysOld)),
+
+  // ─── Appointments ────────────────────────────────────────────────────────
+  getAppointments: (filters) => safeCall(() => window.api.getAppointments(filters)),
+  getAppointment: (id) => safeCall(() => window.api.getAppointment(id)),
+  createAppointment: (data) => safeCall(() => window.api.createAppointment(data)),
+  updateAppointment: (id, data) => safeCall(() => window.api.updateAppointment(id, data)),
+  deleteAppointment: (id) => safeCall(() => window.api.deleteAppointment(id)),
+  getUpcomingAppointments: (days, userId) => safeCall(() => window.api.getUpcomingAppointments(days, userId)),
+  getCustomerAppointments: (customerId) => safeCall(() => window.api.getCustomerAppointments(customerId)),
+
+  // ─── Tasks ───────────────────────────────────────────────────────────────
+  getTasks: (filters) => safeCall(() => window.api.getTasks(filters)),
+  getTask: (id) => safeCall(() => window.api.getTask(id)),
+  createTask: (data) => safeCall(() => window.api.createTask(data)),
+  updateTask: (id, data) => safeCall(() => window.api.updateTask(id, data)),
+  deleteTask: (id) => safeCall(() => window.api.deleteTask(id)),
+  getActiveTasks: (userId) => safeCall(() => window.api.getActiveTasks(userId)),
+  getOverdueTasks: (userId) => safeCall(() => window.api.getOverdueTasks(userId)),
+  getTaskStats: (userId) => safeCall(() => window.api.getTaskStats(userId)),
+
+  // ─── Finance ─────────────────────────────────────────────────────────────
+  getFinanceSummary: (startDate, endDate, userId) => safeCall(() => window.api.getFinanceSummary(startDate, endDate, userId)),
+  getFinanceTransactions: (filters) => safeCall(() => window.api.getFinanceTransactions(filters)),
+  createFinanceTransaction: (data) => safeCall(() => window.api.createFinanceTransaction(data)),
+  deleteFinanceTransaction: (id) => safeCall(() => window.api.deleteFinanceTransaction(id)),
+
+  // ─── Debts ───────────────────────────────────────────────────────────────
+  getDebts: (filters) => safeCall(() => window.api.getDebts(filters)),
+  payDebt: (data) => safeCall(() => window.api.payDebt(data)),
+  getDebtPayments: (filters) => safeCall(() => window.api.getDebtPayments(filters)),
+  getDebtStatsUnified: (userId) => safeCall(() => window.api.getDebtStatsUnified(userId)),
+
+  // ─── Assets ──────────────────────────────────────────────────────────────
+  getAssets: (filters) => safeCall(() => window.api.getAssets(filters)),
+  getAsset: (id) => safeCall(() => window.api.getAsset(id)),
+  createAsset: (data) => safeCall(() => window.api.createAsset(data)),
+  updateAsset: (id, data) => safeCall(() => window.api.updateAsset(id, data)),
+  deleteAsset: (id) => safeCall(() => window.api.deleteAsset(id)),
+  getAssetCategories: () => safeCall(() => window.api.getAssetCategories()),
+
+  // ─── Telegram ────────────────────────────────────────────────────────────
+  sendTelegramMessage: (text) => safeCall(() => window.api.sendTelegramMessage(text)),
+  sendTelegramReport: (userId) => safeCall(() => window.api.sendTelegramReport(userId)),
+
+  // ─── Export ──────────────────────────────────────────────────────────────
+  exportExcel: (records, filename) => safeCall(() => window.api.exportExcel(records, filename)),
+  exportPdf: (records, options) => safeCall(() => window.api.exportPdf(records, options)),
+  exportDailyPdf: (records, date, options) => safeCall(() => window.api.exportDailyPdf(records, date, options)),
+  exportCustomersExcel: (customers) => safeCall(() => window.api.exportCustomersExcel(customers)),
+
+  // ─── Backup ──────────────────────────────────────────────────────────────
+  createBackup: (dir) => safeCall(() => window.api.createBackup(dir)),
+  restoreBackup: (filePath) => safeCall(() => window.api.restoreBackup(filePath)),
+  listBackups: (dir) => safeCall(() => window.api.listBackups(dir)),
+  getDbPath: () => safeCall(() => window.api.getDbPath()),
+
+  // ─── File Dialogs ────────────────────────────────────────────────────────
+  openFileDialog: (options) => window.api?.openFileDialog?.(options),
+  openFolderDialog: () => window.api?.openFolderDialog?.(),
+  openPath: (filePath) => window.api?.openPath?.(filePath),
+  showItemInFolder: (filePath) => window.api?.showItemInFolder?.(filePath),
+  openExternal: (url) => window.api?.openExternal?.(url),
+
+  // ─── Logging ─────────────────────────────────────────────────────────────
+  getLogPath: () => safeCall(() => window.api.getLogPath()),
+  openLogFolder: () => safeCall(() => window.api.openLogFolder()),
+
+  // ─── Seed ────────────────────────────────────────────────────────────────
+  seedData: () => safeCall(() => window.api.seedData()),
+
+  // ─── Auto-Update ─────────────────────────────────────────────────────────
+  checkForUpdate: () => safeCall(() => window.api.checkForUpdate()),
+  getAppVersion: () => safeCall(() => window.api.getAppVersion()),
+  downloadUpdate: () => safeCall(() => window.api.downloadUpdate()),
+  installUpdate: () => window.api?.installUpdate?.(),
+  onUpdaterStatus: (cb) => window.api?.onUpdaterStatus?.(cb) || (() => {}),
+
+  // ─── Auth (kept as stubs for backward compat, no server) ─────────────────
+  login: (username, password) => safeCall(() => window.api.login(username, password)),
+  logout: (token) => safeCall(() => window.api.logout(token)),
+  verifyToken: (token) => safeCall(() => window.api.verifyToken(token)),
+  register: (data) => safeCall(() => window.api.register(data)),
+  requestPasswordReset: () => Promise.resolve({ success: false, error: 'Offline rejim' }),
+  resetPassword: () => Promise.resolve({ success: false, error: 'Offline rejim' }),
+
+  // ─── Compat stubs ────────────────────────────────────────────────────────
+  getRemoteConfig: () => ({ enabled: false }),
+  setRemoteConfig: () => {},
+  getDashboardStats: () => Promise.resolve({ success: false, error: 'Use local stats' }),
+  getFinanceStats: (startDate, endDate, userId) => safeCall(() => window.api.getFinanceSummary(startDate, endDate, userId)),
+  getCustomerCount: (userId) => safeCall(() => window.api.getCustomers(null, userId).then(r => ({ success: true, data: r.data?.length || 0 }))),
+  grantLicense: () => Promise.resolve({ success: false, error: 'Offline rejim' }),
+  revokeLicense: () => Promise.resolve({ success: false, error: 'Offline rejim' }),
+  getMachineId: () => safeCall(() => window.api.getDeviceId()),
 };

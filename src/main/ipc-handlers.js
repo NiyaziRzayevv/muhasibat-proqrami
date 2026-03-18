@@ -806,29 +806,36 @@ function registerHandlers() {
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  // ─── License ───────────────────────────────────────────────────────────────
+  // ─── License (RSA-based offline) ──────────────────────────────────────────
+  const licenseService = require('../services/license-service');
+
   ipcMain.handle('license:status', () => {
-    try { return { success: true, data: licensesDb.getLicenseStatus() }; }
+    try { return { success: true, data: licenseService.getLicenseStatus() }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
   ipcMain.handle('license:activate', (_, key) => {
     try {
-      const result = licensesDb.activateLicense(key);
+      const result = licenseService.activateLicenseKey(key);
       if (result.success) {
-        auditLogsDb.logAction({ action: 'LICENSE_ACTIVATED', entity_type: 'licenses', user_name: 'admin', new_data: { key } });
+        try { auditLogsDb.logAction({ action: 'LICENSE_ACTIVATED', entity_type: 'licenses', user_name: 'admin', new_data: { key: key.substring(0, 20) + '...' } }); } catch {}
       }
       return result;
     } catch (e) { return { success: false, error: e.message }; }
   });
 
-  ipcMain.handle('license:generateKey', () => {
-    try { return { success: true, data: licensesDb.generateLicenseKey() }; }
+  ipcMain.handle('license:demo', () => {
+    try { return licenseService.activateDemo(); }
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  ipcMain.handle('license:machineId', () => {
-    try { return { success: true, data: licensesDb.getMachineId() }; }
+  ipcMain.handle('license:deviceId', () => {
+    try { return { success: true, data: licenseService.generateDeviceId() }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('license:deactivate', () => {
+    try { licenseService.deleteLicense(); return { success: true }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 

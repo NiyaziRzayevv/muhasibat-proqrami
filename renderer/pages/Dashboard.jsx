@@ -64,43 +64,57 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
     try {
-      const [dashRes, recentRes, licRes] = await Promise.all([
-        apiBridge.getDashboardStats(userId),
+      const [
+        todayRes, monthRes, allRes, topSvcRes, topBrandRes, chartRes,
+        recentRes, licRes, lowStockRes, stockValRes, salesRes,
+        debtRes, prodRes, expTodayRes, expMonthRes, taskRes, unreadRes
+      ] = await Promise.all([
+        apiBridge.getTodayStats(userId),
+        apiBridge.getMonthStats(year, month, userId),
+        apiBridge.getAllTimeStats(userId),
+        apiBridge.getTopServices(8, userId),
+        apiBridge.getTopBrands(8, userId),
+        apiBridge.getMonthlyChart(year, userId),
         apiBridge.getRecords({ limit: 8, offset: 0, orderBy: 'date', orderDir: 'desc', userId }),
         apiBridge.getLicenseStatus(),
+        apiBridge.getLowStockProducts(userId),
+        apiBridge.getStockValue(userId),
+        apiBridge.getSalesStats(now.toISOString().split('T')[0], now.toISOString().split('T')[0], userId),
+        apiBridge.getDebtStats(userId),
+        apiBridge.getProductStats(userId),
+        apiBridge.getExpenseStats(now.toISOString().split('T')[0], now.toISOString().split('T')[0], userId),
+        apiBridge.getExpenseStats(`${year}-${String(month).padStart(2,'0')}-01`, now.toISOString().split('T')[0], userId),
+        apiBridge.getTaskStats(userId),
+        apiBridge.getUnreadCount(userId),
       ]);
 
-      if (dashRes.success) {
-        const d = dashRes.data;
-        setTodayStats(d.today);
-        setMonthStats(d.month);
-        setAllStats(d.allTime);
-        setTopServices(d.top_services || []);
-        setTopBrands(d.top_brands || []);
-        if (d.monthly_chart) {
-          setMonthlyChart(d.monthly_chart.map(c => ({
-            name: MONTHS_SHORT[parseInt(c.month) - 1],
-            total: c.total,
-            count: c.count,
-          })));
-        }
-        setCustomerCount(d.customer_count || 0);
-        setLowStockProducts(d.low_stock || []);
-        setStockValue(d.stock_value);
-        setTodaySales(d.today_sales);
-        setMonthlyRevenue(d.monthly_revenue || []);
-        setDebtStats(d.debt);
-        setProductStats(d.products);
-        setTodayExpenses(d.today_expenses);
-        setMonthExpenses(d.month_expenses);
-        setUnreadNotifs(d.unread_notifications || 0);
-        setUpcomingAppointments(d.upcoming_appointments || []);
-        setActiveTasks(d.active_tasks || []);
-        setTaskStats(d.task_stats);
+      if (todayRes.success) setTodayStats(todayRes.data);
+      if (monthRes.success) setMonthStats(monthRes.data);
+      if (allRes.success) setAllStats(allRes.data);
+      if (topSvcRes.success) setTopServices(topSvcRes.data || []);
+      if (topBrandRes.success) setTopBrands(topBrandRes.data || []);
+      if (chartRes.success && chartRes.data) {
+        setMonthlyChart((chartRes.data || []).map(c => ({
+          name: MONTHS_SHORT[parseInt(c.month) - 1],
+          total: c.total,
+          count: c.count,
+        })));
       }
       if (recentRes.success) setRecentRecords(recentRes.data);
       if (licRes.success) setLicenseStatus(licRes.data);
+      if (lowStockRes.success) setLowStockProducts(lowStockRes.data || []);
+      if (stockValRes.success) setStockValue(stockValRes.data);
+      if (salesRes.success) setTodaySales(salesRes.data);
+      if (debtRes.success) setDebtStats(debtRes.data);
+      if (prodRes.success) setProductStats(prodRes.data);
+      if (expTodayRes.success) setTodayExpenses(expTodayRes.data);
+      if (expMonthRes.success) setMonthExpenses(expMonthRes.data);
+      if (taskRes.success) setTaskStats(taskRes.data);
+      if (unreadRes.success) setUnreadNotifs(unreadRes.data || 0);
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {

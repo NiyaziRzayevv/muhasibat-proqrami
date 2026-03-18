@@ -27,6 +27,7 @@ import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Notifications from './pages/Notifications';
 import License from './pages/License';
+import LicenseActivation from './pages/LicenseActivation';
 import Appointments from './pages/Appointments';
 import Tasks from './pages/Tasks';
 import Analytics from './pages/Analytics';
@@ -52,19 +53,56 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userAccess, setUserAccess] = useState(null);
-  const [licenseOk, setLicenseOk] = useState(true);
+  const [licenseOk, setLicenseOk] = useState(false);
+  const [licenseChecked, setLicenseChecked] = useState(false);
+  const [licenseInfo, setLicenseInfo] = useState(null);
   const smartInputRef = useRef(null);
 
   useEffect(() => {
-    checkAuth();
+    checkLicenseFirst();
     loadSettings();
   }, []);
 
-  useEffect(() => {
-    if (currentUser) {
-      setLicenseOk(true);
+  // License check is the FIRST thing - before any auth
+  async function checkLicenseFirst() {
+    try {
+      const res = await window.api.getLicenseStatus();
+      if (res.success && res.data.valid) {
+        setLicenseOk(true);
+        setLicenseInfo(res.data.license || res.data);
+        // After license OK, check auth
+        await checkAuth();
+      } else {
+        setLicenseOk(false);
+        setLicenseInfo(res.data || null);
+      }
+    } catch (e) {
+      console.error('License check error:', e);
+      setLicenseOk(false);
+    } finally {
+      setLicenseChecked(true);
     }
-  }, [currentUser]);
+  }
+
+  // Demo timer: re-check license every 30 seconds
+  useEffect(() => {
+    if (!licenseOk) return;
+    if (licenseInfo?.type === 'demo') {
+      const interval = setInterval(async () => {
+        try {
+          const res = await window.api.getLicenseStatus();
+          if (!res.success || !res.data.valid) {
+            setLicenseOk(false);
+            setLicenseInfo(null);
+            setCurrentUser(null);
+          } else {
+            setLicenseInfo(res.data.license || res.data);
+          }
+        } catch {}
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [licenseOk, licenseInfo?.type]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -128,9 +166,12 @@ export default function App() {
 
   async function checkLicense() {
     try {
-      const res = await apiBridge.getLicenseStatus();
-      if (res.success) {
-        setLicenseOk(!res.data.expired);
+      const res = await window.api.getLicenseStatus();
+      if (res.success && res.data.valid) {
+        setLicenseOk(true);
+        setLicenseInfo(res.data.license || res.data);
+      } else {
+        setLicenseOk(false);
       }
     } catch (e) {
       console.error('License check error:', e);
@@ -197,7 +238,7 @@ export default function App() {
   const ctx = {
     settings, showNotification, refreshSettings, theme, setTheme, currency, setCurrency, smartInputRef,
     currentUser, handleLogout, unreadCount, setUnreadCount, loadUnreadCount, isAdmin,
-    userAccess, checkAccess, hasSystemAccess, checkLicense,
+    userAccess, checkAccess, hasSystemAccess, checkLicense, licenseInfo,
     hasPermission: (perm) => {
       if (!currentUser) return false;
       if (currentUser.role_name === 'admin') return true;
@@ -206,6 +247,27 @@ export default function App() {
     }
   };
 
+  // 1. Loading state
+  if (!licenseChecked) {
+    return (
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 2. License NOT valid → show activation screen
+  if (!licenseOk) {
+    return (
+      <LanguageProvider>
+        <LicenseActivation onActivated={() => {
+          checkLicenseFirst();
+        }} />
+      </LanguageProvider>
+    );
+  }
+
+  // 3. License OK but auth not checked yet
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-dark-950 flex items-center justify-center">
@@ -214,6 +276,7 @@ export default function App() {
     );
   }
 
+  // 4. No user logged in → show login
   if (!currentUser) {
     return (
       <LanguageProvider>
@@ -224,6 +287,7 @@ export default function App() {
     );
   }
 
+  // 5. Access check
   if (!accessKnown) {
     return (
       <div className="min-h-screen bg-dark-950 flex items-center justify-center">
@@ -237,29 +301,6 @@ export default function App() {
       <LanguageProvider>
         <AppContext.Provider value={ctx}>
           <NoAccess />
-        </AppContext.Provider>
-      </LanguageProvider>
-    );
-  }
-
-  if (!licenseOk && !isAdmin) {
-    return (
-      <LanguageProvider>
-        <AppContext.Provider value={ctx}>
-          <div className="min-h-screen bg-dark-950 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-3 bg-red-900/30 border-b border-red-800/40">
-              <div className="flex items-center gap-2 text-red-300 text-sm">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Lisenziya müddəti bitib. Proqramı istifadə etmək üçün lisenziya açarı daxil edin.
-              </div>
-              <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-800/40 hover:bg-red-900/30">
-                Çıxış
-              </button>
-            </div>
-            <div className="flex-1">
-              <License />
-            </div>
-          </div>
         </AppContext.Provider>
       </LanguageProvider>
     );

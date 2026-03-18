@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Key, CheckCircle, XCircle, Clock, Copy, RefreshCw, Cpu, AlertTriangle } from 'lucide-react';
+import { Shield, Key, CheckCircle, XCircle, Clock, Copy, Cpu, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { useApp } from '../App';
-import { apiBridge } from '../api/bridge';
-import { apiRequest } from '../api/http';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function License() {
-  const { showNotification, checkLicense, isAdmin } = useApp();
+  const { showNotification, checkLicense, isAdmin, licenseInfo } = useApp();
   const { t } = useLanguage();
   const [license, setLicense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
   const [licenseKey, setLicenseKey] = useState('');
-  const [machineId, setMachineId] = useState('');
-  const [generatedKey, setGeneratedKey] = useState('');
+  const [deviceId, setDeviceId] = useState('');
 
   useEffect(() => {
     loadLicense();
@@ -22,14 +19,12 @@ export default function License() {
   async function loadLicense() {
     setLoading(true);
     try {
-      const licRes = await apiBridge.getLicenseStatus();
+      const [licRes, devRes] = await Promise.all([
+        window.api.getLicenseStatus(),
+        window.api.getDeviceId(),
+      ]);
       if (licRes.success) setLicense(licRes.data);
-      if (window.api?.getMachineId) {
-        const machRes = await window.api.getMachineId();
-        if (machRes.success) setMachineId(machRes.data);
-      } else {
-        setMachineId('Browser rejimi — cihaz ID yoxdur');
-      }
+      if (devRes.success) setDeviceId(devRes.data);
     } catch (e) {
       showNotification('Yükləmə xətası: ' + e.message, 'error');
     } finally {
@@ -44,13 +39,7 @@ export default function License() {
     }
     setActivating(true);
     try {
-      let res;
-      if (window.api?.activateLicense) {
-        res = await window.api.activateLicense(licenseKey.trim().toUpperCase());
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        res = await apiRequest('/licenses/activate', { method: 'POST', token, body: { license_key: licenseKey.trim().toUpperCase(), machine_id: machineId } });
-      }
+      const res = await window.api.activateLicense(licenseKey.trim());
       if (res.success) {
         showNotification('Lisenziya uğurla aktivləşdirildi!', 'success');
         setLicenseKey('');
@@ -66,19 +55,13 @@ export default function License() {
     }
   }
 
-  async function handleGenerateKey() {
+  async function handleDeactivate() {
     try {
-      if (window.api?.generateLicenseKey) {
-        const res = await window.api.generateLicenseKey();
-        if (res.success) setGeneratedKey(res.data);
-        else showNotification(res.error || 'Xəta', 'error');
-        return;
+      const res = await window.api.deactivateLicense();
+      if (res.success) {
+        showNotification('Lisenziya deaktiv edildi', 'success');
+        await loadLicense();
       }
-
-      const token = localStorage.getItem('auth_token') || '';
-      const res = await apiRequest('/licenses/admin/generate-key', { method: 'POST', token, body: {} });
-      if (res.success) setGeneratedKey(res.data);
-      else showNotification(res.error || 'Xəta', 'error');
     } catch (e) {
       showNotification('Xəta: ' + e.message, 'error');
     }
@@ -96,9 +79,16 @@ export default function License() {
     );
   }
 
-  const isActive = license?.valid && !license?.expired;
-  const isPro = license?.type === 'pro';
-  const isTrial = license?.type === 'trial';
+  const isActive = license?.valid;
+  const isLifetime = license?.license?.type === 'lifetime';
+  const isTimed = license?.license?.type === 'timed' || license?.license?.type === 'trial';
+  const isDemo = license?.license?.type === 'demo' || license?.isDemo;
+  const licData = license?.license || {};
+
+  const typeLabel = isLifetime ? 'Ömürlük' : isDemo ? 'Demo (10 dəq)' : isTimed ? 'Müddətli' : 'Yoxdur';
+  const colorClass = isActive
+    ? isLifetime ? 'emerald' : isDemo ? 'amber' : 'blue'
+    : 'red';
 
   return (
     <div className="h-full overflow-y-auto p-6">
@@ -116,77 +106,79 @@ export default function License() {
 
         {/* Status Card */}
         <div className={`rounded-2xl border p-6 ${isActive
-          ? isPro
-            ? 'bg-emerald-900/10 border-emerald-800/40'
-            : 'bg-amber-900/10 border-amber-800/40'
+          ? `bg-${colorClass}-900/10 border-${colorClass}-800/40`
           : 'bg-red-900/10 border-red-800/40'}`}
         >
           <div className="flex items-start gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${isActive ? isPro ? 'bg-emerald-500/20' : 'bg-amber-500/20' : 'bg-red-500/20'}`}>
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${isActive ? `bg-${colorClass}-500/20` : 'bg-red-500/20'}`}>
               {isActive
-                ? isPro ? <CheckCircle size={28} className="text-emerald-400" />
-                        : <Clock size={28} className="text-amber-400" />
+                ? <CheckCircle size={28} className={`text-${colorClass}-400`} />
                 : <XCircle size={28} className="text-red-400" />
               }
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-lg font-bold text-white">
-                  {isPro ? 'PRO Lisenziya' : isTrial ? 'Trial Rejimi' : 'Lisenziya Yoxdur'}
-                </h2>
+                <h2 className="text-lg font-bold text-white">{typeLabel} Lisenziya</h2>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full ${isActive
-                  ? isPro ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                  ? `bg-${colorClass}-500/20 text-${colorClass}-400`
                   : 'bg-red-500/20 text-red-400'}`}>
-                  {isActive ? 'AKTİV' : 'SONA ERDİ'}
+                  {isActive ? 'AKTİV' : license?.reason || 'SONA ERDİ'}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-dark-500">Status</p>
                   <p className={`font-medium ${isActive ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isActive ? 'Aktiv' : 'Bitib'}
+                    {isActive ? 'Aktiv' : 'Deaktiv'}
                   </p>
                 </div>
                 <div>
                   <p className="text-dark-500">Növ</p>
-                  <p className="text-white font-medium">{isPro ? 'PRO' : 'Trial (Sınaq)'}</p>
+                  <p className="text-white font-medium">{typeLabel}</p>
                 </div>
-                {license?.expiresAt && (
+                {licData.expiresAt && (
                   <div>
                     <p className="text-dark-500">Bitmə tarixi</p>
-                    <p className="text-white font-medium">{license.expiresAt}</p>
+                    <p className="text-white font-medium">{new Date(licData.expiresAt).toLocaleDateString('az-AZ')}</p>
                   </div>
                 )}
-                <div>
-                  <p className="text-dark-500">Qalan gün</p>
-                  <p className={`font-bold text-lg ${license?.daysLeft > 7 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {license?.daysLeft || 0} gün
-                  </p>
-                </div>
+                {licData.daysLeft !== null && licData.daysLeft !== undefined && !isDemo && (
+                  <div>
+                    <p className="text-dark-500">Qalan gün</p>
+                    <p className={`font-bold text-lg ${licData.daysLeft > 7 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {isLifetime ? '∞' : `${licData.daysLeft} gün`}
+                    </p>
+                  </div>
+                )}
+                {isDemo && licData.minutesLeft !== undefined && (
+                  <div>
+                    <p className="text-dark-500">Qalan vaxt</p>
+                    <p className="font-bold text-lg text-amber-400">{licData.minutesLeft} dəqiqə</p>
+                  </div>
+                )}
+                {licData.issuedAt && (
+                  <div>
+                    <p className="text-dark-500">Verilmə tarixi</p>
+                    <p className="text-white font-medium">{new Date(licData.issuedAt).toLocaleDateString('az-AZ')}</p>
+                  </div>
+                )}
               </div>
-
-              {isTrial && isActive && license?.daysLeft <= 7 && (
-                <div className="mt-3 flex items-center gap-2 text-amber-400 text-sm">
-                  <AlertTriangle size={14} />
-                  <span>Trial müddəti bitmək üzrədir. Lisenziya açarı daxil edin.</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Machine ID */}
+        {/* Device ID */}
         <div className="bg-dark-900 border border-dark-800 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <Cpu size={16} className="text-dark-400" />
             <h3 className="text-sm font-semibold text-white">Cihaz ID</h3>
           </div>
           <div className="flex items-center gap-3">
-            <code className="flex-1 bg-dark-800 text-primary-400 px-4 py-2 rounded-xl text-sm font-mono">
-              {machineId}
+            <code className="flex-1 bg-dark-800 text-primary-400 px-4 py-2 rounded-xl text-sm font-mono select-all">
+              {deviceId}
             </code>
             <button
-              onClick={() => copyToClipboard(machineId)}
+              onClick={() => copyToClipboard(deviceId)}
               className="p-2 bg-dark-800 hover:bg-dark-700 text-dark-400 hover:text-white rounded-lg transition-colors"
             >
               <Copy size={16} />
@@ -195,14 +187,41 @@ export default function License() {
           <p className="text-xs text-dark-500 mt-2">Lisenziya açarı alarkən bu ID-ni bildirin</p>
         </div>
 
-        {/* Info */}
-        <div className="bg-dark-900 border border-dark-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Key size={16} className="text-primary-400" />
-            <h3 className="text-sm font-semibold text-white">Lisenziya Məlumatı</h3>
+        {/* Activate License */}
+        {isAdmin && (
+          <div className="bg-dark-900 border border-dark-800 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Key size={16} className="text-primary-400" />
+              <h3 className="text-sm font-semibold text-white">Lisenziya Aktivasiyası</h3>
+            </div>
+            <div className="flex gap-3">
+              <textarea
+                value={licenseKey}
+                onChange={(e) => setLicenseKey(e.target.value)}
+                placeholder="Lisenziya açarını yapışdırın..."
+                rows={2}
+                className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-4 py-2 text-sm font-mono text-white placeholder:text-dark-600 focus:outline-none focus:border-primary-500/50 resize-none"
+              />
+              <button
+                onClick={handleActivate}
+                disabled={activating || !licenseKey.trim()}
+                className="px-5 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 self-end"
+              >
+                {activating ? <Loader2 size={16} className="animate-spin" /> : 'Aktiv Et'}
+              </button>
+            </div>
+
+            {isActive && (
+              <button
+                onClick={handleDeactivate}
+                className="mt-4 flex items-center gap-2 text-red-400 hover:text-red-300 text-xs transition-colors"
+              >
+                <Trash2 size={12} />
+                Lisenziyani sil
+              </button>
+            )}
           </div>
-          <p className="text-dark-400 text-sm">Lisenziya admin tərəfindən idarə olunur. Lisenziya almaq üçün admin ilə əlaqə saxlayın.</p>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -177,8 +177,9 @@ contextBridge.exposeInMainWorld('api', {
   // License
   getLicenseStatus: () => ipcRenderer.invoke('license:status'),
   activateLicense: (key) => ipcRenderer.invoke('license:activate', key),
-  generateLicenseKey: () => ipcRenderer.invoke('license:generateKey'),
-  getMachineId: () => ipcRenderer.invoke('license:machineId'),
+  activateDemo: () => ipcRenderer.invoke('license:demo'),
+  getDeviceId: () => ipcRenderer.invoke('license:deviceId'),
+  deactivateLicense: () => ipcRenderer.invoke('license:deactivate'),
 
   // Appointments
   getAppointments: (filters) => ipcRenderer.invoke('appointments:list', filters),
