@@ -231,6 +231,10 @@ contextBridge.exposeInMainWorld('api', {
   // Record Payment
   updateRecordPayment: (id, paidAmount, status) => ipcRenderer.invoke('records:updatePayment', id, paidAmount, status),
 
+  // AI Assistant
+  aiChat: (message, userId) => ipcRenderer.invoke('ai:chat', message, userId),
+  aiQuickActions: () => ipcRenderer.invoke('ai:quickActions'),
+
   // Auto-Update
   checkForUpdate: () => ipcRenderer.invoke('updater:check'),
   getAppVersion: () => ipcRenderer.invoke('updater:version'),

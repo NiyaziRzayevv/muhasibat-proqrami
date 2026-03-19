@@ -24,6 +24,7 @@ const debtsDb = require('../database/debts');
 const financeTransDb = require('../database/finance_transactions');
 const { processSmartInput, createRecordFromParsed, createSaleFromParsed, updateRecordWithPayment } = require('../services/record-service');
 const { parseInventory, parseUniversal } = require('../ai/parser');
+const aiAssistant = require('../ai/assistant');
 const { createBackup, restoreBackup, listBackups } = require('../services/backup-service');
 const { exportRecordsToExcel, exportCustomersToExcel } = require('../exports/excel-export');
 const { exportRecordsToPdf, exportDailyReportToPdf, exportSaleReceiptPdf } = require('../exports/pdf-export');
@@ -1083,6 +1084,23 @@ function registerHandlers() {
       if (!result) return { success: false, error: 'Qeyd tapılmadı' };
       return { success: true, data: result };
     } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── AI ASSISTANT ────────────────────────────────────────
+  ipcMain.handle('ai:chat', async (_, message, userId) => {
+    try {
+      return await aiAssistant.processMessage(message, userId);
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('ai:quickActions', () => {
+    try {
+      return { success: true, data: aiAssistant.getQuickActions() };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   });
 }
 

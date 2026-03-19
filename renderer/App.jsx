@@ -35,6 +35,7 @@ import Analytics from './pages/Analytics';
 import Assets from './pages/Assets';
 import UserWorkspace from './pages/UserWorkspace';
 import NoAccess from './pages/NoAccess';
+import AIAssistant from './pages/AIAssistant';
 import UpdateNotification from './components/UpdateNotification';
 import { apiBridge } from './api/bridge';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -390,6 +391,7 @@ function AppLayout({ sidebarCollapsed, setSidebarCollapsed, notification, smartI
               <Route path="/notifications" element={<ErrorBoundary><Notifications /></ErrorBoundary>} />
               <Route path="/appointments" element={<ErrorBoundary><Appointments /></ErrorBoundary>} />
               <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
+              <Route path="/ai-assistant" element={<ErrorBoundary><AIAssistant /></ErrorBoundary>} />
               <Route path="/analytics" element={<ErrorBoundary><Analytics /></ErrorBoundary>} />
               <Route path="/assets" element={<ErrorBoundary><Assets /></ErrorBoundary>} />
               {/* Admin-only pages */}

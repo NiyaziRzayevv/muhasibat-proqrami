@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, Package,
   ShoppingCart, Truck, ArrowLeftRight, Building2, History,
   Monitor, DollarSign, TrendingDown, Shield, Activity,
-  Bell, Key, LogOut, User, Calendar, CheckSquare, BarChart2
+  Bell, Key, LogOut, User, Calendar, CheckSquare, BarChart2, Bot
 } from 'lucide-react';
 import { useApp } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -62,6 +62,7 @@ function buildAdminNav(unreadCount, t) {
       items: [
         { to: '/appointments', icon: Calendar, label: t('appointments') },
         { to: '/tasks', icon: CheckSquare, label: t('tasks') },
+        { to: '/ai-assistant', icon: Bot, label: 'AI Köməkçi' },
       ]
     },
     {
@@ -128,6 +129,7 @@ function buildUserNav(unreadCount, t) {
       items: [
         { to: '/appointments', icon: Calendar, label: t('appointments') },
         { to: '/tasks', icon: CheckSquare, label: t('tasks') },
+        { to: '/ai-assistant', icon: Bot, label: 'AI Köməkçi' },
         { to: '/notifications', icon: Bell, label: t('notifications'), badge: unreadCount > 0 ? unreadCount : null },
       ]
     },
@@ -162,7 +164,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               <span className="text-lg font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
               <span className="text-lg font-black tracking-tight text-white">Qeyd</span>
             </div>
-            <p className="text-[9px] text-dark-500 mt-0.5">v1.3.9</p>
+            <p className="text-[9px] text-dark-500 mt-0.5">v1.4.3</p>
           </div>
         ) : (
           <div className="flex items-center justify-center">
