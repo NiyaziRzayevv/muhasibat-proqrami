@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, Lock, User, AlertCircle, UserPlus, Phone, Mail, ArrowLeft, CheckCircle, Clock } from 'lucide-react';
+import UpdateNotification from '../components/UpdateNotification';
 import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -165,6 +166,7 @@ export default function Login({ onLogin, onPending }) {
 
   return (
     <div className="h-screen bg-dark-950 overflow-y-auto p-4">
+      <UpdateNotification />
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8 mt-6">
@@ -541,7 +543,7 @@ export default function Login({ onLogin, onPending }) {
         </div>
 
         <p className="text-center text-xs text-dark-600 mt-6">
-          v1.3.9 · SmartQeyd Sistemi
+          v1.4.2 · SmartQeyd Sistemi
         </p>
       </div>
     </div>
