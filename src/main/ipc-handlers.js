@@ -866,22 +866,23 @@ function registerHandlers() {
     } catch (e) { return { success: false, error: e.message }; }
   });
 
-  // Activate license key for user
-  ipcMain.handle('license:activateForUser', (_, userId, licenseKey) => {
+  // Activate license key for user (with device binding)
+  ipcMain.handle('license:activateForUser', (_, userId, licenseKey, deviceId) => {
     try {
-      const result = userLicensesDb.activateUserLicense(userId, licenseKey);
+      const devId = deviceId || licenseService.generateDeviceId();
+      const result = userLicensesDb.activateUserLicense(userId, licenseKey, devId);
       if (result.success) {
-        try { auditLogsDb.logAction({ action: 'USER_LICENSE_ACTIVATED', entity_type: 'user_licenses', entity_id: userId, user_name: String(userId), new_data: { key: licenseKey } }); } catch {}
+        try { auditLogsDb.logAction({ action: 'USER_LICENSE_ACTIVATED', entity_type: 'user_licenses', entity_id: userId, user_name: String(userId), new_data: { key: licenseKey, deviceId: devId } }); } catch {}
       }
       return result;
     } catch (e) { return { success: false, error: e.message }; }
   });
 
-  // Admin: generate license for user
-  ipcMain.handle('license:generateForUser', (_, durationType, durationValue, adminId, targetUserId) => {
+  // Admin: generate license for user (with device binding)
+  ipcMain.handle('license:generateForUser', (_, durationType, durationValue, adminId, targetUserId, targetDeviceId) => {
     try {
-      const result = userLicensesDb.generateUserLicense(durationType, durationValue, adminId, targetUserId || null);
-      try { auditLogsDb.logAction({ action: 'USER_LICENSE_GENERATED', entity_type: 'user_licenses', user_id: adminId, user_name: 'admin', new_data: { durationType, durationValue, targetUserId } }); } catch {}
+      const result = userLicensesDb.generateUserLicense(durationType, durationValue, adminId, targetUserId || null, targetDeviceId || null);
+      try { auditLogsDb.logAction({ action: 'USER_LICENSE_GENERATED', entity_type: 'user_licenses', user_id: adminId, user_name: 'admin', new_data: { durationType, durationValue, targetUserId, targetDeviceId } }); } catch {}
       return { success: true, data: result };
     } catch (e) { return { success: false, error: e.message }; }
   });

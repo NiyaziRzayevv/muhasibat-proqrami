@@ -184,8 +184,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // User-level license
   checkUserLicense: (userId) => ipcRenderer.invoke('license:checkUser', userId),
-  activateUserLicense: (userId, key) => ipcRenderer.invoke('license:activateForUser', userId, key),
-  generateUserLicense: (durationType, durationValue, adminId, targetUserId) => ipcRenderer.invoke('license:generateForUser', durationType, durationValue, adminId, targetUserId),
+  activateUserLicense: (userId, key, deviceId) => ipcRenderer.invoke('license:activateForUser', userId, key, deviceId),
+  generateUserLicense: (durationType, durationValue, adminId, targetUserId, targetDeviceId) => ipcRenderer.invoke('license:generateForUser', durationType, durationValue, adminId, targetUserId, targetDeviceId),
   getAllUserLicenses: () => ipcRenderer.invoke('license:getAllUser'),
   revokeUserLicense: (licenseId) => ipcRenderer.invoke('license:revokeUser', licenseId),
 

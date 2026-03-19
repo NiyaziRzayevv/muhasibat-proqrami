@@ -45,7 +45,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
     setError('');
     setSuccess('');
     try {
-      const res = await window.api.activateUserLicense(currentUser.id, licenseKey.trim());
+      const res = await window.api.activateUserLicense(currentUser.id, licenseKey.trim(), deviceId);
       if (res.success) {
         setSuccess('Lisenziya uğurla aktivləşdirildi!');
         setTimeout(() => onActivated?.(), 1000);
@@ -197,7 +197,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.3.9 · SmartQeyd Sistemi
+          v1.4.0 · SmartQeyd Sistemi
         </p>
       </div>
     </div>

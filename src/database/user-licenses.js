@@ -4,37 +4,50 @@ const crypto = require('crypto');
 const SECRET = 'SQ_2024_LICENSE_KEY_SECRET';
 
 // ─── Encode license info into key ───────────────────────────────────────────
-// Key format: SQ-<type_code><duration_hex>-<random>-<checksum>
+// Key format: SQ-<type_code><duration_hex>-<random>-<devHash>-<checksum>
 // type_code: L=lifetime, M=minutes, H=hours, D=days, O=months
 // duration_hex: hex of duration value (00 for lifetime)
-// This makes the key self-validating - no need to look up in DB on other PC
-function _encodeKey(durationType, durationValue) {
+// devHash: first 5 chars of device_id (binds key to specific PC)
+// This makes the key self-validating and device-bound
+function _encodeKey(durationType, durationValue, deviceId) {
   const typeMap = { lifetime: 'L', minutes: 'M', hours: 'H', days: 'D', months: 'O' };
   const tc = typeMap[durationType] || 'D';
   const dv = durationType === 'lifetime' ? 0 : (durationValue || 30);
   const dvHex = dv.toString(16).toUpperCase().padStart(4, '0');
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase().substring(0, 5);
-  const payload = `${tc}${dvHex}-${rand}`;
+  const devHash = (deviceId || '').substring(0, 5).toUpperCase().padEnd(5, '0');
+  const payload = `${tc}${dvHex}-${rand}-${devHash}`;
   const checksum = crypto.createHmac('sha256', SECRET).update(payload).digest('hex').substring(0, 5).toUpperCase();
-  return `SQ-${tc}${dvHex}-${rand}-${checksum}`;
+  return `SQ-${tc}${dvHex}-${rand}-${devHash}-${checksum}`;
 }
 
 // ─── Decode & validate key ──────────────────────────────────────────────────
 function _decodeKey(licenseKey) {
   const trimmed = (licenseKey || '').trim().toUpperCase();
-  const match = trimmed.match(/^SQ-([LMHDO])([0-9A-F]{4})-([A-Z0-9]{5})-([A-Z0-9]{5})$/);
-  if (!match) return null;
 
-  const [, tc, dvHex, rand, checksum] = match;
-  const payload = `${tc}${dvHex}-${rand}`;
-  const expected = crypto.createHmac('sha256', SECRET).update(payload).digest('hex').substring(0, 5).toUpperCase();
-  if (checksum !== expected) return null;
+  // New format with device hash: SQ-<tc><dvHex>-<rand>-<devHash>-<checksum>
+  const matchNew = trimmed.match(/^SQ-([LMHDO])([0-9A-F]{4})-([A-Z0-9]{5})-([A-Z0-9]{5})-([A-Z0-9]{5})$/);
+  if (matchNew) {
+    const [, tc, dvHex, rand, devHash, checksum] = matchNew;
+    const payload = `${tc}${dvHex}-${rand}-${devHash}`;
+    const expected = crypto.createHmac('sha256', SECRET).update(payload).digest('hex').substring(0, 5).toUpperCase();
+    if (checksum !== expected) return null;
+    const typeMap = { L: 'lifetime', M: 'minutes', H: 'hours', D: 'days', O: 'months' };
+    return { durationType: typeMap[tc] || 'days', durationValue: parseInt(dvHex, 16), deviceHash: devHash };
+  }
 
-  const typeMap = { L: 'lifetime', M: 'minutes', H: 'hours', D: 'days', O: 'months' };
-  const durationType = typeMap[tc] || 'days';
-  const durationValue = parseInt(dvHex, 16);
+  // Legacy format without device hash: SQ-<tc><dvHex>-<rand>-<checksum>
+  const matchOld = trimmed.match(/^SQ-([LMHDO])([0-9A-F]{4})-([A-Z0-9]{5})-([A-Z0-9]{5})$/);
+  if (matchOld) {
+    const [, tc, dvHex, rand, checksum] = matchOld;
+    const payload = `${tc}${dvHex}-${rand}`;
+    const expected = crypto.createHmac('sha256', SECRET).update(payload).digest('hex').substring(0, 5).toUpperCase();
+    if (checksum !== expected) return null;
+    const typeMap = { L: 'lifetime', M: 'minutes', H: 'hours', D: 'days', O: 'months' };
+    return { durationType: typeMap[tc] || 'days', durationValue: parseInt(dvHex, 16), deviceHash: null };
+  }
 
-  return { durationType, durationValue };
+  return null;
 }
 
 // ─── Calculate expires_at from duration ─────────────────────────────────────
@@ -79,10 +92,11 @@ function checkUserLicense(userId) {
 }
 
 // ─── Activate license key for user ───────────────────────────────────────────
-// Self-validating: decodes key to get duration info, creates new license record
-function activateUserLicense(userId, licenseKey) {
+// Self-validating: decodes key to get duration info, checks device binding
+function activateUserLicense(userId, licenseKey, deviceId) {
   const db = getDb();
   const trimmed = (licenseKey || '').trim().toUpperCase();
+  const currentDevHash = (deviceId || '').substring(0, 5).toUpperCase();
 
   // First check if this key was already activated by this user
   const existing = db.prepare(`SELECT * FROM user_licenses WHERE license_key = ? AND user_id = ? AND status = 'active'`).get(trimmed, userId);
@@ -91,7 +105,7 @@ function activateUserLicense(userId, licenseKey) {
   }
 
   // Check if key was already used by another user
-  const usedByOther = db.prepare(`SELECT * FROM user_licenses WHERE license_key = ? AND user_id != ? AND status = 'active'`).get(trimmed, userId);
+  const usedByOther = db.prepare(`SELECT * FROM user_licenses WHERE license_key = ? AND user_id != ?`).get(trimmed, userId);
   if (usedByOther) {
     return { success: false, error: 'Bu açar artıq başqa istifadəçi tərəfindən istifadə olunur' };
   }
@@ -102,6 +116,11 @@ function activateUserLicense(userId, licenseKey) {
     return { success: false, error: 'Lisenziya açarı yanlışdır' };
   }
 
+  // Check device binding - if key has device hash, it must match current device
+  if (decoded.deviceHash && currentDevHash && decoded.deviceHash !== currentDevHash) {
+    return { success: false, error: 'Bu açar başqa cihaz üçün yaradılıb. Sizin cihaz ID-niz uyğun gəlmir.' };
+  }
+
   const { durationType, durationValue } = decoded;
   const type = durationType === 'lifetime' ? 'lifetime' : 'timed';
   const expiresAt = _calcExpiresAt(durationType, durationValue);
@@ -109,34 +128,34 @@ function activateUserLicense(userId, licenseKey) {
   // Deactivate any previous active license for this user
   db.prepare(`UPDATE user_licenses SET status = 'expired', updated_at = datetime('now','localtime') WHERE user_id = ? AND status = 'active'`).run(userId);
 
-  // Create new license record
+  // Create new license record with device_id
   db.prepare(`
-    INSERT INTO user_licenses (license_key, user_id, type, status, issued_by, expires_at, activated_at, created_at, updated_at)
-    VALUES (?, ?, ?, 'active', NULL, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'))
-  `).run(trimmed, userId, type, expiresAt);
+    INSERT INTO user_licenses (license_key, user_id, device_id, type, status, issued_by, expires_at, activated_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'active', NULL, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'))
+  `).run(trimmed, userId, deviceId || null, type, expiresAt);
 
   return { success: true, data: checkUserLicense(userId) };
 }
 
 // ─── Generate license key (admin only) ───────────────────────────────────────
-function generateUserLicense(durationType, durationValue, issuedByAdminId, targetUserId) {
+function generateUserLicense(durationType, durationValue, issuedByAdminId, targetUserId, targetDeviceId) {
   const db = getDb();
-  const licenseKey = _encodeKey(durationType, durationValue);
+  const licenseKey = _encodeKey(durationType, durationValue, targetDeviceId);
   const type = durationType === 'lifetime' ? 'lifetime' : 'timed';
   const expiresAt = targetUserId ? _calcExpiresAt(durationType, durationValue) : null;
 
   // Only insert into local DB if target user is specified (same PC)
   if (targetUserId) {
     db.prepare(`
-      INSERT INTO user_licenses (license_key, user_id, type, status, issued_by, expires_at, created_at, updated_at)
-      VALUES (?, ?, ?, 'active', ?, ?, datetime('now','localtime'), datetime('now','localtime'))
-    `).run(licenseKey, targetUserId, type, issuedByAdminId, expiresAt);
+      INSERT INTO user_licenses (license_key, user_id, device_id, type, status, issued_by, expires_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+    `).run(licenseKey, targetUserId, targetDeviceId || null, type, issuedByAdminId, expiresAt);
   } else {
     // Just record that key was generated (no user yet, status = pending)
     db.prepare(`
-      INSERT INTO user_licenses (license_key, user_id, type, status, issued_by, expires_at, created_at, updated_at)
-      VALUES (?, NULL, ?, 'pending', ?, NULL, datetime('now','localtime'), datetime('now','localtime'))
-    `).run(licenseKey, type, issuedByAdminId);
+      INSERT INTO user_licenses (license_key, user_id, device_id, type, status, issued_by, expires_at, created_at, updated_at)
+      VALUES (?, NULL, ?, ?, 'pending', ?, NULL, datetime('now','localtime'), datetime('now','localtime'))
+    `).run(licenseKey, targetDeviceId || null, type, issuedByAdminId);
   }
 
   return {
@@ -146,6 +165,7 @@ function generateUserLicense(durationType, durationValue, issuedByAdminId, targe
     durationValue,
     expiresAt,
     userId: targetUserId || null,
+    deviceId: targetDeviceId || null,
   };
 }
 
@@ -159,6 +179,18 @@ function getAllUserLicenses() {
     LEFT JOIN users a ON ul.issued_by = a.id
     ORDER BY ul.created_at DESC
   `).all();
+}
+
+// ─── Get license by key (for checking across devices) ───────────────────────
+function getLicenseByKey(licenseKey) {
+  const db = getDb();
+  const trimmed = (licenseKey || '').trim().toUpperCase();
+  return db.prepare(`
+    SELECT ul.*, u.username as user_name, u.full_name as user_full_name
+    FROM user_licenses ul
+    LEFT JOIN users u ON ul.user_id = u.id
+    WHERE ul.license_key = ?
+  `).get(trimmed);
 }
 
 // ─── Expire overdue licenses (called on startup / periodically) ─────────────
@@ -184,6 +216,7 @@ module.exports = {
   activateUserLicense,
   generateUserLicense,
   getAllUserLicenses,
+  getLicenseByKey,
   expireOverdueLicenses,
   revokeUserLicense,
 };

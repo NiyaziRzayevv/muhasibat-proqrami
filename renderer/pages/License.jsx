@@ -20,6 +20,7 @@ export default function License() {
   // Users list for admin
   const [usersList, setUsersList] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [targetDeviceId, setTargetDeviceId] = useState('');
 
   useEffect(() => {
     loadData();
@@ -51,7 +52,7 @@ export default function License() {
     setGeneratedKey('');
     try {
       const targetUser = selectedUserId ? parseInt(selectedUserId) : null;
-      const res = await window.api.generateUserLicense(genDurationType, genDurationValue, currentUser.id, targetUser);
+      const res = await window.api.generateUserLicense(genDurationType, genDurationValue, currentUser.id, targetUser, targetDeviceId.trim() || null);
       if (res.success) {
         setGeneratedKey(res.data.licenseKey);
         showNotification('Lisenziya yaradıldı!', 'success');
@@ -160,6 +161,22 @@ export default function License() {
                 <p className="text-[10px] text-dark-600 mt-1">Boş saxlasanız, açar hər hansı istifadəçiyə verilə bilər</p>
               </div>
 
+              {/* Target Device ID */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-dark-400 mb-1.5">
+                  <Key size={12} className="inline mr-1" />
+                  Müştəri Cihaz ID (məcburi)
+                </label>
+                <input
+                  type="text"
+                  value={targetDeviceId}
+                  onChange={(e) => setTargetDeviceId(e.target.value)}
+                  placeholder="Müştərinin cihaz ID-sini yapışdırın..."
+                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2.5 text-sm font-mono text-primary-400 focus:outline-none focus:border-primary-500/50 placeholder:text-dark-600"
+                />
+                <p className="text-[10px] text-dark-600 mt-1">Müştəri proqramda Cihaz ID-ni kopyalayıb sizə göndərməlidir. Key bu cihaza bağlanacaq.</p>
+              </div>
+
               {/* Duration Type */}
               <div className="mb-4">
                 <label className="block text-xs font-medium text-dark-400 mb-1.5">Müddət tipi</label>
@@ -231,7 +248,7 @@ export default function License() {
               {/* Generate button */}
               <button
                 onClick={handleGenerate}
-                disabled={generating}
+                disabled={generating || !targetDeviceId.trim()}
                 className="w-full py-2.5 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 shadow-lg shadow-primary-500/10"
               >
                 {generating ? (
@@ -293,12 +310,22 @@ export default function License() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-[10px] text-dark-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-dark-500">
                         <span>
                           <User size={10} className="inline mr-0.5" />
                           {lic.user_full_name || lic.user_name || 'Təyin olunmayıb'}
                         </span>
                         <span>{typeLabels[lic.type] || lic.type}</span>
+                        {lic.device_id && (
+                          <span className="text-cyan-400/70 font-mono" title={lic.device_id}>
+                            Cihaz: {lic.device_id.substring(0, 8)}...
+                          </span>
+                        )}
+                        {lic.activated_at && (
+                          <span className="text-dark-400">
+                            Aktiv: {new Date(lic.activated_at).toLocaleDateString('az-AZ')}
+                          </span>
+                        )}
                         {lic.expires_at && (
                           <span className={new Date(lic.expires_at) < new Date() ? 'text-red-400' : ''}>
                             Bitmə: {new Date(lic.expires_at).toLocaleDateString('az-AZ')}
