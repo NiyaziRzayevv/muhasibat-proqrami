@@ -119,7 +119,7 @@ export default function License() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="min-h-full p-4 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">

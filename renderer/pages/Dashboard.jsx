@@ -176,8 +176,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-6 space-y-6">
+    <div className="min-h-full">
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
 
       {/* UPDATE BANNER */}
       {updateStatus && updateStatus !== 'up-to-date' && updateStatus !== 'checking' && updateStatus !== 'error' && !updateDismissed && (() => {

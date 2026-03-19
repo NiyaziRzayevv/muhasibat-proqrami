@@ -365,7 +365,7 @@ function AppLayout({ sidebarCollapsed, setSidebarCollapsed, notification, smartI
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
 
-        <main className="flex-1 overflow-hidden bg-dark-900">
+        <main className="flex-1 overflow-y-auto bg-dark-900">
           <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/workspace" element={<Navigate to="/dashboard" replace />} />

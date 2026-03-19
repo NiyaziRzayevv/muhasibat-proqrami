@@ -96,7 +96,7 @@ export default function Notifications() {
   const unread = notifs.filter(n => !n.is_read).length;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="min-h-full flex flex-col">
       <div className="flex items-center justify-between px-6 py-4 border-b border-dark-800 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center">

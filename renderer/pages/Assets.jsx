@@ -182,7 +182,7 @@ export default function Assets() {
   const totalValue = assets.reduce((s, a) => s + Number(a.current_value ?? a.currentValue ?? a.purchase_price ?? a.purchasePrice ?? 0), 0);
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="min-h-full p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

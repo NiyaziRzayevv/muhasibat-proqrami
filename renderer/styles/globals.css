@@ -42,7 +42,7 @@
 
 @layer components {
   .page-container {
-    @apply flex flex-col h-full overflow-hidden p-6;
+    @apply flex flex-col min-h-full p-4 sm:p-6;
   }
 
   .card {
@@ -166,11 +166,11 @@
   }
 
   .modal-content {
-    @apply bg-gradient-to-br from-dark-800 to-dark-900 border border-dark-700/50 rounded-3xl shadow-2xl shadow-black/50 w-full animate-fade-in;
+    @apply bg-gradient-to-br from-dark-800 to-dark-900 border border-dark-700/50 rounded-3xl shadow-2xl shadow-black/50 w-full animate-fade-in max-h-[90vh] overflow-y-auto;
   }
 
   .form-grid {
-    @apply grid grid-cols-2 gap-4;
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
   }
 
   .form-group {
@@ -182,7 +182,7 @@
   }
 
   .page-header {
-    @apply flex items-center justify-between mb-8;
+    @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6 sm:mb-8;
   }
 
   .page-title {

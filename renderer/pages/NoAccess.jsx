@@ -30,7 +30,7 @@ export default function NoAccess() {
   const isExpired = userAccess?.reason === 'expired';
 
   return (
-    <div className="h-screen flex items-center justify-center bg-dark-950">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-dark-950 overflow-y-auto py-6">
       <div className="max-w-md w-full mx-4 text-center">
         <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
           <Lock size={36} className="text-red-400" />
