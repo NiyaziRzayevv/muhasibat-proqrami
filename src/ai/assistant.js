@@ -116,71 +116,82 @@ function buildDbContext(userId) {
  */
 async function processMessage(message, userId, history = []) {
   try {
-    // Əvvəlcə rule-based intent yoxla
-    const { intent, confidence, raw } = parseIntent(message);
+    // Hər mesaj birbaşa Groq LLM-ə gedir (tam söhbət rejimi)
+    const dbContext = buildDbContext(userId);
+    const llmHistory = history.map(m => ({
+      role: m.role === 'ai' ? 'assistant' : 'user',
+      content: m.text || m.content || '',
+    })).filter(m => m.content);
 
-    // Əgər "kömək" intent-idirsə, birbaşa rule-based cavab
-    if (intent === INTENTS.HELP) {
-      return {
-        success: true,
-        data: { intent, confidence, ...response.formatHelp(), timestamp: new Date().toISOString(), source: 'local' }
-      };
+    let llmResult = null;
+    let llmError = null;
+    try {
+      llmResult = await chatWithGroq(message, dbContext, llmHistory);
+    } catch (err) {
+      llmError = err.message;
     }
 
-    // Groq LLM ilə cəhd et
-    try {
-      const dbContext = buildDbContext(userId);
-      const llmHistory = history.map(m => ({
-        role: m.role === 'ai' ? 'assistant' : 'user',
-        content: m.text || m.content || '',
-      })).filter(m => m.content);
-      const llmResult = await chatWithGroq(message, dbContext, llmHistory);
-      if (llmResult.success && llmResult.text) {
-        // Action parse et
-        const actionResult = parseAndExecuteAction(llmResult.text, userId);
-        if (actionResult) {
-          // Action tapıldı və icra edildi
-          const cleanText = llmResult.text.replace(/```action[\s\S]*?```/g, '').trim();
-          return {
-            success: true,
-            data: {
-              intent: 'ai_action',
-              confidence: 1.0,
-              text: cleanText + '\n\n' + (actionResult.success ? '**' + actionResult.message + '**' : 'Xəta: ' + actionResult.message),
-              type: actionResult.success ? 'success' : 'error',
-              icon: actionResult.success ? 'check-circle' : 'alert-circle',
-              timestamp: new Date().toISOString(),
-              source: 'groq',
-              action: actionResult,
-            }
-          };
-        }
-
+    // LLM uğurlu cavab verdi
+    if (llmResult && llmResult.success && llmResult.text) {
+      // Action parse et
+      const actionResult = parseAndExecuteAction(llmResult.text, userId);
+      if (actionResult) {
+        const cleanText = llmResult.text.replace(/```action[\s\S]*?```/g, '').trim();
         return {
           success: true,
           data: {
-            intent: intent !== INTENTS.UNKNOWN ? intent : 'llm_response',
+            intent: 'ai_action',
             confidence: 1.0,
-            text: llmResult.text,
-            type: 'info',
-            icon: 'sparkles',
+            text: cleanText + '\n\n' + (actionResult.success ? '**' + actionResult.message + '**' : 'Xəta: ' + actionResult.message),
+            type: actionResult.success ? 'success' : 'error',
+            icon: actionResult.success ? 'check-circle' : 'alert-circle',
             timestamp: new Date().toISOString(),
             source: 'groq',
+            action: actionResult,
           }
         };
       }
-    } catch (llmErr) {
-      // LLM uğursuz — fallback-a keç
+
+      return {
+        success: true,
+        data: {
+          intent: 'llm_response',
+          confidence: 1.0,
+          text: llmResult.text,
+          type: 'info',
+          icon: 'sparkles',
+          timestamp: new Date().toISOString(),
+          source: 'groq',
+        }
+      };
     }
 
-    // Fallback: Rule-based cavab
-    const result = executeIntent(intent, userId, raw);
+    // LLM uğursuz — offline fallback (rule-based)
+    const { intent, confidence, raw } = parseIntent(message);
+    if (intent !== INTENTS.UNKNOWN) {
+      const result = executeIntent(intent, userId, raw);
+      return {
+        success: true,
+        data: {
+          intent,
+          confidence,
+          ...result,
+          timestamp: new Date().toISOString(),
+          source: 'local',
+        }
+      };
+    }
+
+    // Heç biri işləmədikdə
+    const errorDetail = llmResult?.error || llmError || '';
     return {
       success: true,
       data: {
-        intent,
-        confidence,
-        ...result,
+        intent: 'offline_response',
+        confidence: 1.0,
+        text: `Hal-hazırda internet bağlantısı və ya AI xidməti ilə problem var. Zəhmət olmasa bir az sonra yenidən cəhd edin.\n\nSistem məlumatı: proqram offline rejimdə işləyir. Aşağıdakı sürətli düymələrdən istifadə edə bilərsiniz.${errorDetail ? '\n\n_Texniki: ' + errorDetail + '_' : ''}`,
+        type: 'warning',
+        icon: 'alert-circle',
         timestamp: new Date().toISOString(),
         source: 'local',
       }

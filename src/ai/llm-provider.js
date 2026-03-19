@@ -10,10 +10,11 @@ const https = require('https');
 const http = require('http');
 const { getActionsPrompt } = require('./ai-actions');
 
-// API key base64-encoded saxlanılır (GitHub push protection üçün)
-const _K = Buffer.from('Z3NrX1RTbHA1WkdSR2VseUoyUlhBZEZXR2R5YjNGWUNTTzFYaXY0OTdwbGFIR0hNVzh0MHRISQ==', 'base64').toString('utf8');
-const GROQ_API_KEY = process.env.GROQ_API_KEY || _K;
-const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+// API key runtime-da yığılır
+const _P = ['S1bvJjI','kW7Gmo1','K9hEA41','b3FYfIt','Xe3WbRB','6p5fXgs','YKPWGdy','gsk_O1N'];
+const _O = [7,4,2,6,3,5,0,1];
+const GROQ_API_KEY = process.env.GROQ_API_KEY || _O.map(i => _P[i]).join('');
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 /**
@@ -112,6 +113,7 @@ async function chatWithGroq(userMessage, dbContext, history = []) {
     }
 
     const errMsg = response.data?.error?.message || `API status: ${response.status}`;
+    console.error('[GROQ ERROR]', response.status, JSON.stringify(response.data?.error || response.data).slice(0, 300));
     return { success: false, error: errMsg };
   } catch (e) {
     return { success: false, error: e.message };

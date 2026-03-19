@@ -37,6 +37,7 @@ import UserWorkspace from './pages/UserWorkspace';
 import NoAccess from './pages/NoAccess';
 import AIAssistant from './pages/AIAssistant';
 import UpdateNotification from './components/UpdateNotification';
+import WhatsNew from './components/WhatsNew';
 import { apiBridge } from './api/bridge';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -327,6 +328,7 @@ export default function App() {
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
         <UpdateNotification />
+        <WhatsNew />
         <HashRouter>
           <AppLayout
             sidebarCollapsed={sidebarCollapsed}
