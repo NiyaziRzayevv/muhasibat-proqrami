@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import UniversalSmartInput from './components/UniversalSmartInput';
 import Dashboard from './pages/Dashboard';
 import Records from './pages/Records';
@@ -362,15 +363,7 @@ function AppLayout({ sidebarCollapsed, setSidebarCollapsed, notification, smartI
     <div className="flex h-screen bg-dark-950 overflow-hidden">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Global AI Smart Input Bar - Only for Admin */}
-        {isAdmin && (
-          <div className="shrink-0 bg-dark-900 border-b border-dark-800 px-4 py-2.5">
-            <UniversalSmartInput
-              compact={true}
-              onDone={(page) => { if (page) navigate(`/${page}`); }}
-            />
-          </div>
-        )}
+        <TopBar />
 
         <main className="flex-1 overflow-hidden bg-dark-900">
           <Routes>

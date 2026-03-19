@@ -176,31 +176,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{t('dashboard')}</h1>
-          <p className="text-sm text-dark-400 mt-0.5">
-            {liveTime.toLocaleDateString('az-AZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 bg-dark-800 border border-dark-700 rounded-xl px-4 py-2">
-            <Clock size={14} className="text-primary-400" />
-            <span className="font-mono text-lg font-bold text-white tracking-widest">
-              {liveTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
-          </div>
-          <button onClick={handleSendTelegram} disabled={sendingTelegram} className="btn-secondary bg-blue-600/10 text-blue-400 border-blue-600/20 hover:bg-blue-600/20 hover:border-blue-600/30">
-            {sendingTelegram ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            Telegram
-          </button>
-          <button onClick={loadData} disabled={loading} className="btn-secondary">
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-            {t('refresh')}
-          </button>
-        </div>
-      </div>
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-[1800px] mx-auto p-5 space-y-5">
 
       {/* UPDATE NOTIFICATION BANNER */}
       {updateStatus && updateStatus !== 'up-to-date' && updateStatus !== 'checking' && updateStatus !== 'error' && !updateDismissed && (() => {
@@ -264,38 +241,39 @@ export default function Dashboard() {
         );
       })()}
 
-      {/* QUICK ACTIONS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: t('posSale'), icon: ShoppingCart, color: 'emerald', path: '/pos' },
-          { label: t('newRecord'), icon: Plus, color: 'blue', path: '/new-record' },
-          { label: t('addExpense'), icon: Wallet, color: 'red', path: '/expenses' },
-          { label: t('reports'), icon: BarChart2, color: 'purple', path: '/reports' },
-        ].map(a => {
-          const Icon = a.icon;
-          const cls = {
-            emerald: 'from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-emerald-500/20',
-            blue:    'from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/20',
-            red:     'from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-red-500/20',
-            purple:  'from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 shadow-purple-500/20',
-          }[a.color];
-          return (
-            <button key={a.path} onClick={() => navigate(a.path)}
-              className={`flex items-center justify-center gap-2 bg-gradient-to-r ${cls} text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg text-sm`}>
-              <Icon size={16} />{a.label}
+      {/* SÜRƏTLI ƏMƏLİYYATLAR */}
+      <div className="bg-dark-800/50 border border-dark-700/40 rounded-2xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Star size={14} className="text-amber-400" />
+          <span className="text-xs font-semibold text-dark-300 uppercase tracking-wider">{t('smartAdd') || 'Sürətli əməliyyatlar'}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={handleSendTelegram} disabled={sendingTelegram} className="text-dark-500 hover:text-blue-400 transition-colors">
+              {sendingTelegram ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             </button>
-          );
-        })}
-      </div>
-
-      <div className="flex-1 overflow-y-auto space-y-6 pr-1">
-        <div className="card p-4">
-          <p className="text-xs font-semibold text-dark-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Star size={13} className="text-primary-400" />
-            {t('smartAdd')}
-          </p>
-          <UniversalSmartInput onDone={() => loadData()} />
+            <button onClick={loadData} disabled={loading} className="text-dark-500 hover:text-white transition-colors">
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: t('posSale') || 'Satış', icon: ShoppingCart, gradient: 'from-emerald-600 to-emerald-500', path: '/pos' },
+            { label: t('customer') || 'Müştəri', icon: Users, gradient: 'from-blue-600 to-blue-500', path: '/customers' },
+            { label: t('products') || 'Məhsul', icon: Package, gradient: 'from-violet-600 to-violet-500', path: '/products' },
+            { label: t('addExpense') || 'Xərc', icon: TrendingDown, gradient: 'from-red-600 to-red-500', path: '/expenses' },
+            { label: t('debts') || 'Borc', icon: CreditCard, gradient: 'from-amber-600 to-amber-500', path: '/debts' },
+            { label: t('analytics') || 'Analiz', icon: BarChart2, gradient: 'from-cyan-600 to-cyan-500', path: '/analytics' },
+          ].map(a => {
+            const Icon = a.icon;
+            return (
+              <button key={a.path} onClick={() => navigate(a.path)}
+                className={`flex items-center gap-2 bg-gradient-to-r ${a.gradient} text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]`}>
+                <Icon size={14} /> {a.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
         {/* GƏLİR DETAYLARI */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -818,6 +796,7 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
+
       </div>
     </div>
   );
