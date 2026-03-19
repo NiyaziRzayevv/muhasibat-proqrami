@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, TrendingUp, Calendar, Wrench, Star, Car, CreditCard, Users,
   RefreshCw, ArrowRight, Clock, CheckCircle, TrendingDown, Bell, Key,
-  ShoppingCart, Plus, Wallet, FileText, BarChart2, Zap, Send, Loader2
+  ShoppingCart, Plus, Wallet, FileText, BarChart2, Zap, Send, Loader2, Bot
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -224,8 +224,8 @@ export default function Dashboard() {
           <button key={a.path} onClick={() => navigate(a.path)} className={`flex items-center gap-1.5 ${a.cls} border font-semibold py-1.5 px-3 rounded-lg text-[11px] transition-all`}><I size={12} />{a.label}</button>
         ); })}
         <div className="ml-auto flex items-center gap-1.5">
-          <button onClick={handleSendTelegram} disabled={sendingTelegram} className="w-8 h-8 rounded-lg bg-dark-800/60 border border-dark-700/40 flex items-center justify-center text-dark-400 hover:text-blue-400 transition-colors">
-            {sendingTelegram ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          <button onClick={() => navigate('/ai-assistant')} title="AI Köməkçi" className="w-8 h-8 rounded-lg bg-dark-800/60 border border-dark-700/40 flex items-center justify-center text-dark-400 hover:text-primary-400 transition-colors">
+            <Bot size={13} />
           </button>
           <button onClick={loadData} disabled={loading} className="w-8 h-8 rounded-lg bg-dark-800/60 border border-dark-700/40 flex items-center justify-center text-dark-400 hover:text-white transition-colors">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />

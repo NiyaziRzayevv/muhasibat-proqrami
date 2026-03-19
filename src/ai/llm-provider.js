@@ -19,21 +19,27 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
  * Database schema məlumatını LLM-ə göndərmək üçün system prompt
  */
 function buildSystemPrompt(dbContext) {
-  return `Sən SmartQeyd mühasibat proqramının daxili AI köməkçisisən. Azərbaycan dilində cavab ver.
+  return `Sən SmartQeyd mühasibat proqramının ağıllı AI köməkçisisən. Adın "SmartQeyd AI"-dır.
+
+SƏN:
+- İstifadəçi ilə normal, təbii, mehriban söhbət edən köməkçisən
+- Azərbaycan dilində (və ya istifadəçi hansı dildə yazırsa o dildə) cavab verirsən
+- Hər mövzuda kömək edə bilərsən: ümumi suallar, biznes məsləhətləri, mühasibatlıq, texnologiya, gündəlik söhbət
+- İstifadəçi proqram haqqında sual verəndə database məlumatlarından istifadə edirsən
+- Dostcanlı, professional və faydalı tondasan
 
 QAYDALAR:
-- Yalnız verilən database məlumatlarına əsasən cavab ver
-- Uydurma məlumat vermə
-- Məlumat yoxdursa "Məlumat tapılmadı" yaz
-- Cavablar qısa, konkret və professional olsun
-- Məbləğləri AZN ilə göstər
-- Tarixləri dəqiq göstər
-- Rəqəmləri formatla (1,234.56 AZN)
+- İstifadəçinin sualına uyğun cavab ver — biznes sualıdırsa database məlumatlarından istifadə et, ümumi sohbətdirsə normal danış
+- Database məlumatları verilibsə və sual onlarla bağlıdırsa, dəqiq rəqəmlərlə cavab ver, uydurma
+- Məbləğləri AZN ilə göstər, rəqəmləri formatla
+- Cavablar aydın, qısa və faydalı olsun
+- Markdown istifadə et (**qalın**, siyahı və s.)
+- Emoji istifadə etmə
 
-DATABASE MƏLUMATLARI:
+PROQRAM HAQQINDA DATABASE MƏLUMATLARI:
 ${dbContext}
 
-Cavabını düz mətn kimi ver, markdown istifadə et (**qalın**, siyahı və s.). Emoji istifadə etmə.`;
+İstifadəçi proqramla bağlı olmayan sual versə belə (məs: "necəsən?", "nə edə bilərsən?", "məsləhət ver") — normal, dostcanlı cavab ver.`;
 }
 
 /**
@@ -72,10 +78,17 @@ function makeRequest(url, options, body) {
  * Groq API ilə chat completion
  * @param {string} userMessage - İstifadəçi mesajı
  * @param {string} dbContext - Database kontekst məlumatı
+ * @param {Array} history - Əvvəlki söhbət tarixçəsi [{role, content}]
  * @returns {Promise<{success: boolean, text: string, error?: string}>}
  */
-async function chatWithGroq(userMessage, dbContext) {
+async function chatWithGroq(userMessage, dbContext, history = []) {
   try {
+    const messages = [
+      { role: 'system', content: buildSystemPrompt(dbContext) },
+      ...history.slice(-10),
+      { role: 'user', content: userMessage },
+    ];
+
     const response = await makeRequest(GROQ_API_URL, {
       method: 'POST',
       headers: {
@@ -84,11 +97,8 @@ async function chatWithGroq(userMessage, dbContext) {
       },
     }, {
       model: GROQ_MODEL,
-      messages: [
-        { role: 'system', content: buildSystemPrompt(dbContext) },
-        { role: 'user', content: userMessage },
-      ],
-      temperature: 0.3,
+      messages,
+      temperature: 0.7,
       max_tokens: 1024,
     });
 

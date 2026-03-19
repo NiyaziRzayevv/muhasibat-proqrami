@@ -172,7 +172,8 @@ export default function AIAssistant() {
         }]);
         return;
       }
-      const res = await window.api.aiChat(text.trim(), currentUser?.id);
+      const chatHistory = messages.filter(m => m.role === 'user' || m.role === 'ai').slice(-10);
+      const res = await window.api.aiChat(text.trim(), currentUser?.id, chatHistory);
       if (res.success && res.data) {
         setMessages(prev => [...prev, { role: 'ai', ...res.data }]);
       } else {

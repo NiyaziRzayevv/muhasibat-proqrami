@@ -1,6 +1,6 @@
 {
   "name": "smartqeyd",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
   "main": "src/main/index.js",
   "scripts": {
@@ -114,7 +114,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "SmartQeyd",
       "runAfterFinish": true,
-      "include": null,
+      "include": "build/installer.nsh",
       "artifactName": "SmartQeyd-Setup-${version}.${ext}"
     },
     "afterSign": null,

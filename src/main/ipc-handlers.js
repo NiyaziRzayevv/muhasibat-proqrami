@@ -1087,9 +1087,9 @@ function registerHandlers() {
   });
 
   // ─── AI ASSISTANT ────────────────────────────────────────
-  ipcMain.handle('ai:chat', async (_, message, userId) => {
+  ipcMain.handle('ai:chat', async (_, message, userId, history) => {
     try {
-      return await aiAssistant.processMessage(message, userId);
+      return await aiAssistant.processMessage(message, userId, history || []);
     } catch (e) {
       return { success: false, error: e.message };
     }

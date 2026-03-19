@@ -23,7 +23,7 @@ function createWindow() {
       contextIsolation: true,
       sandbox: false,
     },
-    icon: fs.existsSync(path.join(__dirname, '../../assets/icon.ico')) ? path.join(__dirname, '../../assets/icon.ico') : undefined,
+    icon: fs.existsSync(path.join(__dirname, '../../assets/logo.ico')) ? path.join(__dirname, '../../assets/logo.ico') : undefined,
     show: false,
     title: 'SmartQeyd',
   });

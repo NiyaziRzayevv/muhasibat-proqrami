@@ -113,7 +113,7 @@ function buildDbContext(userId) {
  * @param {number|null} userId - Cari istifadəçi ID
  * @returns {Promise<{ success: boolean, data: object }>}
  */
-async function processMessage(message, userId) {
+async function processMessage(message, userId, history = []) {
   try {
     // Əvvəlcə rule-based intent yoxla
     const { intent, confidence, raw } = parseIntent(message);
@@ -129,7 +129,11 @@ async function processMessage(message, userId) {
     // Groq LLM ilə cəhd et
     try {
       const dbContext = buildDbContext(userId);
-      const llmResult = await chatWithGroq(message, dbContext);
+      const llmHistory = history.map(m => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.text || m.content || '',
+      })).filter(m => m.content);
+      const llmResult = await chatWithGroq(message, dbContext, llmHistory);
       if (llmResult.success && llmResult.text) {
         return {
           success: true,

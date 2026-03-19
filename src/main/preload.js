@@ -232,7 +232,7 @@ contextBridge.exposeInMainWorld('api', {
   updateRecordPayment: (id, paidAmount, status) => ipcRenderer.invoke('records:updatePayment', id, paidAmount, status),
 
   // AI Assistant
-  aiChat: (message, userId) => ipcRenderer.invoke('ai:chat', message, userId),
+  aiChat: (message, userId, history) => ipcRenderer.invoke('ai:chat', message, userId, history),
   aiQuickActions: () => ipcRenderer.invoke('ai:quickActions'),
 
   // Auto-Update
