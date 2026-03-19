@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package } from 'lucide-react';
 
-const CURRENT_VERSION = '1.4.7';
+const CURRENT_VERSION = '1.4.8';
 
 const CHANGELOGS = {
+  '1.4.8': {
+    title: 'SmartQeyd v1.4.8 — AI Tam İşlək + Düzəlişlər',
+    date: '2026-03-19',
+    highlights: [
+      { icon: Bot, text: 'AI Köməkçi tam söhbət rejimində — Groq LLM ilə limitsiz söhbət' },
+      { icon: Zap, text: 'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq əlavə etmək mümkündür' },
+      { icon: Shield, text: 'API key və model düzəldildi — AI artıq tam işləyir' },
+      { icon: Package, text: 'Masaüstü ikon düzəldildi' },
+    ],
+    changes: [
+      'AI köməkçi Groq LLM ilə tam funksional — limitsiz söhbət',
+      'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq, randevu əlavə etmək',
+      'AI proqramın database-ini tam oxuyur və dəqiq cavab verir',
+      'Güncəlləmə sonrası yeniliklər pəncərəsi',
+      'Masaüstü ikon düzəldildi',
+      'Performans və sabitlik təkmilləşdirmələri',
+    ],
+  },
   '1.4.7': {
     title: 'SmartQeyd v1.4.7 — AI Köməkçi + Yeniliklər',
     date: '2026-03-19',
