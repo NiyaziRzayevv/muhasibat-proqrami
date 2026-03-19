@@ -167,9 +167,13 @@ export default function Login({ onLogin, onPending }) {
     <div className="h-screen bg-dark-950 overflow-y-auto p-4">
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <img src="./logo.png" alt="SmartQeyd" className="h-48 w-auto object-contain mb-4" />
-          <p className="text-dark-400 text-sm mt-1">Smart Business Management</p>
+        <div className="flex flex-col items-center mb-8 mt-6">
+          <img src="./smart.png" alt="SmartQeyd" className="h-20 w-auto object-contain mb-3" />
+          <div className="flex items-center gap-2 select-none">
+            <span className="text-4xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
+            <span className="text-4xl font-black tracking-tight text-white">Qeyd</span>
+          </div>
+          <p className="text-dark-500 text-xs mt-2 tracking-widest uppercase font-medium">Smart Business Management</p>
           {/* Language Switcher */}
           <div className="flex gap-2 mt-3">
             {['az', 'ru', 'en'].map(code => (

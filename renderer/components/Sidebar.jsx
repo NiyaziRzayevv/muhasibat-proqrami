@@ -155,13 +155,18 @@ export default function Sidebar({ collapsed, onToggle }) {
       ${collapsed ? 'w-[72px]' : 'w-64'}`}
     >
       {/* Logo Header */}
-      <div className="flex flex-col items-center py-3 border-b border-dark-800/50 px-3 shrink-0 bg-dark-900/50">
-        <div className="relative flex items-center justify-center shrink-0 overflow-hidden">
-          <img src="./logo.png" alt="logo" className="w-[200px] h-auto object-contain" />
-        </div>
-        {!collapsed && (
-          <div className="text-center mt-1">
-            <p className="text-[10px] text-primary-400/80 font-medium">v1.3.7</p>
+      <div className="flex flex-col items-center py-4 border-b border-dark-800/50 px-3 shrink-0 bg-dark-900/50">
+        {!collapsed ? (
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1 select-none">
+              <span className="text-lg font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
+              <span className="text-lg font-black tracking-tight text-white">Qeyd</span>
+            </div>
+            <p className="text-[9px] text-dark-500 mt-0.5">v1.3.7</p>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center">
+            <span className="text-lg font-black bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">S</span>
           </div>
         )}
         <button

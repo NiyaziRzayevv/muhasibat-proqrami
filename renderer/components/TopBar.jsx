@@ -25,9 +25,10 @@ export default function TopBar() {
       {/* Left spacer */}
       <div className="flex-1" />
 
-      {/* Center Logo */}
-      <div className="absolute left-1/2 -translate-x-1/2">
-        <img src="./logo.png" alt="SmartQeyd" className="h-9 object-contain" />
+      {/* Center Brand */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 select-none">
+        <span className="text-xl font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
+        <span className="text-xl font-black tracking-tight text-white">Qeyd</span>
       </div>
 
       {/* Right: Clock + Notification + User */}
