@@ -1,5 +1,5 @@
 const { autoUpdater } = require('electron-updater');
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, app, BrowserWindow } = require('electron');
 const logger = require('./logger');
 
 let mainWindow = null;
@@ -13,7 +13,6 @@ function sendToRenderer(channel, ...args) {
 function initAutoUpdater(win) {
   mainWindow = win;
 
-  const { app } = require('electron');
   logger.info('UPDATER', `Init auto-updater. Version: ${app.getVersion()}, isPackaged: ${app.isPackaged}`);
 
   // Auto-download updates silently
@@ -95,7 +94,6 @@ function initAutoUpdater(win) {
 
   // IPC: get current version
   ipcMain.handle('updater:version', () => {
-    const { app } = require('electron');
     return { success: true, data: { version: app.getVersion() } };
   });
 
@@ -111,7 +109,25 @@ function initAutoUpdater(win) {
 
   // IPC: install now
   ipcMain.handle('updater:install', () => {
-    autoUpdater.quitAndInstall(false, true);
+    try {
+      const { closeDb } = require('../database/index');
+      closeDb();
+    } catch (e) { /* ignore */ }
+
+    // Bütün pəncərələri force bağla
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(w => {
+      w.removeAllListeners('close');
+      w.destroy();
+    });
+
+    // isSilent=true (sessiz quraşdır), isForceRunAfter=true (sonra yenidən aç)
+    autoUpdater.quitAndInstall(true, true);
+
+    // Əgər hələ bağlanmayıbsa, force exit
+    setTimeout(() => {
+      app.exit(0);
+    }, 2000);
   });
 
   // Check for updates 5 seconds after launch, then every 4 hours
