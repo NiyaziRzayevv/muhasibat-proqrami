@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Notification } = require('electron');
+const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { registerHandlers } = require('./ipc-handlers');
@@ -31,7 +31,6 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.maximize();
-    setTimeout(() => checkLowStockNotification(), 3000);
     initAutoUpdater(mainWindow);
   });
 
@@ -57,30 +56,6 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
-}
-
-function checkLowStockNotification() {
-  logger.info('STOCK', 'Running low-stock notification check');
-  try {
-    const { getDb } = require('../database/index');
-    const db = getDb();
-    const lowStock = db.prepare(`
-      SELECT name, stock_qty, min_stock, unit FROM products
-      WHERE stock_qty <= min_stock AND min_stock > 0
-      ORDER BY (min_stock - stock_qty) DESC LIMIT 10
-    `).all();
-
-    if (lowStock.length > 0 && Notification.isSupported()) {
-      const names = lowStock.slice(0, 3).map(p => `• ${p.name}: ${p.stock_qty} ${p.unit}`).join('\n');
-      new Notification({
-        title: `⚠️ Azalan Stok — ${lowStock.length} məhsul`,
-        body: names + (lowStock.length > 3 ? `\n... və ${lowStock.length - 3} digər` : ''),
-        urgency: 'normal',
-      }).show();
-    }
-  } catch (e) {
-    logger.errorLog('LOW_STOCK_CHECK', e);
-  }
 }
 
 app.whenReady().then(() => {

@@ -62,9 +62,9 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
   const notifications = [];
   if (!currentUserId) return notifications;
 
-  // Low stock check
+  // Low stock check — only products created by this user
   try {
-    const lowStock = db.prepare(`SELECT COUNT(*) as count FROM products WHERE stock_qty <= min_stock AND min_stock > 0`).get();
+    const lowStock = db.prepare(`SELECT COUNT(*) as count FROM products WHERE stock_qty <= min_stock AND min_stock > 0 AND created_by = ?`).get(currentUserId);
     if (lowStock.count > 0) {
       const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'low_stock' AND is_read = 0 AND user_id = ?`).get(currentUserId);
       if (!existing) {
@@ -80,10 +80,10 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
     }
   } catch (e) { /* ignore */ }
 
-  // Unpaid debts check
+  // Unpaid debts check — only records/sales created by this user
   try {
-    const unpaid = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(remaining_amount),0) as total FROM records WHERE payment_status IN ('gozleyir','qismen','borc')`).get();
-    const saleDebt = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(total - paid_amount),0) as total FROM sales WHERE total > paid_amount`).get();
+    const unpaid = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(remaining_amount),0) as total FROM records WHERE payment_status IN ('gozleyir','qismen','borc') AND created_by = ?`).get(currentUserId);
+    const saleDebt = db.prepare(`SELECT COUNT(*) as count, COALESCE(SUM(total - paid_amount),0) as total FROM sales WHERE total > paid_amount AND created_by = ?`).get(currentUserId);
     const totalCount = (unpaid.count || 0) + (saleDebt.count || 0);
     const totalAmount = (unpaid.total || 0) + (saleDebt.total || 0);
     if (totalCount > 0) {
@@ -101,11 +101,11 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
     }
   } catch (e) { /* ignore */ }
 
-  // Upcoming appointments check (today + tomorrow)
+  // Upcoming appointments check (today + tomorrow) — only this user's appointments
   try {
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const upcoming = db.prepare(`SELECT COUNT(*) as count FROM appointments WHERE date >= ? AND date <= ? AND status IN ('pending','confirmed')`).get(today, tomorrow);
+    const upcoming = db.prepare(`SELECT COUNT(*) as count FROM appointments WHERE date >= ? AND date <= ? AND status IN ('pending','confirmed') AND created_by = ?`).get(today, tomorrow, currentUserId);
     if (upcoming.count > 0) {
       const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'upcoming_appointments' AND is_read = 0 AND user_id = ?`).get(currentUserId);
       if (!existing) {
@@ -121,10 +121,10 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
     }
   } catch (e) { /* ignore */ }
 
-  // Overdue tasks check
+  // Overdue tasks check — only this user's tasks
   try {
     const today = new Date().toISOString().split('T')[0];
-    const overdue = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status != 'done' AND due_date IS NOT NULL AND due_date < ?`).get(today);
+    const overdue = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status != 'done' AND due_date IS NOT NULL AND due_date < ? AND created_by = ?`).get(today, currentUserId);
     if (overdue.count > 0) {
       const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'overdue_tasks' AND is_read = 0 AND user_id = ?`).get(currentUserId);
       if (!existing) {
@@ -140,9 +140,9 @@ function checkAndCreateSystemNotifications(currentUserId = null) {
     }
   } catch (e) { /* ignore */ }
 
-  // Pending tasks check
+  // Pending tasks check — only this user's tasks
   try {
-    const pending = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status = 'todo'`).get();
+    const pending = db.prepare(`SELECT COUNT(*) as count FROM tasks WHERE status = 'todo' AND created_by = ?`).get(currentUserId);
     if (pending.count > 5) {
       const existing = db.prepare(`SELECT id FROM notifications WHERE type = 'pending_tasks' AND is_read = 0 AND user_id = ?`).get(currentUserId);
       if (!existing) {
