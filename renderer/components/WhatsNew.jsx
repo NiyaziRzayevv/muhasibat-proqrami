@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package } from 'lucide-react';
 
-const CURRENT_VERSION = '1.4.8';
+const CURRENT_VERSION = '1.4.9';
 
 const CHANGELOGS = {
   '1.4.8': {
