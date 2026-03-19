@@ -73,35 +73,34 @@ export default function App() {
         setLicenseInfo(res.data.license || res.data);
       } else {
         setLicenseOk(false);
-        setLicenseInfo(res.data || null);
+        // Keep info so LicenseActivation can show expired message
+        setLicenseInfo(res.data ? { ...res.data, expired: true } : { expired: true });
       }
     } catch (e) {
       console.error('License check error:', e);
       setLicenseOk(false);
+      setLicenseInfo(null);
     } finally {
       setLicenseChecked(true);
     }
   }
 
-  // Demo timer: re-check license every 30 seconds
+  // Re-check license every 30 seconds (demo + timed)
   useEffect(() => {
     if (!licenseOk) return;
-    if (licenseInfo?.type === 'demo') {
-      const interval = setInterval(async () => {
-        try {
-          const res = await window.api.getLicenseStatus();
-          if (!res.success || !res.data.valid) {
-            setLicenseOk(false);
-            setLicenseInfo(null);
-            setCurrentUser(null);
-          } else {
-            setLicenseInfo(res.data.license || res.data);
-          }
-        } catch {}
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [licenseOk, licenseInfo?.type]);
+    const interval = setInterval(async () => {
+      try {
+        const res = await window.api.getLicenseStatus();
+        if (!res.success || !res.data.valid) {
+          setLicenseOk(false);
+          setLicenseInfo(res.data ? { ...res.data, expired: true } : { expired: true });
+        } else {
+          setLicenseInfo(res.data.license || res.data);
+        }
+      } catch {}
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [licenseOk]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -278,9 +277,12 @@ export default function App() {
     return (
       <LanguageProvider>
         <AppContext.Provider value={ctx}>
-          <LicenseActivation onActivated={() => {
-            checkLicenseAfterLogin();
-          }} />
+          <LicenseActivation
+            licenseInfo={licenseInfo}
+            onActivated={() => {
+              checkLicenseAfterLogin();
+            }}
+          />
         </AppContext.Provider>
       </LanguageProvider>
     );

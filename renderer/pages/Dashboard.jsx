@@ -61,6 +61,25 @@ export default function Dashboard() {
   const [taskStats, setTaskStats] = useState(null);
   const [liveTime, setLiveTime] = useState(new Date());
   const [sendingTelegram, setSendingTelegram] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState(null);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [updateDismissed, setUpdateDismissed] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
+
+  // Listen for update events
+  useEffect(() => {
+    if (!window.api?.onUpdaterStatus) return;
+    const unsub = window.api.onUpdaterStatus((data) => {
+      setUpdateStatus(data.status);
+      if (data.status === 'available') {
+        setUpdateInfo(data);
+        setUpdateDismissed(false);
+      }
+      if (data.status === 'downloading') setUpdateProgress(data.percent || 0);
+      if (data.status === 'downloaded') setUpdateInfo(prev => ({ ...prev, ...data }));
+    });
+    return () => { if (unsub) unsub(); };
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -182,6 +201,68 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {/* UPDATE NOTIFICATION BANNER */}
+      {updateStatus && updateStatus !== 'up-to-date' && updateStatus !== 'checking' && updateStatus !== 'error' && !updateDismissed && (() => {
+        const version = updateInfo?.version || '?';
+        const releaseNotes = updateInfo?.releaseNotes || '';
+        const changeItems = releaseNotes.split('\n').filter(l => l.trim().startsWith('-')).map(l => l.trim().replace(/^-\s*/, ''));
+        return (
+          <div className="bg-gradient-to-r from-primary-900/40 to-primary-950/60 border border-primary-700/30 rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16" />
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                  <Zap size={16} className="text-primary-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    {updateStatus === 'downloaded' ? 'Yeniləmə hazırdır!' : updateStatus === 'downloading' ? 'Yüklənir...' : `Yeni versiya mövcuddur: v${version}`}
+                  </p>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400">v{version}</span>
+                </div>
+              </div>
+              <button onClick={() => setUpdateDismissed(true)} className="text-dark-500 hover:text-white transition-colors p-1">
+                <span className="text-xs">Bağla</span>
+              </button>
+            </div>
+            {changeItems.length > 0 && (
+              <div className="space-y-1.5 mb-4">
+                <p className="text-xs font-medium text-dark-400 uppercase tracking-wider">Dəyişikliklər:</p>
+                {changeItems.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 bg-dark-800/40 rounded-lg px-3 py-2">
+                    <CheckCircle size={12} className="text-primary-400 shrink-0 mt-0.5" />
+                    <span className="text-xs text-dark-200">{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {updateStatus === 'downloading' && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-dark-400 mb-1">
+                  <span>Yüklənir...</span>
+                  <span>{updateProgress}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-dark-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full transition-all duration-300" style={{ width: `${updateProgress}%` }} />
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {updateStatus === 'available' && (
+                <button onClick={() => window.api?.downloadUpdate?.()} className="flex items-center gap-1.5 py-2 px-4 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold transition-colors">
+                  <ArrowRight size={12} /> Yüklə və yenilə
+                </button>
+              )}
+              {updateStatus === 'downloaded' && (
+                <button onClick={() => window.api?.installUpdate?.()} className="flex items-center gap-1.5 py-2 px-4 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-colors">
+                  <RefreshCw size={12} /> Yenidən başlat və yenilə
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* QUICK ACTIONS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

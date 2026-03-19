@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Key, Copy, CheckCircle, Clock, Shield, AlertTriangle, Loader2, Monitor, Phone, LogOut } from 'lucide-react';
 import { useApp } from '../App';
 
-export default function LicenseActivation({ onActivated }) {
+export default function LicenseActivation({ onActivated, licenseInfo }) {
   const { currentUser, handleLogout, showNotification } = useApp();
   const [deviceId, setDeviceId] = useState('');
   const [licenseKey, setLicenseKey] = useState('');
@@ -10,6 +10,7 @@ export default function LicenseActivation({ onActivated }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
+  const isExpired = licenseInfo?.expired === true;
 
   useEffect(() => {
     loadDeviceId();
@@ -83,6 +84,26 @@ export default function LicenseActivation({ onActivated }) {
 
         {/* Card */}
         <div className="bg-dark-900/80 backdrop-blur border border-dark-800/60 rounded-2xl p-6 shadow-2xl">
+
+          {/* Expired license warning */}
+          {isExpired && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3.5 mb-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <AlertTriangle size={16} className="text-red-400" />
+                <p className="text-red-300 text-sm font-semibold">Lisenziya müddəti bitib!</p>
+              </div>
+              <p className="text-red-400/80 text-xs mb-2">
+                Sistemdən istifadə etmək üçün yeni lisenziya açarı almalısınız.
+              </p>
+              <div className="flex items-center gap-2">
+                <Phone size={14} className="text-red-400" />
+                <a href="tel:+994556115900" className="text-red-300 font-bold text-base tracking-wide hover:text-red-200 transition-colors">
+                  055 611 59 00
+                </a>
+              </div>
+              <p className="text-red-500/60 text-xs mt-1">ilə əlaqə saxlayın və yeni lisenziya əldə edin</p>
+            </div>
+          )}
 
           {/* Contact info banner */}
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-5">
@@ -172,7 +193,7 @@ export default function LicenseActivation({ onActivated }) {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.3.1 · SmartQeyd Sistemi
+          v1.3.2 · SmartQeyd Sistemi
         </p>
       </div>
     </div>
