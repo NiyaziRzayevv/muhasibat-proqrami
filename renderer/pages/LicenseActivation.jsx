@@ -197,7 +197,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.3.8 · SmartQeyd Sistemi
+          v1.3.9 · SmartQeyd Sistemi
         </p>
       </div>
     </div>
