@@ -69,6 +69,26 @@ const SCHEMA = `
     created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
+  CREATE TABLE IF NOT EXISTS user_licenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    license_key TEXT NOT NULL UNIQUE,
+    user_id INTEGER,
+    device_id TEXT,
+    type TEXT NOT NULL DEFAULT 'timed',
+    status TEXT NOT NULL DEFAULT 'active',
+    issued_by INTEGER,
+    expires_at TEXT,
+    activated_at TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (issued_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_user_licenses_user ON user_licenses(user_id);
+  CREATE INDEX IF NOT EXISTS idx_user_licenses_key ON user_licenses(license_key);
+  CREATE INDEX IF NOT EXISTS idx_user_licenses_status ON user_licenses(status);
+
   CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,

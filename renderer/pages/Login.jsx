@@ -84,12 +84,7 @@ export default function Login({ onLogin, onPending }) {
         phone: phone.trim() || null,
         email: email.trim() || null,
       });
-      if (res.success && res.data?.token) {
-        // Auto-login after registration
-        localStorage.setItem('auth_token', res.data.token);
-        localStorage.setItem('auth_user', JSON.stringify(res.data));
-        onLogin(res.data);
-      } else if (res.success) {
+      if (res.success) {
         setSuccess(t('registerSuccess'));
         setMode('login');
       } else {

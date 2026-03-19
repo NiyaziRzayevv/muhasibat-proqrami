@@ -37,11 +37,15 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
       setError('Lisenziya açarını daxil edin');
       return;
     }
+    if (!currentUser?.id) {
+      setError('İstifadəçi tapılmadı. Yenidən giriş edin.');
+      return;
+    }
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      const res = await window.api.activateLicense(licenseKey.trim());
+      const res = await window.api.activateUserLicense(currentUser.id, licenseKey.trim());
       if (res.success) {
         setSuccess('Lisenziya uğurla aktivləşdirildi!');
         setTimeout(() => onActivated?.(), 1000);

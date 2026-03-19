@@ -174,13 +174,20 @@ contextBridge.exposeInMainWorld('api', {
   logAuditAction: (data) => ipcRenderer.invoke('audit:log', data),
   clearAuditLogs: (daysOld) => ipcRenderer.invoke('audit:clear', daysOld),
 
-  // License
+  // License (legacy device-level)
   getLicenseStatus: () => ipcRenderer.invoke('license:status'),
   activateLicense: (key) => ipcRenderer.invoke('license:activate', key),
   activateDemo: () => ipcRenderer.invoke('license:demo'),
   getDeviceId: () => ipcRenderer.invoke('license:deviceId'),
   deactivateLicense: () => ipcRenderer.invoke('license:deactivate'),
   generateLicense: (deviceId, durationType, durationValue) => ipcRenderer.invoke('license:generate', deviceId, durationType, durationValue),
+
+  // User-level license
+  checkUserLicense: (userId) => ipcRenderer.invoke('license:checkUser', userId),
+  activateUserLicense: (userId, key) => ipcRenderer.invoke('license:activateForUser', userId, key),
+  generateUserLicense: (durationType, durationValue, adminId, targetUserId) => ipcRenderer.invoke('license:generateForUser', durationType, durationValue, adminId, targetUserId),
+  getAllUserLicenses: () => ipcRenderer.invoke('license:getAllUser'),
+  revokeUserLicense: (licenseId) => ipcRenderer.invoke('license:revokeUser', licenseId),
 
   // Appointments
   getAppointments: (filters) => ipcRenderer.invoke('appointments:list', filters),

@@ -64,17 +64,28 @@ export default function App() {
     loadSettings();
   }, []);
 
-  // Check license after user logs in
-  async function checkLicenseAfterLogin() {
+  // Check license for current user (user-level)
+  async function checkLicenseAfterLogin(user) {
+    const u = user || currentUser;
+    if (!u) { setLicenseChecked(true); return; }
     try {
-      const res = await window.api.getLicenseStatus();
+      // Admin always has license
+      const isAdm = u.role_name === 'admin' || u.username === 'admin';
+      if (isAdm) {
+        setLicenseOk(true);
+        setLicenseInfo({ type: 'lifetime', daysLeft: null });
+        setLicenseChecked(true);
+        return;
+      }
+      // User-level license check
+      const res = await window.api.checkUserLicense(u.id);
       if (res.success && res.data.valid) {
         setLicenseOk(true);
         setLicenseInfo(res.data.license || res.data);
       } else {
         setLicenseOk(false);
-        // Keep info so LicenseActivation can show expired message
-        setLicenseInfo(res.data ? { ...res.data, expired: true } : { expired: true });
+        const reason = res.data?.reason || 'no_license';
+        setLicenseInfo({ expired: reason === 'expired', reason, ...(res.data || {}) });
       }
     } catch (e) {
       console.error('License check error:', e);
@@ -85,22 +96,25 @@ export default function App() {
     }
   }
 
-  // Re-check license every 30 seconds (demo + timed)
+  // Re-check user license every 30 seconds
   useEffect(() => {
-    if (!licenseOk) return;
+    if (!licenseOk || !currentUser) return;
+    const isAdm = currentUser.role_name === 'admin' || currentUser.username === 'admin';
+    if (isAdm) return; // Admin never expires
     const interval = setInterval(async () => {
       try {
-        const res = await window.api.getLicenseStatus();
+        const res = await window.api.checkUserLicense(currentUser.id);
         if (!res.success || !res.data.valid) {
           setLicenseOk(false);
-          setLicenseInfo(res.data ? { ...res.data, expired: true } : { expired: true });
+          const reason = res.data?.reason || 'expired';
+          setLicenseInfo({ expired: true, reason, ...(res.data || {}) });
         } else {
           setLicenseInfo(res.data.license || res.data);
         }
       } catch {}
     }, 30000);
     return () => clearInterval(interval);
-  }, [licenseOk]);
+  }, [licenseOk, currentUser]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -129,8 +143,8 @@ export default function App() {
         if (res.success) {
           setCurrentUser(res.data);
           await checkAccess(res.data);
-          // User logged in — now check license
-          await checkLicenseAfterLogin();
+          // User logged in — now check user-level license
+          await checkLicenseAfterLogin(res.data);
         } else {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
@@ -206,8 +220,8 @@ export default function App() {
   async function handleLogin(user) {
     setCurrentUser(user);
     await checkAccess(user);
-    // After login, check license
-    await checkLicenseAfterLogin();
+    // After login, check user-level license
+    await checkLicenseAfterLogin(user);
   }
 
   async function handleLogout() {

@@ -806,7 +806,7 @@ function registerHandlers() {
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  // ─── License (RSA-based offline) ──────────────────────────────────────────
+  // ─── License (RSA-based offline — legacy, kept for admin device license) ───
   const licenseService = require('../services/license-service');
 
   ipcMain.handle('license:status', () => {
@@ -845,6 +845,57 @@ function registerHandlers() {
       try { auditLogsDb.logAction({ action: 'LICENSE_GENERATED', entity_type: 'licenses', user_name: 'admin', new_data: { deviceId, durationType, durationValue } }); } catch {}
       return { success: true, data: result };
     } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── User-Level License System ─────────────────────────────────────────────
+  const userLicensesDb = require('../database/user-licenses');
+
+  // Check license for specific user (admin always passes)
+  ipcMain.handle('license:checkUser', (_, userId) => {
+    try {
+      const user = usersDb.getUserById(userId);
+      if (!user) return { success: true, data: { valid: false, reason: 'user_not_found' } };
+      // Admin always has license
+      if (user.role_name === 'admin' || user.username === 'admin') {
+        return { success: true, data: { valid: true, license: { type: 'lifetime', daysLeft: null } } };
+      }
+      // Expire overdue licenses first
+      userLicensesDb.expireOverdueLicenses();
+      const result = userLicensesDb.checkUserLicense(userId);
+      return { success: true, data: result };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // Activate license key for user
+  ipcMain.handle('license:activateForUser', (_, userId, licenseKey) => {
+    try {
+      const result = userLicensesDb.activateUserLicense(userId, licenseKey);
+      if (result.success) {
+        try { auditLogsDb.logAction({ action: 'USER_LICENSE_ACTIVATED', entity_type: 'user_licenses', entity_id: userId, user_name: String(userId), new_data: { key: licenseKey } }); } catch {}
+      }
+      return result;
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // Admin: generate license for user
+  ipcMain.handle('license:generateForUser', (_, durationType, durationValue, adminId, targetUserId) => {
+    try {
+      const result = userLicensesDb.generateUserLicense(durationType, durationValue, adminId, targetUserId || null);
+      try { auditLogsDb.logAction({ action: 'USER_LICENSE_GENERATED', entity_type: 'user_licenses', user_id: adminId, user_name: 'admin', new_data: { durationType, durationValue, targetUserId } }); } catch {}
+      return { success: true, data: result };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // Admin: get all user licenses
+  ipcMain.handle('license:getAllUser', () => {
+    try { return { success: true, data: userLicensesDb.getAllUserLicenses() }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // Admin: revoke license
+  ipcMain.handle('license:revokeUser', (_, licenseId) => {
+    try { return userLicensesDb.revokeUserLicense(licenseId); }
+    catch (e) { return { success: false, error: e.message }; }
   });
 
   // ─── Appointments ─────────────────────────────────────────────────────────
