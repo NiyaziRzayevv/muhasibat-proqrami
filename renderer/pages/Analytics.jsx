@@ -15,24 +15,24 @@ const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06
 
 function fmt(n) { return Number(n || 0).toFixed(2); }
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 shadow-xl">
-      <p className="text-xs text-dark-400 mb-1">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} className="text-xs font-semibold" style={{ color: p.color }}>
-          {p.name}: {p.value?.toFixed ? p.value.toFixed(2) : p.value} {csym}
-        </p>
-      ))}
-    </div>
-  );
-};
-
 export default function Analytics() {
   const { currentUser, isAdmin, currency } = useApp();
   const { t } = useLanguage();
   const csym = getCurrencySymbol(currency);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-dark-800 border border-dark-700 rounded-xl px-3 py-2 shadow-xl">
+        <p className="text-xs text-dark-400 mb-1">{label}</p>
+        {payload.map((p, i) => (
+          <p key={i} className="text-xs font-semibold" style={{ color: p.color }}>
+            {p.name}: {p.value?.toFixed ? p.value.toFixed(2) : p.value} {csym}
+          </p>
+        ))}
+      </div>
+    );
+  };
   const userId = isAdmin ? null : currentUser?.id;
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('30');

@@ -21,14 +21,17 @@ export default function TopBar() {
   const initials = (currentUser?.full_name || currentUser?.username || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="shrink-0 h-14 bg-dark-950 border-b border-dark-800/50 flex items-center justify-between px-5">
+    <div className="shrink-0 h-14 bg-dark-950 border-b border-dark-800/50 flex items-center px-5 relative">
+      {/* Left spacer */}
+      <div className="flex-1" />
+
       {/* Center Logo */}
-      <div className="flex items-center gap-3">
-        <img src="./logo.png" alt="SmartQeyd" className="h-8 object-contain" />
+      <div className="absolute left-1/2 -translate-x-1/2">
+        <img src="./logo.png" alt="SmartQeyd" className="h-9 object-contain" />
       </div>
 
       {/* Right: Clock + Notification + User */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 ml-auto">
         {/* Live Clock */}
         <div className="flex items-center gap-2 bg-dark-800/60 border border-dark-700/50 rounded-xl px-3.5 py-1.5">
           <Clock size={13} className="text-primary-400" />
