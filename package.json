@@ -1,6 +1,6 @@
 {
   "name": "smartqeyd",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
   "main": "src/main/index.js",
   "scripts": {
@@ -89,9 +89,9 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
     ],
-    "icon": "assets/logo.ico",
+    "icon": "build/icon.png",
     "win": {
-      "icon": "assets/logo.ico",
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",
@@ -107,9 +107,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
-      "installerIcon": "assets/logo.ico",
-      "uninstallerIcon": "assets/logo.ico",
-      "installerHeaderIcon": "assets/logo.ico",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "SmartQeyd",

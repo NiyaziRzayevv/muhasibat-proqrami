@@ -18,12 +18,12 @@ const AVAILABLE_ACTIONS = [
   {
     name: 'add_customer',
     description: 'Yeni müştəri əlavə et',
-    params: { name: 'string (məcburi)', phone: 'string', email: 'string', address: 'string', notes: 'string' },
+    params: { name: 'string (məcburi)', phone: 'string', notes: 'string' },
   },
   {
     name: 'add_product',
     description: 'Yeni məhsul əlavə et',
-    params: { name: 'string (məcburi)', price: 'number', cost_price: 'number', stock_qty: 'number', unit: 'string', barcode: 'string', min_stock: 'number' },
+    params: { name: 'string (məcburi)', sell_price: 'number', buy_price: 'number', stock_qty: 'number', unit: 'string', barcode: 'string', min_stock: 'number' },
   },
   {
     name: 'add_expense',
@@ -71,10 +71,8 @@ function executeAction(actionName, params, userId) {
         if (!params.name) return { success: false, message: 'Müştəri adı məcburidir' };
         const customer = customersDb.createCustomer({
           name: params.name,
-          phone: params.phone || '',
-          email: params.email || '',
-          address: params.address || '',
-          notes: params.notes || '',
+          phone: params.phone || null,
+          notes: params.notes || null,
           created_by: userId,
         });
         return { success: true, message: `Müştəri "${params.name}" uğurla əlavə edildi (ID: ${customer.id})`, data: customer, navigate: '/customers' };
@@ -84,11 +82,11 @@ function executeAction(actionName, params, userId) {
         if (!params.name) return { success: false, message: 'Məhsul adı məcburidir' };
         const product = productsDb.createProduct({
           name: params.name,
-          price: Number(params.price) || 0,
-          cost_price: Number(params.cost_price) || 0,
+          sell_price: Number(params.sell_price || params.price) || 0,
+          buy_price: Number(params.buy_price || params.cost_price) || 0,
           stock_qty: Number(params.stock_qty) || 0,
           unit: params.unit || 'ədəd',
-          barcode: params.barcode || '',
+          barcode: params.barcode || null,
           min_stock: Number(params.min_stock) || 5,
           created_by: userId,
         });
@@ -102,7 +100,8 @@ function executeAction(actionName, params, userId) {
           amount: Number(params.amount),
           category: params.category || 'Digər',
           date: params.date || new Date().toISOString().split('T')[0],
-          created_by: userId,
+          user_id: userId,
+          payment_method: params.payment_method || 'cash',
         });
         return { success: true, message: `Xərc "${params.description}" (${params.amount} AZN) uğurla əlavə edildi`, data: expense, navigate: '/expenses' };
       }
@@ -125,9 +124,12 @@ function executeAction(actionName, params, userId) {
         const appt = appointmentsDb.createAppointment({
           title: params.title,
           customer_id: params.customer_id || null,
+          customer_name: params.customer_name || null,
+          phone: params.phone || null,
           date: params.date || new Date().toISOString().split('T')[0],
           time: params.time || '10:00',
-          notes: params.notes || '',
+          duration: params.duration || 60,
+          notes: params.notes || null,
           status: 'pending',
           created_by: userId,
         });
@@ -142,7 +144,7 @@ function executeAction(actionName, params, userId) {
       }
 
       case 'search_product': {
-        const products = productsDb.getAllProducts({ search: params.query || '', created_by: userId });
+        const products = productsDb.getAllProducts({ search: params.query || '', userId });
         if (!products || products.length === 0) return { success: true, message: 'Məhsul tapılmadı', data: [] };
         const list = products.slice(0, 10).map(p => `- ${p.name} | ${p.price} AZN | Stok: ${p.stock_qty}`).join('\n');
         return { success: true, message: `${products.length} məhsul tapıldı:\n${list}`, data: products.slice(0, 10) };
