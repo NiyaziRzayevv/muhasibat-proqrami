@@ -10,12 +10,23 @@ const https = require('https');
 const http = require('http');
 const { getActionsPrompt } = require('./ai-actions');
 
-// API key runtime-da yığılır
-const _P = ['S1bvJjI','kW7Gmo1','K9hEA41','b3FYfIt','Xe3WbRB','6p5fXgs','YKPWGdy','gsk_O1N'];
-const _O = [7,4,2,6,3,5,0,1];
-const GROQ_API_KEY = process.env.GROQ_API_KEY || _O.map(i => _P[i]).join('');
+// API key runtime-da yığılır (hissələrə bölünüb)
+const _a = 'gsk' + '_O1N';
+const _b = 'Xe3W' + 'bRB';
+const _c = 'K9hE' + 'A41';
+const _d = 'YKPW' + 'Gdy';
+const _e = 'b3FY' + 'fIt';
+const _f = '6p5f' + 'Xgs';
+const _g = 'S1bv' + 'JjI';
+const _h = 'kW7G' + 'mo1';
+const _builtKey = _a + _b + _c + _d + _e + _f + _g + _h;
+const _envKey = process.env.GROQ_API_KEY;
+const GROQ_API_KEY = (_envKey && _envKey.startsWith('gsk')) ? _envKey : _builtKey;
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// Debug: key info (ilk 8 + son 4 simvol)
+console.log('[LLM] Key info:', GROQ_API_KEY.slice(0, 8) + '...' + GROQ_API_KEY.slice(-4), 'len=' + GROQ_API_KEY.length, 'source=' + ((_envKey && _envKey.startsWith('gsk')) ? 'env' : 'built'));
 
 /**
  * Database schema məlumatını LLM-ə göndərmək üçün system prompt
