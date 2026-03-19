@@ -8,6 +8,7 @@
 
 const https = require('https');
 const http = require('http');
+const { getActionsPrompt } = require('./ai-actions');
 
 // API key base64-encoded saxlanılır (GitHub push protection üçün)
 const _K = Buffer.from('Z3NrX1RTbHA1WkdSR2VseUoyUlhBZEZXR2R5YjNGWUNTTzFYaXY0OTdwbGFIR0hNVzh0MHRISQ==', 'base64').toString('utf8');
@@ -39,7 +40,8 @@ QAYDALAR:
 PROQRAM HAQQINDA DATABASE MƏLUMATLARI:
 ${dbContext}
 
-İstifadəçi proqramla bağlı olmayan sual versə belə (məs: "necəsən?", "nə edə bilərsən?", "məsləhət ver") — normal, dostcanlı cavab ver.`;
+İstifadəçi proqramla bağlı olmayan sual versə belə (məs: "necəsən?", "nə edə bilərsən?", "məsləhət ver") — normal, dostcanlı cavab ver.
+${getActionsPrompt()}`;
 }
 
 /**
@@ -64,9 +66,9 @@ function makeRequest(url, options, body) {
     });
 
     req.on('error', (e) => reject(e));
-    req.setTimeout(30000, () => {
+    req.setTimeout(60000, () => {
       req.destroy();
-      reject(new Error('Request timeout (30s)'));
+      reject(new Error('Request timeout (60s)'));
     });
 
     if (body) req.write(JSON.stringify(body));
@@ -99,7 +101,7 @@ async function chatWithGroq(userMessage, dbContext, history = []) {
       model: GROQ_MODEL,
       messages,
       temperature: 0.7,
-      max_tokens: 1024,
+      max_tokens: 2048,
     });
 
     if (response.status === 200 && response.data?.choices?.[0]?.message?.content) {

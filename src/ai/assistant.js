@@ -13,6 +13,7 @@ const { parseIntent, INTENTS } = require('./assistant-intent');
 const dataAccess = require('./assistant-data');
 const response = require('./assistant-response');
 const { chatWithGroq } = require('./llm-provider');
+const { executeAction } = require('./ai-actions');
 
 /**
  * Database-dən kontekst məlumatı toplayıb LLM-ə göndərmək üçün
@@ -135,6 +136,26 @@ async function processMessage(message, userId, history = []) {
       })).filter(m => m.content);
       const llmResult = await chatWithGroq(message, dbContext, llmHistory);
       if (llmResult.success && llmResult.text) {
+        // Action parse et
+        const actionResult = parseAndExecuteAction(llmResult.text, userId);
+        if (actionResult) {
+          // Action tapıldı və icra edildi
+          const cleanText = llmResult.text.replace(/```action[\s\S]*?```/g, '').trim();
+          return {
+            success: true,
+            data: {
+              intent: 'ai_action',
+              confidence: 1.0,
+              text: cleanText + '\n\n' + (actionResult.success ? '**' + actionResult.message + '**' : 'Xəta: ' + actionResult.message),
+              type: actionResult.success ? 'success' : 'error',
+              icon: actionResult.success ? 'check-circle' : 'alert-circle',
+              timestamp: new Date().toISOString(),
+              source: 'groq',
+              action: actionResult,
+            }
+          };
+        }
+
         return {
           success: true,
           data: {
@@ -174,6 +195,27 @@ async function processMessage(message, userId, history = []) {
         icon: 'alert-circle',
       }
     };
+  }
+}
+
+/**
+ * LLM cavabından action JSON parse et və icra et
+ * @param {string} llmText - LLM-dən gələn cavab
+ * @param {number} userId
+ * @returns {object|null} - Action nəticəsi və ya null (action yoxdursa)
+ */
+function parseAndExecuteAction(llmText, userId) {
+  try {
+    // ```action ... ``` blokunu tap
+    const actionMatch = llmText.match(/```action\s*\n?([\s\S]*?)\n?```/);
+    if (!actionMatch) return null;
+
+    const actionJson = JSON.parse(actionMatch[1].trim());
+    if (!actionJson.action) return null;
+
+    return executeAction(actionJson.action, actionJson.params || {}, userId);
+  } catch (e) {
+    return null;
   }
 }
 

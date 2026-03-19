@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Send, Bot, User, ShoppingCart, CreditCard, Package, BarChart3,
   TrendingDown, CheckSquare, DollarSign, LayoutDashboard, HelpCircle,
-  AlertCircle, Sparkles, Loader2, Trash2, ChevronDown
+  AlertCircle, Sparkles, Loader2, Trash2, ChevronDown, CheckCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -24,6 +25,7 @@ const ICON_MAP = {
   'building': Package,
   'truck': Package,
   'sparkles': Sparkles,
+  'check-circle': CheckCircle,
 };
 
 const TYPE_COLORS = {
@@ -125,6 +127,7 @@ function UserMessage({ text, time }) {
 export default function AIAssistant() {
   const { currentUser } = useApp();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -137,7 +140,7 @@ export default function AIAssistant() {
     // Başlanğıc mesajı
     setMessages([{
       role: 'ai',
-      text: 'Salam! Mən **SmartQeyd AI köməkçisiyəm**. Proqramınızdakı məlumatlar haqqında suallarınızı cavablandıra bilərəm.\n\nAşağıdakı düymələrdən istifadə edin və ya sualınızı yazın.',
+      text: 'Salam! Mən **SmartQeyd AI köməkçisiyəm**. Istənilən sualınızı cavablandıra və proqramda əməliyyatlar icra edə bilərəm.\n\nMəsələn: "müştəri əlavə et", "bugünkü satışlar", "məhsul axtar" və ya istənilən sualınızı yazın.',
       type: 'info',
       icon: 'help-circle',
       intent: 'welcome',
@@ -176,6 +179,9 @@ export default function AIAssistant() {
       const res = await window.api.aiChat(text.trim(), currentUser?.id, chatHistory);
       if (res.success && res.data) {
         setMessages(prev => [...prev, { role: 'ai', ...res.data }]);
+        if (res.data.action?.navigate) {
+          setTimeout(() => navigate(res.data.action.navigate), 2000);
+        }
       } else {
         setMessages(prev => [...prev, {
           role: 'ai',
