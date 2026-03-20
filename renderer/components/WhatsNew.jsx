@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.5.1';
+const CURRENT_VERSION = '1.5.2';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
   {
-    version: '1.5.0',
-    title: 'SmartQeyd v1.5.0 — AI Tam İşlək!',
+    version: '1.5.2',
+    title: 'SmartQeyd v1.5.2 — AI Tam Gücləndirildi!',
     date: '2026-03-20',
     highlights: [
-      { icon: Bot, text: 'AI Köməkçi tam söhbət rejimində — Groq LLM ilə limitsiz söhbət' },
-      { icon: Zap, text: 'AI ilə müştəri, məhsul, xərc, tapşırıq əlavə etmək' },
-      { icon: Shield, text: 'AI bağlantı problemi tamamilə həll edildi' },
-      { icon: Rocket, text: 'Güncəlləmə sonrası yeniliklər pəncərəsi' },
+      { icon: Bot, text: 'AI ilə əlavə et, sil, axtar, siyahı göstər — tam idarəetmə' },
+      { icon: Zap, text: 'Söhbət tarixçəsi yadda qalır — proqramı bağlayıb açsanız da' },
+      { icon: Shield, text: 'AI bağlantı problemi həll edildi — AI tam işləyir' },
+      { icon: Rocket, text: 'Müştəri, məhsul, xərc, tapşırıq, randevu silmə dəstəyi' },
     ],
     changes: [
+      'AI ilə müştəri, məhsul, xərc, tapşırıq, randevu SİLMƏK mümkündür',
+      'AI ilə siyahı göstərmək: müştərilər, məhsullar, xərclər, tapşırıqlar, randevular',
+      'Söhbət tarixçəsi localStorage-da saxlanılır (100 mesaja qədər)',
       'AI köməkçi Groq LLM ilə tam funksional — limitsiz söhbət',
       'AI bağlantı və API key problemi tamamilə həll edildi',
-      'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq, randevu əlavə etmək',
-      'AI proqramın database-ini tam oxuyur və dəqiq cavab verir',
       'Güncəlləmə sonrası yeniliklər pəncərəsi düzəldildi',
-      'Masaüstü ikon düzəldildi',
       'Performans və sabitlik təkmilləşdirmələri',
     ],
   },

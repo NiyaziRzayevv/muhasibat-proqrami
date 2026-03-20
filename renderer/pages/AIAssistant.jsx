@@ -124,6 +124,27 @@ function UserMessage({ text, time }) {
   );
 }
 
+const CHAT_STORAGE_KEY = 'smartqeyd_ai_chat_history';
+const MAX_STORED_MESSAGES = 100;
+
+function loadChatHistory() {
+  try {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return null;
+}
+
+function saveChatHistory(messages) {
+  try {
+    const toStore = messages.slice(-MAX_STORED_MESSAGES);
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toStore));
+  } catch {}
+}
+
 export default function AIAssistant() {
   const { currentUser } = useApp();
   const { t } = useLanguage();
@@ -137,16 +158,24 @@ export default function AIAssistant() {
 
   useEffect(() => {
     loadQuickActions();
-    // Başlanğıc mesajı
-    setMessages([{
-      role: 'ai',
-      text: 'Salam! Mən **SmartQeyd AI köməkçisiyəm**. Istənilən sualınızı cavablandıra və proqramda əməliyyatlar icra edə bilərəm.\n\nMəsələn: "müştəri əlavə et", "bugünkü satışlar", "məhsul axtar" və ya istənilən sualınızı yazın.',
-      type: 'info',
-      icon: 'help-circle',
-      intent: 'welcome',
-      timestamp: new Date().toISOString(),
-    }]);
+    const saved = loadChatHistory();
+    if (saved) {
+      setMessages(saved);
+    } else {
+      setMessages([{
+        role: 'ai',
+        text: 'Salam! Mən **SmartQeyd AI köməkçisiyəm**. İstənilən sualınızı cavablandıra və proqramda əməliyyatlar icra edə bilərəm.\n\nMəsələn: "müştəri əlavə et", "müştəriləri göstər", "ID 5 müştərini sil", "bugünkü satışlar" və ya istənilən sualınızı yazın.',
+        type: 'info',
+        icon: 'help-circle',
+        intent: 'welcome',
+        timestamp: new Date().toISOString(),
+      }]);
+    }
   }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) saveChatHistory(messages);
+  }, [messages]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -194,7 +223,7 @@ export default function AIAssistant() {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [loading, currentUser]);
+  }, [loading, currentUser, messages]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -202,14 +231,16 @@ export default function AIAssistant() {
   }
 
   function handleClear() {
-    setMessages([{
+    const fresh = [{
       role: 'ai',
       text: 'Söhbət silindi. Yeni sual verə bilərsiniz.',
       type: 'info',
       icon: 'help-circle',
       intent: 'welcome',
       timestamp: new Date().toISOString(),
-    }]);
+    }];
+    setMessages(fresh);
+    saveChatHistory(fresh);
   }
 
   const QUICK_ICONS = {
@@ -234,7 +265,7 @@ export default function AIAssistant() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white">SmartQeyd AI</h1>
-              <p className="text-[11px] text-dark-400">Ağıllı biznes köməkçisi · Offline</p>
+              <p className="text-[11px] text-dark-400">Ağıllı biznes köməkçisi · <span className="text-emerald-400">Online</span></p>
             </div>
           </div>
           <button
@@ -311,7 +342,7 @@ export default function AIAssistant() {
           </button>
         </form>
         <p className="text-[10px] text-dark-600 mt-2 text-center">
-          SmartQeyd AI · Offline · Yalnız lokal database məlumatları əsasında cavab verir
+          SmartQeyd AI · Groq LLM · Əlavə et, sil, axtar, siyahı göstər
         </p>
       </div>
     </div>
