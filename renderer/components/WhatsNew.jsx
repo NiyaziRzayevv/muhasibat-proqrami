@@ -6,6 +6,27 @@ const CURRENT_VERSION = '1.5.5';
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
   {
+    version: '1.5.5',
+    title: 'SmartQeyd v1.5.5 — Unified API & Detail Pages!',
+    date: '2026-03-20',
+    highlights: [
+      { icon: Package, text: 'Detail səhifələr: Müştəri, Məhsul, Satış — tam detallı görünüş' },
+      { icon: Zap, text: 'apiBridge: Bütün əsas səhifələr unified API ilə işləyir' },
+      { icon: Shield, text: 'Finance gücləndirildi: Trend chart, kateqoriya analizi, ödəniş statistikası' },
+      { icon: Rocket, text: 'Dashboard optimallaşdırıldı: DashboardService single-call' },
+    ],
+    changes: [
+      'CustomerDetail: Müştəri icmalı, satışlar, borclar, nəqliyyat, timeline, qeydlər',
+      'ProductDetail: Stok, qiymət tarixçəsi, stok hərəkətləri, son satışlar',
+      'SaleDetail: Məhsullar, borc, maliyyə əməliyyatları, stok hərəkətləri',
+      'Siyahılardan detail səhifələrə klik ilə keçid (müştəri adı, məhsul adı, satış №)',
+      'POS/NewSale/Expenses/Debts/Products/Customers/Sales → apiBridge migration',
+      'Finance: FinanceService trend chart (gəlir vs xərc), kateqoriya pie chart',
+      'Dashboard: 21 paralel call → DashboardService single-call + əlavə data',
+      'Route sırası düzəldildi: /sales/new → /sales/:id ardıcıllığı',
+    ],
+  },
+  {
     version: '1.5.4',
     title: 'SmartQeyd v1.5.4 — Tam Biznes İnteqrasiya!',
     date: '2026-03-20',
