@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
@@ -46,15 +47,7 @@ export default function Customers() {
   const loadCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = window.api?.getCustomers
-        ? await window.api.getCustomers(search, userId)
-        : await apiRequest(`/customers${(() => {
-          const params = new URLSearchParams();
-          if (search) params.append('search', search);
-          if (userId) params.append('userId', userId);
-          const q = params.toString();
-          return q ? `?${q}` : '';
-        })()}`, { token: getToken() });
+      const res = await apiBridge.getCustomers(search, userId);
       if (res.success) setCustomers(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -80,12 +73,8 @@ export default function Customers() {
     setDetailTab('records');
     try {
       const [recRes, salesRes] = await Promise.all([
-        window.api?.getRecords
-          ? window.api.getRecords({ customer_id: c.id, userId })
-          : apiRequest(`/records?${new URLSearchParams({ customer_id: c.id, ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() }),
-        window.api?.getSales
-          ? window.api.getSales({ customer_id: c.id, userId })
-          : apiRequest(`/sales?${new URLSearchParams({ customer_id: c.id, ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() }),
+        apiBridge.getRecords({ customer_id: c.id, userId }),
+        apiBridge.getSales({ customer_id: c.id, userId }),
       ]);
       if (recRes.success) setDetailRecords(recRes.data);
       if (salesRes.success) setDetailSales(salesRes.data || []);
@@ -153,16 +142,9 @@ export default function Customers() {
     }
     setSaving(true);
     try {
-      let result;
-      if (editing) {
-        result = window.api?.updateCustomer
-          ? await window.api.updateCustomer(editing.id, form)
-          : await apiRequest(`/customers/${editing.id}`, { method: 'PUT', token: getToken(), body: form });
-      } else {
-        result = window.api?.createCustomer
-          ? await window.api.createCustomer({ ...form, created_by: currentUser?.id })
-          : await apiRequest('/customers', { method: 'POST', token: getToken(), body: form });
-      }
+      const result = editing
+        ? await apiBridge.updateCustomer(editing.id, form)
+        : await apiBridge.createCustomer({ ...form, created_by: currentUser?.id });
 
       if (result.success) {
         showNotification(editing ? 'Müştəri yeniləndi' : 'Müştəri əlavə edildi', 'success');
@@ -178,9 +160,7 @@ export default function Customers() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const result = window.api?.deleteCustomer
-        ? await window.api.deleteCustomer(deleteId)
-        : await apiRequest(`/customers/${deleteId}`, { method: 'DELETE', token: getToken() });
+      const result = await apiBridge.deleteCustomer(deleteId);
       if (result.success) {
         showNotification('Müştəri silindi', 'success');
         setDeleteId(null);

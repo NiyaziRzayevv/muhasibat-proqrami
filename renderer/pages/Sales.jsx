@@ -83,9 +83,7 @@ export default function Sales() {
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
       if (userId) params.userId = userId;
-      const res = window.api?.getSales
-        ? await window.api.getSales(params)
-        : await apiRequest(`/sales?${new URLSearchParams(params).toString()}`, { token: getToken() });
+      const res = await apiBridge.getSales(params);
       if (res.success) setSales(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -97,9 +95,7 @@ export default function Sales() {
     setDetailLoading(true);
     setDetailSale({ ...sale, items: [] });
     try {
-      const res = window.api?.getSale
-        ? await window.api.getSale(sale.id)
-        : await apiRequest(`/sales/${sale.id}`, { token: getToken() });
+      const res = await apiBridge.getSaleDetail(sale.id);
       if (res.success) setDetailSale(res.data);
     } catch (e) { console.error(e); }
     finally { setDetailLoading(false); }
@@ -108,9 +104,7 @@ export default function Sales() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const result = window.api?.deleteSale
-        ? await window.api.deleteSale(deleteId)
-        : await apiRequest(`/sales/${deleteId}`, { method: 'DELETE', token: getToken() });
+      const result = await apiBridge.deleteSale(deleteId);
       if (result.success) {
         showNotification('Satış silindi', 'success');
         setDeleteId(null);
@@ -182,13 +176,7 @@ export default function Sales() {
       const prevPaid = payModal.paid_amount || 0;
       const newPaid = prevPaid + amount;
       const status = newPaid >= total ? 'odenilib' : newPaid > 0 ? 'qismen' : 'gozleyir';
-      const result = window.api?.updateSalePayment
-        ? await window.api.updateSalePayment(payModal.id, newPaid, status)
-        : await apiRequest(`/sales/${payModal.id}/payment`, {
-          method: 'PUT',
-          token: getToken(),
-          body: { paid_amount: newPaid, payment_status: status },
-        });
+      const result = await apiBridge.updateSalePayment(payModal.id, newPaid, status);
       if (result.success) {
         showNotification('Ödəniş qeyd edildi', 'success');
         setPayModal(null);

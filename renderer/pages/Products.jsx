@@ -66,41 +66,14 @@ export default function Products() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Products: remote mode supported via HTTP, categories/suppliers require Electron for now
-      let pRes;
-      if (window.api?.getProducts) {
-        pRes = await window.api.getProducts({ search: debouncedSearch || undefined, category_id: filterCat || undefined, low_stock: filterLow || undefined, userId });
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        const params = new URLSearchParams();
-        if (userId) params.append('userId', userId);
-        if (debouncedSearch) params.append('search', debouncedSearch);
-        if (filterCat) params.append('category_id', filterCat);
-        if (filterLow) params.append('low_stock', 'true');
-        const q = params.toString() ? `?${params.toString()}` : '';
-        pRes = await apiRequest(`/products${q}`, { token });
-      }
+      const [pRes, cRes, sRes] = await Promise.all([
+        apiBridge.getProducts({ search: debouncedSearch || undefined, category_id: filterCat || undefined, low_stock: filterLow || undefined, userId }),
+        apiBridge.getCategories(userId),
+        apiBridge.getSuppliers('', userId),
+      ]);
       if (pRes?.success) setProducts(pRes.data);
-
-      if (window.api?.getCategories) {
-        const cRes = await window.api.getCategories(userId);
-        if (cRes.success) setCategories(cRes.data);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        const q = userId ? `?userId=${userId}` : '';
-        const cRes = await apiRequest(`/categories${q}`, { token });
-        if (cRes.success) setCategories(cRes.data);
-      }
-      if (window.api?.getSuppliers) {
-        const sRes = await window.api.getSuppliers('', userId);
-        if (sRes.success) setSuppliers(sRes.data);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        let q = '';
-        if (userId) q = `?userId=${userId}`;
-        const sRes = await apiRequest(`/suppliers${q}`, { token });
-        if (sRes.success) setSuppliers(sRes.data);
-      }
+      if (cRes?.success) setCategories(cRes.data);
+      if (sRes?.success) setSuppliers(sRes.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [debouncedSearch, filterCat, filterLow, userId]);
@@ -140,15 +113,9 @@ export default function Products() {
         sku: form.sku || null,
         barcode: form.barcode || null,
       };
-      let result;
-      if (window.api?.createProduct) {
-        if (editing) result = await window.api.updateProduct(editing.id, { ...payload, updated_by: currentUser?.id });
-        else result = await window.api.createProduct({ ...payload, created_by: currentUser?.id });
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        if (editing) result = await apiRequest(`/products/${editing.id}`, { method: 'PUT', token, body: payload });
-        else result = await apiRequest('/products', { method: 'POST', token, body: payload });
-      }
+      const result = editing
+        ? await apiBridge.updateProduct(editing.id, { ...payload, updated_by: currentUser?.id })
+        : await apiBridge.createProduct({ ...payload, created_by: currentUser?.id });
 
       if (result.success) {
         showNotification(editing ? 'Məhsul yeniləndi' : 'Məhsul əlavə edildi', 'success');
@@ -164,13 +131,7 @@ export default function Products() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      let result;
-      if (window.api?.deleteProduct) {
-        result = await window.api.deleteProduct(deleteId);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        result = await apiRequest(`/products/${deleteId}`, { method: 'DELETE', token });
-      }
+      const result = await apiBridge.deleteProduct(deleteId);
       if (result.success) {
         showNotification('Məhsul silindi', 'success');
         setDeleteId(null);
@@ -184,16 +145,9 @@ export default function Products() {
     if (!stockQty || parseFloat(stockQty) <= 0) { showNotification('Miqdar daxil edin', 'error'); return; }
     setStockSaving(true);
     try {
-      let result;
-      if (window.api?.stockIn) {
-        if (stockType === 'in') result = await window.api.stockIn(stockModal.id, parseFloat(stockQty), stockNote, currentUser?.id);
-        else result = await window.api.stockOut(stockModal.id, parseFloat(stockQty), stockNote, currentUser?.id);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        const body = { product_id: stockModal.id, qty: parseFloat(stockQty), note: stockNote || null };
-        if (stockType === 'in') result = await apiRequest('/stock/in', { method: 'POST', token, body });
-        else result = await apiRequest('/stock/out', { method: 'POST', token, body });
-      }
+      const result = stockType === 'in'
+        ? await apiBridge.stockIn(stockModal.id, parseFloat(stockQty), stockNote, currentUser?.id)
+        : await apiBridge.stockOut(stockModal.id, parseFloat(stockQty), stockNote, currentUser?.id);
 
       if (result.success !== false) {
         showNotification(stockType === 'in' ? 'Stok artırıldı' : 'Stok azaldıldı', 'success');
@@ -234,18 +188,7 @@ export default function Products() {
     if (!importRows.length) return;
     setImportLoading(true);
     try {
-      if (!window.api?.importProductsFromExcel) {
-        const token = localStorage.getItem('auth_token') || '';
-        const res = await apiRequest('/products/import', { method: 'POST', token, body: { rows: importRows } });
-        if (res.success) {
-          showNotification(`${res.data.created} məhsul import edildi ✓`, 'success');
-          setImportModal(false);
-          setImportRows([]);
-          loadData();
-        } else showNotification(res.error || 'Xəta', 'error');
-        return;
-      }
-      const res = await window.api.importProductsFromExcel(importRows, currentUser?.id);
+      const res = await apiBridge.importProductsFromExcel(importRows, currentUser?.id);
       if (res.success) {
         showNotification(`${res.data.created} məhsul import edildi ✓`, 'success');
         setImportModal(false);
@@ -258,26 +201,14 @@ export default function Products() {
 
   async function handleAddCategory() {
     if (!newCatName) return;
-    if (!window.api?.createCategory) {
-      const token = localStorage.getItem('auth_token') || '';
-      const res = await apiRequest('/categories', { method: 'POST', token, body: { name: newCatName, color: newCatColor } });
-      if (res.success) {
-        showNotification('Kateqoriya əlavə edildi', 'success');
-        setCatModalOpen(false);
-        setNewCatName('');
-        await loadData();
-      } else {
-        showNotification(res.error || 'Xəta', 'error');
-      }
-      return;
-    }
-    const res = await window.api.createCategory({ name: newCatName, color: newCatColor, created_by: currentUser?.id });
+    const res = await apiBridge.createCategory({ name: newCatName, color: newCatColor, created_by: currentUser?.id });
     if (res.success) {
       showNotification('Kateqoriya əlavə edildi', 'success');
       setCatModalOpen(false);
       setNewCatName('');
-      const cRes = await window.api.getCategories(userId);
-      if (cRes.success) setCategories(cRes.data);
+      await loadData();
+    } else {
+      showNotification(res.error || 'Xəta', 'error');
     }
   }
 
