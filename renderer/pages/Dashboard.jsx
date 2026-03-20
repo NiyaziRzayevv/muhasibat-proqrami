@@ -87,12 +87,12 @@ export default function Dashboard() {
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     try {
+      // DashboardService single call + əlavə data-lar paralel
       const [
-        todayRes, monthRes, allRes, topSvcRes, topBrandRes, chartRes,
-        recentRes, licRes, lowStockRes, stockValRes, salesRes,
-        debtRes, prodRes, expTodayRes, expMonthRes, taskRes, unreadRes,
-        appointRes, activeTaskRes, custRes, notifCheckRes
+        dashRes, todayRes, monthRes, allRes, topSvcRes, topBrandRes, chartRes,
+        recentRes, licRes, taskRes, unreadRes, activeTaskRes, notifCheckRes
       ] = await Promise.all([
+        apiBridge.getDashboardData(userId),
         apiBridge.getTodayStats(userId),
         apiBridge.getMonthStats(year, month, userId),
         apiBridge.getAllTimeStats(userId),
@@ -101,20 +101,25 @@ export default function Dashboard() {
         apiBridge.getMonthlyChart(year, userId),
         apiBridge.getRecords({ limit: 8, offset: 0, orderBy: 'date', orderDir: 'desc', userId }),
         apiBridge.getLicenseStatus(),
-        apiBridge.getLowStockProducts(userId),
-        apiBridge.getStockValue(userId),
-        apiBridge.getSalesStats(now.toISOString().split('T')[0], now.toISOString().split('T')[0], userId),
-        apiBridge.getDebtStats(userId),
-        apiBridge.getProductStats(userId),
-        apiBridge.getExpenseStats(now.toISOString().split('T')[0], now.toISOString().split('T')[0], userId),
-        apiBridge.getExpenseStats(`${year}-${String(month).padStart(2,'0')}-01`, now.toISOString().split('T')[0], userId),
         apiBridge.getTaskStats(userId),
         apiBridge.getUnreadCount(userId),
-        apiBridge.getUpcomingAppointments(3, userId),
         apiBridge.getActiveTasks(userId),
-        apiBridge.getCustomers(null, userId),
         apiBridge.checkSystemNotifications(userId),
       ]);
+
+      // DashboardService data (consolidated)
+      const d = dashRes.success ? dashRes.data : {};
+      if (dashRes.success) {
+        setTodaySales({ revenue: d.today_sales_total, count: d.today_sales_count });
+        setTodayExpenses({ total: d.today_expense, count: 0 });
+        setMonthExpenses({ total: d.month_expense, count: 0 });
+        setDebtStats({ debt: d.unpaid_total, pending: d.unpaid_total, paid: 0 });
+        setLowStockProducts(d.low_stock_products || []);
+        setStockValue({ sell_value: d.stock_sell_value, buy_value: d.stock_buy_value, total_units: d.product_count });
+        setCustomerCount(d.customer_count || 0);
+        setUpcomingAppointments(d.upcoming_appointments || []);
+        setProductStats({ total: d.product_count, low_stock: d.low_stock_count });
+      }
 
       if (todayRes.success) setTodayStats(todayRes.data);
       if (monthRes.success) setMonthStats(monthRes.data);
@@ -130,18 +135,9 @@ export default function Dashboard() {
       }
       if (recentRes.success) setRecentRecords(recentRes.data);
       if (licRes.success) setLicenseStatus(licRes.data);
-      if (lowStockRes.success) setLowStockProducts(lowStockRes.data || []);
-      if (stockValRes.success) setStockValue(stockValRes.data);
-      if (salesRes.success) setTodaySales(salesRes.data);
-      if (debtRes.success) setDebtStats(debtRes.data);
-      if (prodRes.success) setProductStats(prodRes.data);
-      if (expTodayRes.success) setTodayExpenses(expTodayRes.data);
-      if (expMonthRes.success) setMonthExpenses(expMonthRes.data);
       if (taskRes.success) setTaskStats(taskRes.data);
       if (unreadRes.success) setUnreadNotifs(unreadRes.data || 0);
-      if (appointRes.success) setUpcomingAppointments(appointRes.data || []);
       if (activeTaskRes.success) setActiveTasks(activeTaskRes.data || []);
-      if (custRes.success) setCustomerCount(Array.isArray(custRes.data) ? custRes.data.length : 0);
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {

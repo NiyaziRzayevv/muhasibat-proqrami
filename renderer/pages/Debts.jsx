@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreditCard, RefreshCw, CheckCircle, Loader2, Edit3, Search, Filter, X, FileSpreadsheet, TrendingUp, Users, ShoppingCart, Wrench, Calendar } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useApp } from '../App';
@@ -22,6 +23,7 @@ function fmt(n) {
 }
 
 export default function Debts() {
+  const navigate = useNavigate();
   const { showNotification, currentUser, isAdmin, currency } = useApp();
   const { t } = useLanguage();
   const csym = getCurrencySymbol(currency);
@@ -261,7 +263,7 @@ export default function Debts() {
                     )}
                   </td>
                   <td className="font-mono text-xs text-dark-300">{d.date}</td>
-                  <td className="text-dark-200">{d.customer_name || '—'}</td>
+                  <td className="text-dark-200 cursor-pointer hover:text-primary-400 transition-colors" onClick={() => d.customer_id && navigate(`/customers/${d.customer_id}`)}>{d.customer_name || '—'}</td>
                   <td className="font-medium text-white">{d.ref_number || d.description || '—'}</td>
                   <td className="font-semibold text-white">{fmt(d.total_amount)}</td>
                   <td className="text-dark-300">{fmt(d.paid_amount)}</td>
