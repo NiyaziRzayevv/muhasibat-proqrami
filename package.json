@@ -1,6 +1,6 @@
 {
   "name": "smartqeyd",
-  "version": "1.4.9",
+  "version": "1.5.0",
   "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
   "main": "src/main/index.js",
   "scripts": {

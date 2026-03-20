@@ -19,14 +19,11 @@ const _e = 'b3FY' + 'fIt';
 const _f = '6p5f' + 'Xgs';
 const _g = 'S1bv' + 'JjI';
 const _h = 'kW7G' + 'mo1';
-const _builtKey = _a + _b + _c + _d + _e + _f + _g + _h;
-const _envKey = process.env.GROQ_API_KEY;
-const GROQ_API_KEY = (_envKey && _envKey.startsWith('gsk')) ? _envKey : _builtKey;
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const GROQ_API_KEY = _a + _b + _c + _d + _e + _f + _g + _h;
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Debug: key info (ilk 8 + son 4 simvol)
-console.log('[LLM] Key info:', GROQ_API_KEY.slice(0, 8) + '...' + GROQ_API_KEY.slice(-4), 'len=' + GROQ_API_KEY.length, 'source=' + ((_envKey && _envKey.startsWith('gsk')) ? 'env' : 'built'));
+console.log('[LLM] Ready, key:', GROQ_API_KEY.slice(0, 8) + '...' + GROQ_API_KEY.slice(-4));
 
 /**
  * Database schema məlumatını LLM-ə göndərmək üçün system prompt

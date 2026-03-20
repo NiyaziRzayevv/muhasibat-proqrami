@@ -1,56 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package } from 'lucide-react';
+import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.4.9';
+const CURRENT_VERSION = '1.5.0';
 
-const CHANGELOGS = {
-  '1.4.8': {
-    title: 'SmartQeyd v1.4.8 — AI Tam İşlək + Düzəlişlər',
-    date: '2026-03-19',
+// Versiyalar sıra ilə (ən yenidən köhnəyə)
+const CHANGELOGS = [
+  {
+    version: '1.5.0',
+    title: 'SmartQeyd v1.5.0 — AI Tam İşlək!',
+    date: '2026-03-20',
     highlights: [
       { icon: Bot, text: 'AI Köməkçi tam söhbət rejimində — Groq LLM ilə limitsiz söhbət' },
-      { icon: Zap, text: 'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq əlavə etmək mümkündür' },
-      { icon: Shield, text: 'API key və model düzəldildi — AI artıq tam işləyir' },
-      { icon: Package, text: 'Masaüstü ikon düzəldildi' },
+      { icon: Zap, text: 'AI ilə müştəri, məhsul, xərc, tapşırıq əlavə etmək' },
+      { icon: Shield, text: 'AI bağlantı problemi tamamilə həll edildi' },
+      { icon: Rocket, text: 'Güncəlləmə sonrası yeniliklər pəncərəsi' },
     ],
     changes: [
       'AI köməkçi Groq LLM ilə tam funksional — limitsiz söhbət',
+      'AI bağlantı və API key problemi tamamilə həll edildi',
       'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq, randevu əlavə etmək',
       'AI proqramın database-ini tam oxuyur və dəqiq cavab verir',
-      'Güncəlləmə sonrası yeniliklər pəncərəsi',
+      'Güncəlləmə sonrası yeniliklər pəncərəsi düzəldildi',
       'Masaüstü ikon düzəldildi',
       'Performans və sabitlik təkmilləşdirmələri',
     ],
   },
-  '1.4.7': {
-    title: 'SmartQeyd v1.4.7 — AI Köməkçi + Yeniliklər',
-    date: '2026-03-19',
-    highlights: [
-      { icon: Bot, text: 'AI Köməkçi tam söhbət rejimində — istənilən sualınızı cavablandırır' },
-      { icon: Zap, text: 'AI ilə müştəri əlavə etmə, məhsul axtarışı, xərc yaratma və digər əməliyyatlar' },
-      { icon: Shield, text: 'Güncəlləmə prosesi təkmilləşdirildi — avtomatik bağlanma və yenidən başlama' },
-      { icon: Package, text: 'Proqram ikonu və masaüstü qısayolu düzəldildi' },
-    ],
-    changes: [
-      'AI köməkçi tam funksional — limitsiz söhbət, hər mövzuda cavab',
-      'AI vasitəsilə müştəri, məhsul, xərc, tapşırıq əlavə etmək mümkündür',
-      'AI proqramın database-ini tam oxuyur və dəqiq cavab verir',
-      'Masaüstü ikon düzəldildi — SmartQeyd logosu görünür',
-      'Güncəlləmə sonrası yeniliklər pəncərəsi əlavə edildi',
-      'Performans və sabitlik təkmilləşdirmələri',
-    ],
-  },
-  '1.4.6': {
-    title: 'SmartQeyd v1.4.6',
-    date: '2026-03-19',
-    highlights: [],
-    changes: [
-      'AI action sistemi əlavə edildi',
-      'Söhbət tarixçəsi dəstəyi',
-      'İkon düzəlişləri',
-    ],
-  },
-};
+];
+
+function compareVersions(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+  }
+  return 0;
+}
 
 export default function WhatsNew() {
   const [visible, setVisible] = useState(false);
@@ -58,11 +43,12 @@ export default function WhatsNew() {
 
   useEffect(() => {
     try {
-      const lastSeen = localStorage.getItem('smartqeyd_last_seen_version');
-      if (lastSeen !== CURRENT_VERSION) {
-        const log = CHANGELOGS[CURRENT_VERSION];
-        if (log) {
-          setChangelog(log);
+      const lastSeen = localStorage.getItem('smartqeyd_last_seen_version') || '0.0.0';
+      if (compareVersions(CURRENT_VERSION, lastSeen) > 0) {
+        // Ən son changelog-u göstər
+        const latest = CHANGELOGS[0];
+        if (latest) {
+          setChangelog(latest);
           setVisible(true);
         }
       }
