@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit3, Trash2, Loader2, Save, Phone, User, RefreshCw, X, AlertTriangle, TrendingUp, ShoppingCart, Calendar, DollarSign, Filter, FileSpreadsheet, Users, CreditCard, ArrowUpDown, FileText, Boxes, CheckCircle, Clock, Banknote, AlertCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -16,6 +17,7 @@ function fmt(n) {
 }
 
 export default function Customers() {
+  const navigate = useNavigate();
   const { showNotification, currentUser, isAdmin, currency } = useApp();
   const { t } = useLanguage();
   const csym = getCurrencySymbol(currency);
@@ -318,8 +320,8 @@ export default function Customers() {
                           <div>
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); toggleExpandedCustomer(c.id); }}
-                              className="text-left hover:underline"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/customers/${c.id}`); }}
+                              className="text-left hover:underline hover:text-primary-400 transition-colors"
                             >
                               {c.name || '—'}
                             </button>

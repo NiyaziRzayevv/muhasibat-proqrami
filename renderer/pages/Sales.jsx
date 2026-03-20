@@ -399,9 +399,9 @@ export default function Sales() {
                 </td></tr>
               ) : filteredSales.map((sale, i) => (
                 <tr key={sale.id}>
-                  <td className="text-dark-500 font-mono text-xs">#{sale.id}</td>
+                  <td className="text-dark-500 font-mono text-xs cursor-pointer hover:text-primary-400 transition-colors" onClick={() => navigate(`/sales/${sale.id}`)}>#{sale.id}</td>
                   <td className="font-mono text-xs text-dark-300">{sale.date} {sale.time}</td>
-                  <td className="text-dark-200">{sale.customer_name || '—'}</td>
+                  <td className="text-dark-200 cursor-pointer hover:text-primary-400 transition-colors" onClick={() => sale.customer_id && navigate(`/customers/${sale.customer_id}`)}>{sale.customer_name || '—'}</td>
                   <td className="text-dark-300">{sale.item_count ?? '—'}</td>
                   <td className="font-bold text-white">{fmt(sale.total)}</td>
                   <td className="text-emerald-400">{fmt(sale.paid_amount)}</td>

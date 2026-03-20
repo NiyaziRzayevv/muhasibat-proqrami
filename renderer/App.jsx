@@ -19,6 +19,9 @@ import Sales from './pages/Sales';
 import NewSale from './pages/NewSale';
 import Suppliers from './pages/Suppliers';
 import CustomerHistory from './pages/CustomerHistory';
+import CustomerDetail from './pages/CustomerDetail';
+import ProductDetail from './pages/ProductDetail';
+import SaleDetail from './pages/SaleDetail';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import POS from './pages/POS';
@@ -376,15 +379,18 @@ function AppLayout({ sidebarCollapsed, setSidebarCollapsed, notification, smartI
               <Route path="/new-record" element={<ErrorBoundary><NewRecord /></ErrorBoundary>} />
               <Route path="/records" element={<ErrorBoundary><Records /></ErrorBoundary>} />
               <Route path="/customers" element={<ErrorBoundary><Customers /></ErrorBoundary>} />
+              <Route path="/customers/:id" element={<ErrorBoundary><CustomerDetail /></ErrorBoundary>} />
               <Route path="/vehicles" element={<ErrorBoundary><Vehicles /></ErrorBoundary>} />
               <Route path="/price-base" element={<ErrorBoundary><PriceBase /></ErrorBoundary>} />
               <Route path="/reports" element={<ErrorBoundary><Reports /></ErrorBoundary>} />
               <Route path="/debts" element={<ErrorBoundary><Debts /></ErrorBoundary>} />
               <Route path="/export" element={<ErrorBoundary><ExportPage /></ErrorBoundary>} />
               <Route path="/products" element={<ErrorBoundary><Products /></ErrorBoundary>} />
+              <Route path="/products/:id" element={<ErrorBoundary><ProductDetail /></ErrorBoundary>} />
               <Route path="/stock-movements" element={<ErrorBoundary><StockMovements /></ErrorBoundary>} />
               <Route path="/sales" element={<ErrorBoundary><Sales /></ErrorBoundary>} />
               <Route path="/sales/new" element={<ErrorBoundary><NewSale /></ErrorBoundary>} />
+              <Route path="/sales/:id" element={<ErrorBoundary><SaleDetail /></ErrorBoundary>} />
               <Route path="/suppliers" element={<ErrorBoundary><Suppliers /></ErrorBoundary>} />
               <Route path="/customer-history" element={<ErrorBoundary><CustomerHistory /></ErrorBoundary>} />
               <Route path="/pos" element={<ErrorBoundary><POS /></ErrorBoundary>} />

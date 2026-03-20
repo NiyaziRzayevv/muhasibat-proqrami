@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useDebounce from '../hooks/useDebounce';
 import {
   Search, Plus, Edit3, Trash2, Loader2, Save, Package,
@@ -26,6 +27,7 @@ function fmt(n) {
 }
 
 export default function Products() {
+  const navigate = useNavigate();
   const { showNotification, currentUser, isAdmin, currency } = useApp();
   const { t } = useLanguage();
   const csym = getCurrencySymbol(currency);
@@ -461,7 +463,7 @@ export default function Products() {
                           <Package size={13} className="text-dark-400" />
                         </div>
                         <div>
-                          <p className="font-medium text-white text-sm">{p.name}</p>
+                          <p className="font-medium text-white text-sm cursor-pointer hover:text-primary-400 transition-colors" onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}`); }}>{p.name}</p>
                           {p.barcode && <p className="text-xs text-dark-500 font-mono">{p.barcode}</p>}
                         </div>
                       </div>
