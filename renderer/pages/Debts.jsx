@@ -4,6 +4,7 @@ import { CreditCard, RefreshCw, CheckCircle, Loader2, Edit3, Search, Filter, X, 
 import Modal from '../components/Modal';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
@@ -46,13 +47,7 @@ export default function Debts() {
       const filters = {};
       if (userId) filters.userId = userId;
       if (search) filters.search = search;
-      let res;
-      if (window.api?.getDebts) {
-        res = await window.api.getDebts(filters);
-      } else {
-        const params = new URLSearchParams(filters).toString();
-        res = await apiRequest(`/debts?${params}`);
-      }
+      const res = await apiBridge.getDebts(filters);
       if (res?.success) setDebts(res.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -79,12 +74,7 @@ export default function Debts() {
         payment_method: payMethod,
       };
 
-      let res;
-      if (window.api?.payDebt) {
-        res = await window.api.payDebt(payload);
-      } else {
-        res = await apiRequest('/debts/pay', { method: 'POST', body: payload });
-      }
+      const res = await apiBridge.payDebt(payload);
 
       if (res?.success) {
         showNotification(`Ödəniş qeyd edildi: ${amount.toFixed(2)} ${csym}`, 'success');
