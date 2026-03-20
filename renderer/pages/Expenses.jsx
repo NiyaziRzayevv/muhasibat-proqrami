@@ -6,6 +6,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
@@ -67,19 +68,9 @@ export default function Expenses() {
 
       if (userId) filters.userId = userId;
       const [expRes, statsRes, catRes] = await Promise.all([
-        window.api?.getExpenses
-          ? window.api.getExpenses(filters)
-          : apiRequest(`/expenses?${new URLSearchParams(filters).toString()}`, { token: getToken() }),
-        window.api?.getExpenseStats
-          ? window.api.getExpenseStats(filterStart || null, filterEnd || null, userId)
-          : apiRequest(`/stats/expenses?${new URLSearchParams({
-            ...(filterStart ? { startDate: filterStart } : {}),
-            ...(filterEnd ? { endDate: filterEnd } : {}),
-            ...(userId ? { userId } : {}),
-          }).toString()}`, { token: getToken() }),
-        window.api?.getExpenseCategories
-          ? window.api.getExpenseCategories()
-          : apiRequest(`/expenses/categories?${new URLSearchParams({ ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() }),
+        apiBridge.getExpenses(filters),
+        apiBridge.getExpenseStats(filterStart || null, filterEnd || null, userId),
+        apiBridge.getExpenseCategories(),
       ]);
       if (expRes.success) setExpenses(expRes.data || []);
       if (statsRes.success) setStats(statsRes.data);
@@ -115,12 +106,8 @@ export default function Expenses() {
       const data = { ...form, amount: parseFloat(form.amount) || 0 };
       if (!editing) data.user_id = currentUser?.id;
       const res = editing
-        ? (window.api?.updateExpense
-          ? await window.api.updateExpense(editing.id, data)
-          : await apiRequest(`/expenses/${editing.id}`, { method: 'PUT', token: getToken(), body: data }))
-        : (window.api?.createExpense
-          ? await window.api.createExpense(data)
-          : await apiRequest('/expenses', { method: 'POST', token: getToken(), body: data }));
+        ? await apiBridge.updateExpense(editing.id, data)
+        : await apiBridge.createExpense(data);
       if (res.success) {
         showNotification(editing ? 'Yeniləndi' : 'Xərc əlavə edildi', 'success');
         setModal(false);
@@ -137,9 +124,7 @@ export default function Expenses() {
 
   async function handleDelete(id) {
     if (!confirm('Bu xərci silmək istəyirsiniz?')) return;
-    const res = window.api?.deleteExpense
-      ? await window.api.deleteExpense(id)
-      : await apiRequest(`/expenses/${id}`, { method: 'DELETE', token: getToken() });
+    const res = await apiBridge.deleteExpense(id, currentUser?.id);
     if (res.success) { showNotification('Silindi', 'success'); await loadAll(); }
     else showNotification(res.error || 'Xəta', 'error');
   }

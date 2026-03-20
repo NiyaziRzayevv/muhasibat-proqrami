@@ -5,6 +5,7 @@ import {
   ShoppingCart, Package, AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCurrencySymbol } from '../utils/currency';
 
@@ -35,7 +36,7 @@ export default function NewSale() {
 
   useEffect(() => {
     (async () => {
-      const [pRes, cRes] = await Promise.all([window.api.getProducts({ userId }), window.api.getCustomers('', userId)]);
+      const [pRes, cRes] = await Promise.all([apiBridge.getProducts({ userId }), apiBridge.getCustomers('', userId)]);
       if (pRes.success) setProducts(pRes.data);
       if (cRes.success) setCustomers(cRes.data);
     })();
@@ -99,7 +100,7 @@ export default function NewSale() {
     }
     setSaving(true);
     try {
-      const result = await window.api.createSale({
+      const result = await apiBridge.createSale({
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }),
         customer_id: customerId || null,

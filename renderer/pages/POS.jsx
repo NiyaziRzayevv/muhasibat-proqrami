@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 import jsPDF from 'jspdf';
@@ -238,9 +239,7 @@ export default function POS() {
         created_by: currentUser?.id || null,
       };
 
-      const res = window.api?.createSale
-        ? await window.api.createSale(saleData)
-        : await apiRequest('/sales', { method: 'POST', token: getToken(), body: saleData });
+      const res = await apiBridge.createSale(saleData);
       if (res.success) {
         setLastSale({ ...res.data, change: Math.max(0, change) });
         showNotification('Satış tamamlandı!', 'success');
