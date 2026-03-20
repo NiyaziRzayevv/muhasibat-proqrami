@@ -168,13 +168,7 @@ export default function AIAssistant() {
     setLoading(true);
 
     try {
-      if (!window.api?.aiChat) {
-        setMessages(prev => [...prev, {
-          role: 'ai', text: 'AI xidməti mövcud deyil.', type: 'error', icon: 'alert-circle',
-          timestamp: new Date().toISOString(),
-        }]);
-        return;
-      }
+      console.log('[AI] window.api exists:', !!window.api, 'aiChat exists:', typeof window.api?.aiChat);
       const chatHistory = messages.filter(m => m.role === 'user' || m.role === 'ai').slice(-10);
       const res = await window.api.aiChat(text.trim(), currentUser?.id, chatHistory);
       if (res.success && res.data) {
