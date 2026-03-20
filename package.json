@@ -1,6 +1,6 @@
 {
   "name": "smartqeyd",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "SmartQeyd - Ağıllı Biznes İdarəetmə Sistemi",
   "main": "src/main/index.js",
   "scripts": {
@@ -37,6 +37,9 @@
   "author": "SmartQeyd",
   "license": "MIT",
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "better-sqlite3": "^9.4.3",
     "date-fns": "^3.3.1",
     "electron-store": "^8.1.0",
