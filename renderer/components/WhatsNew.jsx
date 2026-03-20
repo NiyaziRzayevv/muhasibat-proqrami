@@ -1,10 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.5.3';
+const CURRENT_VERSION = '1.5.4';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.5.4',
+    title: 'SmartQeyd v1.5.4 — Tam Biznes İnteqrasiya!',
+    date: '2026-03-20',
+    highlights: [
+      { icon: Zap, text: 'Service Layer: Satış, borc, xərc, stok — tam transaction əsaslı' },
+      { icon: Shield, text: 'Audit Log: Bütün əməliyyatlar avtomatik qeydə alınır' },
+      { icon: Package, text: 'Detail səhifələr: Müştəri, məhsul, satış, borc detallı görünüş' },
+      { icon: Rocket, text: 'Real Dashboard: Bütün data real vaxtda hesablanır' },
+    ],
+    changes: [
+      'SalesService: Satış → stok azalma → maliyyə → borc — bir transaction-da',
+      'DebtService: Borc ödənişi → satış yenilənmə → maliyyə qeydi avtomatik',
+      'StockService: Stok giriş/çıxış/düzəliş + qiymət tarixçəsi',
+      'CustomerService: Müştəri detail + timeline (satış, borc, ödəniş, randevu)',
+      'DashboardService: Real-time gəlir, xərc, borc, stok, chart data',
+      'NotificationService: Aşağı stok, gecikmiş borc, yaxın randevu xəbərdarlıqları',
+      'AuditService: Yaratma, silmə, yeniləmə, ödəniş — tam iz qeydi',
+      'Qeyd sistemi (Notes): Müştəri/satış/vasitə üçün qeydlər',
+      'Qiymət tarixçəsi (Price History): Hər dəyişiklik qeydə alınır',
+      'Migration v16: debts, notes, price_history cədvəlləri + index-lər',
+      'Dashboard-da randevular, tapşırıqlar, müştəri sayı düzəldildi',
+    ],
+  },
   {
     version: '1.5.2',
     title: 'SmartQeyd v1.5.2 — AI Tam Gücləndirildi!',

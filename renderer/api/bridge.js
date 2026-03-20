@@ -103,6 +103,8 @@ export const apiBridge = {
   // ─── Customers ──────────────────────────────────────────────────────────
   getCustomers: (s, u) => ipcOrHttp(() => window.api.getCustomers(s, u), 'GET', '/customers', () => ({ search: s, userId: u })),
   getCustomer: (id) => ipcOrHttp(() => window.api.getCustomer(id), 'GET', `/customers/${id}`),
+  getCustomerDetail: (id) => ipcOrHttp(() => window.api.getCustomerDetail(id), 'GET', `/customers/${id}/detail`),
+  getCustomerTimeline: (id, l) => ipcOrHttp(() => window.api.getCustomerTimeline(id, l), 'GET', `/customers/${id}/timeline`, () => ({ limit: l })),
   createCustomer: (d) => ipcOrHttp(() => window.api.createCustomer(d), 'POST', '/customers', () => d),
   updateCustomer: (id, d) => ipcOrHttp(() => window.api.updateCustomer(id, d), 'PUT', `/customers/${id}`, () => d),
   deleteCustomer: (id) => ipcOrHttp(() => window.api.deleteCustomer(id), 'DELETE', `/customers/${id}`),
@@ -137,10 +139,13 @@ export const apiBridge = {
   updateSupplier: (id, d) => ipcOrHttp(() => window.api.updateSupplier(id, d), 'PUT', `/suppliers/${id}`, () => d),
   deleteSupplier: (id) => ipcOrHttp(() => window.api.deleteSupplier(id), 'DELETE', `/suppliers/${id}`),
   getSupplierProducts: (id) => ipcOrHttp(() => window.api.getSupplierProducts(id), 'GET', `/suppliers/${id}/products`),
+  getSupplierDetail: (id) => ipcOrHttp(() => window.api.getSupplierDetail(id), 'GET', `/suppliers/${id}/detail`),
 
   // ─── Products ───────────────────────────────────────────────────────────
   getProducts: (f) => ipcOrHttp(() => window.api.getProducts(f), 'GET', '/products', () => f),
   getProduct: (id) => ipcOrHttp(() => window.api.getProduct(id), 'GET', `/products/${id}`),
+  getProductDetail: (id) => ipcOrHttp(() => window.api.getProductDetail(id), 'GET', `/products/${id}/detail`),
+  updateProductPrice: (id, bp, sp, r, u) => ipcOrHttp(() => window.api.updateProductPrice(id, bp, sp, r, u), 'PUT', `/products/${id}/price`, () => ({ buyPrice: bp, sellPrice: sp, reason: r, userId: u })),
   createProduct: (d) => ipcOrHttp(() => window.api.createProduct(d), 'POST', '/products', () => d),
   updateProduct: (id, d) => ipcOrHttp(() => window.api.updateProduct(id, d), 'PUT', `/products/${id}`, () => d),
   deleteProduct: (id) => ipcOrHttp(() => window.api.deleteProduct(id), 'DELETE', `/products/${id}`),
@@ -158,9 +163,10 @@ export const apiBridge = {
   // ─── Sales ──────────────────────────────────────────────────────────────
   getSales: (f) => ipcOrHttp(() => window.api.getSales(f), 'GET', '/sales', () => f),
   getSale: (id) => ipcOrHttp(() => window.api.getSale(id), 'GET', `/sales/${id}`),
+  getSaleDetail: (id) => ipcOrHttp(() => window.api.getSaleDetail(id), 'GET', `/sales/${id}/detail`),
   createSale: (d) => ipcOrHttp(() => window.api.createSale(d), 'POST', '/sales', () => d),
   updateSalePayment: (id, pa, st) => ipcOrHttp(() => window.api.updateSalePayment(id, pa, st), 'PUT', `/sales/${id}/payment`, () => ({ paidAmount: pa, status: st })),
-  deleteSale: (id) => ipcOrHttp(() => window.api.deleteSale(id), 'DELETE', `/sales/${id}`),
+  deleteSale: (id, u) => ipcOrHttp(() => window.api.deleteSale(id, u), 'DELETE', `/sales/${id}`, () => ({ userId: u })),
   getSalesStats: (s, e, u) => ipcOrHttp(() => window.api.getSalesStats(s, e, u), 'GET', '/sales/stats', () => ({ startDate: s, endDate: e, userId: u })),
   getTopSellingProducts: (l, u) => ipcOrHttp(() => window.api.getTopSellingProducts(l, u), 'GET', '/sales/top-products', () => ({ limit: l, userId: u })),
   getMonthlySalesChart: (y, u) => ipcOrHttp(() => window.api.getMonthlySalesChart(y, u), 'GET', '/sales/monthly-chart', () => ({ year: y, userId: u })),
@@ -189,7 +195,8 @@ export const apiBridge = {
   getExpenses: (f) => ipcOrHttp(() => window.api.getExpenses(f), 'GET', '/expenses', () => f),
   createExpense: (d) => ipcOrHttp(() => window.api.createExpense(d), 'POST', '/expenses', () => d),
   updateExpense: (id, d) => ipcOrHttp(() => window.api.updateExpense(id, d), 'PUT', `/expenses/${id}`, () => d),
-  deleteExpense: (id) => ipcOrHttp(() => window.api.deleteExpense(id), 'DELETE', `/expenses/${id}`),
+  deleteExpense: (id, u) => ipcOrHttp(() => window.api.deleteExpense(id, u), 'DELETE', `/expenses/${id}`, () => ({ userId: u })),
+  getExpenseDetail: (id) => ipcOrHttp(() => window.api.getExpenseDetail(id), 'GET', `/expenses/${id}/detail`),
   getExpenseStats: (s, e, u) => ipcOrHttp(() => window.api.getExpenseStats(s, e, u), 'GET', '/expenses/stats', () => ({ startDate: s, endDate: e, userId: u })),
   getExpenseCategories: () => ipcOrHttp(() => window.api.getExpenseCategories(), 'GET', '/expenses/categories'),
 
@@ -228,12 +235,18 @@ export const apiBridge = {
 
   // ─── Finance ────────────────────────────────────────────────────────────
   getFinanceSummary: (s, e, u) => ipcOrHttp(() => window.api.getFinanceSummary(s, e, u), 'GET', '/finance/summary', () => ({ startDate: s, endDate: e, userId: u })),
+  getExpensesByCategory: (s, e, u) => ipcOrHttp(() => window.api.getExpensesByCategory(s, e, u), 'GET', '/finance/expenses-by-category', () => ({ startDate: s, endDate: e, userId: u })),
+  getMonthlyTrend: (y, u) => ipcOrHttp(() => window.api.getMonthlyTrend(y, u), 'GET', '/finance/monthly-trend', () => ({ year: y, userId: u })),
+  getPaymentMethodStats: (s, e, u) => ipcOrHttp(() => window.api.getPaymentMethodStats(s, e, u), 'GET', '/finance/payment-methods', () => ({ startDate: s, endDate: e, userId: u })),
+  getRecentFinanceTransactions: (l, u) => ipcOrHttp(() => window.api.getRecentFinanceTransactions(l, u), 'GET', '/finance/recent', () => ({ limit: l, userId: u })),
+  getDailyCashFlow: (y, m, u) => ipcOrHttp(() => window.api.getDailyCashFlow(y, m, u), 'GET', '/finance/cash-flow', () => ({ year: y, month: m, userId: u })),
   getFinanceTransactions: (f) => ipcOrHttp(() => window.api.getFinanceTransactions(f), 'GET', '/finance', () => f),
   createFinanceTransaction: (d) => ipcOrHttp(() => window.api.createFinanceTransaction(d), 'POST', '/finance', () => d),
   deleteFinanceTransaction: (id) => ipcOrHttp(() => window.api.deleteFinanceTransaction(id), 'DELETE', `/finance/${id}`),
 
-  // ─── Debts ──────────────────────────────────────────────────────────────
+  // ─── Debts ────────────────────────────────────────────────────────────────────
   getDebts: (f) => ipcOrHttp(() => window.api.getDebts(f), 'GET', '/debts', () => f),
+  getDebtDetail: (id) => ipcOrHttp(() => window.api.getDebtDetail(id), 'GET', `/debts/${id}/detail`),
   payDebt: (d) => ipcOrHttp(() => window.api.payDebt(d), 'POST', '/debts/pay', () => d),
   getDebtPayments: (f) => ipcOrHttp(() => window.api.getDebtPayments(f), 'GET', '/debts/payments', () => f),
   getDebtStatsUnified: (u) => ipcOrHttp(() => window.api.getDebtStatsUnified(u), 'GET', '/debts/stats', () => ({ userId: u })),
@@ -250,40 +263,40 @@ export const apiBridge = {
   sendTelegramMessage: (t) => isElectron ? safeCall(() => window.api.sendTelegramMessage(t)) : Promise.resolve({ success: false, error: 'Yalnız desktop' }),
   sendTelegramReport: (u) => isElectron ? safeCall(() => window.api.sendTelegramReport(u)) : Promise.resolve({ success: false, error: 'Yalnız desktop' }),
 
-  // ─── Export (Electron only — mobil-də PDF/Excel yoxdur) ─────────────────
+  // ─── Export (Electron only) ──────────────────────────────────────────────
   exportExcel: (r, f) => isElectron ? safeCall(() => window.api.exportExcel(r, f)) : Promise.resolve({ success: false, error: 'Mobil-də dəstəklənmir' }),
   exportPdf: (r, o) => isElectron ? safeCall(() => window.api.exportPdf(r, o)) : Promise.resolve({ success: false, error: 'Mobil-də dəstəklənmir' }),
   exportDailyPdf: (r, d, o) => isElectron ? safeCall(() => window.api.exportDailyPdf(r, d, o)) : Promise.resolve({ success: false, error: 'Mobil-də dəstəklənmir' }),
   exportCustomersExcel: (c) => isElectron ? safeCall(() => window.api.exportCustomersExcel(c)) : Promise.resolve({ success: false, error: 'Mobil-də dəstəklənmir' }),
 
-  // ─── Backup (Electron only) ─────────────────────────────────────────────
+  // ─── Backup (Electron only) ──────────────────────────────────────────────
   createBackup: (d) => isElectron ? safeCall(() => window.api.createBackup(d)) : Promise.resolve({ success: false, error: 'Yalnız desktop' }),
   restoreBackup: (f) => isElectron ? safeCall(() => window.api.restoreBackup(f)) : Promise.resolve({ success: false, error: 'Yalnız desktop' }),
   listBackups: (d) => isElectron ? safeCall(() => window.api.listBackups(d)) : Promise.resolve({ success: true, data: [] }),
   getDbPath: () => isElectron ? safeCall(() => window.api.getDbPath()) : Promise.resolve({ success: true, data: 'remote' }),
 
-  // ─── File Dialogs (Electron only) ───────────────────────────────────────
+  // ─── File Dialogs (Electron only) ────────────────────────────────────────
   openFileDialog: (o) => isElectron ? window.api?.openFileDialog?.(o) : null,
   openFolderDialog: () => isElectron ? window.api?.openFolderDialog?.() : null,
   openPath: (f) => isElectron ? window.api?.openPath?.(f) : null,
   showItemInFolder: (f) => isElectron ? window.api?.showItemInFolder?.(f) : null,
   openExternal: (url) => isElectron ? window.api?.openExternal?.(url) : window.open(url, '_blank'),
 
-  // ─── Logging ────────────────────────────────────────────────────────────
+  // ─── Logging ─────────────────────────────────────────────────────────────
   getLogPath: () => isElectron ? safeCall(() => window.api.getLogPath()) : Promise.resolve({ success: true, data: '' }),
   openLogFolder: () => isElectron ? safeCall(() => window.api.openLogFolder()) : Promise.resolve({ success: false }),
 
-  // ─── Seed ───────────────────────────────────────────────────────────────
+  // ─── Seed ────────────────────────────────────────────────────────────────
   seedData: () => isElectron ? safeCall(() => window.api.seedData()) : Promise.resolve({ success: false, error: 'Yalnız desktop' }),
 
-  // ─── Auto-Update (Electron only) ───────────────────────────────────────
+  // ─── Auto-Update (Electron only) ────────────────────────────────────────
   checkForUpdate: () => isElectron ? safeCall(() => window.api.checkForUpdate()) : Promise.resolve({ success: false }),
-  getAppVersion: () => isElectron ? safeCall(() => window.api.getAppVersion()) : Promise.resolve({ success: true, data: '1.5.2' }),
+  getAppVersion: () => isElectron ? safeCall(() => window.api.getAppVersion()) : Promise.resolve({ success: true, data: '1.5.4' }),
   downloadUpdate: () => isElectron ? safeCall(() => window.api.downloadUpdate()) : Promise.resolve({ success: false }),
   installUpdate: () => isElectron ? window.api?.installUpdate?.() : null,
   onUpdaterStatus: (cb) => isElectron ? (window.api?.onUpdaterStatus?.(cb) || (() => {})) : (() => {}),
 
-  // ─── Auth ───────────────────────────────────────────────────────────────
+  // ─── Auth ────────────────────────────────────────────────────────────────
   login: (u, p) => isElectron
     ? safeCall(() => window.api.login(u, p))
     : httpCall('POST', '/auth/login', { username: u, password: p }).then(r => { if (r.success && r.data?.token) setAuthToken(r.data.token); return r; }),
@@ -295,10 +308,22 @@ export const apiBridge = {
   requestPasswordReset: () => Promise.resolve({ success: false, error: 'Dəstəklənmir' }),
   resetPassword: () => Promise.resolve({ success: false, error: 'Dəstəklənmir' }),
 
-  // ─── Compat stubs ──────────────────────────────────────────────────────
+  // ─── Dashboard (real data) ──────────────────────────────────────────────
+  getDashboardData: (u) => ipcOrHttp(() => window.api.getDashboardData(u), 'GET', '/dashboard', () => ({ userId: u })),
+
+  // ─── Notes ──────────────────────────────────────────────────────────────
+  getNotes: (f) => ipcOrHttp(() => window.api.getNotes(f), 'GET', '/notes', () => f),
+  createNote: (d) => ipcOrHttp(() => window.api.createNote(d), 'POST', '/notes', () => d),
+  updateNote: (id, d) => ipcOrHttp(() => window.api.updateNote(id, d), 'PUT', `/notes/${id}`, () => d),
+  deleteNote: (id) => ipcOrHttp(() => window.api.deleteNote(id), 'DELETE', `/notes/${id}`),
+
+  // ─── Price History ──────────────────────────────────────────────────────
+  getPriceHistory: (pid) => ipcOrHttp(() => window.api.getPriceHistory(pid), 'GET', `/products/${pid}/price-history`),
+
+  // ─── Compat stubs ───────────────────────────────────────────────────────
   getRemoteConfig: () => ({ enabled: !isElectron }),
   setRemoteConfig: () => {},
-  getDashboardStats: () => Promise.resolve({ success: false, error: 'Use local stats' }),
+  getDashboardStats: (u) => ipcOrHttp(() => window.api.getDashboardData(u), 'GET', '/dashboard', () => ({ userId: u })),
   getFinanceStats: (s, e, u) => ipcOrHttp(() => window.api.getFinanceSummary(s, e, u), 'GET', '/finance/summary', () => ({ startDate: s, endDate: e, userId: u })),
   getCustomerCount: (u) => isElectron
     ? safeCall(() => window.api.getCustomers(null, u).then(r => ({ success: true, data: r.data?.length || 0 })))

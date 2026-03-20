@@ -23,6 +23,15 @@ const assetsDb = require('../database/assets');
 const debtsDb = require('../database/debts');
 const financeTransDb = require('../database/finance_transactions');
 const { processSmartInput, createRecordFromParsed, createSaleFromParsed, updateRecordWithPayment } = require('../services/record-service');
+const SalesService = require('../services/sales-service');
+const DebtService = require('../services/debt-service');
+const ExpenseService = require('../services/expense-service');
+const DashboardService = require('../services/dashboard-service');
+const StockService = require('../services/stock-service');
+const CustomerService = require('../services/customer-service');
+const AuditService = require('../services/audit-service');
+const NotificationService = require('../services/notification-service');
+const FinanceService = require('../services/finance-service');
 const { parseInventory, parseUniversal } = require('../ai/parser');
 const aiAssistant = require('../ai/assistant');
 const { createBackup, restoreBackup, listBackups } = require('../services/backup-service');
@@ -204,6 +213,14 @@ function registerHandlers() {
 
   ipcMain.handle('customers:getOne', (_, id) => {
     try { return { success: true, data: customersDb.getCustomerById(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+  ipcMain.handle('customers:detail', (_, id) => {
+    try { return { success: true, data: CustomerService.getCustomerDetail(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+  ipcMain.handle('customers:timeline', (_, id, limit) => {
+    try { return { success: true, data: CustomerService.getTimeline(id, limit) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
@@ -465,12 +482,30 @@ function registerHandlers() {
       return { success: false, error: e.message };
     }
   });
+  ipcMain.handle('products:detail', (_, id) => {
+    try { return { success: true, data: StockService.getProductDetail(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+  ipcMain.handle('products:updatePrice', (_, id, buyPrice, sellPrice, reason, userId) => {
+    try { return { success: true, data: StockService.updateProductPrice(id, buyPrice, sellPrice, reason, userId) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
   ipcMain.handle('products:update', (_, id, data) => {
     try {
+      const userId = data?.updated_by || data?.created_by || null;
+      // Price change tracking
+      if (data && (data.buy_price !== undefined || data.sell_price !== undefined)) {
+        const old = productsDb.getProductById(id);
+        if (old && (data.buy_price !== old.buy_price || data.sell_price !== old.sell_price)) {
+          StockService.updateProductPrice(id, data.buy_price, data.sell_price, 'Məhsul redaktəsi', userId);
+          delete data.buy_price;
+          delete data.sell_price;
+        }
+      }
       if (data && data.stock_qty !== undefined) {
         const newQty = Number(data.stock_qty);
         if (!Number.isNaN(newQty)) {
-          stockMovementsDb.stockAdjust(id, newQty, 'Məhsul redaktəsi ilə stok düzəlişi', data.updated_by || data.created_by || null);
+          StockService.stockAdjust(id, newQty, 'Məhsul redaktəsi ilə stok düzəlişi', userId);
         }
         delete data.stock_qty;
       }
@@ -494,9 +529,9 @@ function registerHandlers() {
   // Stock Movements
   ipcMain.handle('stock:in', (_, productId, qty, note, createdBy) => {
     try {
-      const after = stockMovementsDb.stockIn(productId, qty, note, null, null, createdBy);
-      logger.info('STOCK', `IN product=${productId} qty=+${qty} after=${after}`);
-      return { success: true, data: after };
+      const result = StockService.stockIn(productId, qty, note, createdBy);
+      logger.info('STOCK', `IN product=${productId} qty=+${qty} after=${result.after}`);
+      return { success: true, data: result };
     } catch (e) {
       logger.errorLog('stock:in', e);
       return { success: false, error: e.message };
@@ -504,16 +539,16 @@ function registerHandlers() {
   });
   ipcMain.handle('stock:out', (_, productId, qty, note, createdBy) => {
     try {
-      const after = stockMovementsDb.stockOut(productId, qty, note, null, null, createdBy);
-      logger.info('STOCK', `OUT product=${productId} qty=-${qty} after=${after}`);
-      return { success: true, data: after };
+      const result = StockService.stockOut(productId, qty, note, createdBy);
+      logger.info('STOCK', `OUT product=${productId} qty=-${qty} after=${result.after}`);
+      return { success: true, data: result };
     } catch (e) {
       logger.errorLog('stock:out', e);
       return { success: false, error: e.message };
     }
   });
   ipcMain.handle('stock:adjust', (_, productId, newQty, note, createdBy) => {
-    try { return { success: true, data: stockMovementsDb.stockAdjust(productId, newQty, note, createdBy) }; }
+    try { return { success: true, data: StockService.stockAdjust(productId, newQty, note, createdBy) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
   ipcMain.handle('stock:movements', (_, filters) => {
@@ -536,7 +571,7 @@ function registerHandlers() {
   });
   ipcMain.handle('sales:create', (_, data) => {
     try {
-      const sale = salesDb.createSale(data);
+      const sale = SalesService.createSale(data);
       logger.dbInsert('sales', sale.id);
       logger.totalCalc('sale.total', sale.total);
       return { success: true, data: sale };
@@ -545,12 +580,16 @@ function registerHandlers() {
       return { success: false, error: e.message };
     }
   });
+  ipcMain.handle('sales:detail', (_, id) => {
+    try { return { success: true, data: SalesService.getSaleDetail(id) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
   ipcMain.handle('sales:updatePayment', (_, id, paidAmount, status) => {
     try { return { success: true, data: salesDb.updateSalePayment(id, paidAmount, status) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
-  ipcMain.handle('sales:delete', (_, id) => {
-    try { return { success: true, data: salesDb.deleteSale(id) }; }
+  ipcMain.handle('sales:delete', (_, id, userId) => {
+    try { return { success: true, data: SalesService.deleteSale(id, userId) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
   ipcMain.handle('sales:stats', (_, startDate, endDate, userId) => {
@@ -727,23 +766,23 @@ function registerHandlers() {
 
   ipcMain.handle('expenses:create', (_, data) => {
     try {
-      const expense = expensesDb.createExpense(data);
-      auditLogsDb.logAction({ action: 'CREATE_EXPENSE', entity_type: 'expenses', entity_id: expense.id, new_data: expense });
+      const expense = ExpenseService.createExpense(data);
       return { success: true, data: expense };
     } catch (e) { return { success: false, error: e.message }; }
   });
-
-  ipcMain.handle('expenses:update', (_, id, data) => {
-    try { return { success: true, data: expensesDb.updateExpense(id, data) }; }
+  ipcMain.handle('expenses:detail', (_, id) => {
+    try { return { success: true, data: ExpenseService.getExpenseDetail(id) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  ipcMain.handle('expenses:delete', (_, id) => {
-    try {
-      expensesDb.deleteExpense(id);
-      auditLogsDb.logAction({ action: 'DELETE_EXPENSE', entity_type: 'expenses', entity_id: id });
-      return { success: true };
-    } catch (e) { return { success: false, error: e.message }; }
+  ipcMain.handle('expenses:update', (_, id, data) => {
+    try { return { success: true, data: ExpenseService.updateExpense(id, data) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('expenses:delete', (_, id, userId) => {
+    try { return { success: true, data: ExpenseService.deleteExpense(id, userId) }; }
+    catch (e) { return { success: false, error: e.message }; }
   });
 
   ipcMain.handle('expenses:stats', (_, startDate, endDate, userId) => {
@@ -787,8 +826,13 @@ function registerHandlers() {
   });
 
   ipcMain.handle('notifications:check', (_, userId) => {
-    try { return { success: true, data: notificationsDb.checkAndCreateSystemNotifications(userId || null) }; }
-    catch (e) { return { success: false, error: e.message }; }
+    try {
+      // Use new NotificationService for comprehensive checks
+      const results = NotificationService.checkAll(userId || null);
+      // Also run legacy checks for backwards compat
+      notificationsDb.checkAndCreateSystemNotifications(userId || null);
+      return { success: true, data: results };
+    } catch (e) { return { success: false, error: e.message }; }
   });
 
   // ─── Audit Logs ────────────────────────────────────────────────────────────
@@ -995,18 +1039,38 @@ function registerHandlers() {
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  // ─── Finance Stats ─────────────────────────────────────────────────────────
+  // ─── Finance Stats (FinanceService) ─────────────────────────────────────────
   ipcMain.handle('finance:summary', (_, startDate, endDate, userId) => {
-    try {
-      const now = new Date();
-      const start = startDate || `${now.getFullYear()}-01-01`;
-      const end = endDate || now.toISOString().split('T')[0];
-      const data = financeTransDb.getFinanceSummary({ startDate: start, endDate: end, userId: userId || null });
-      return { success: true, data };
-    } catch (e) { return { success: false, error: e.message }; }
+    try { return { success: true, data: FinanceService.getSummary(startDate, endDate, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
   });
 
-  // ─── Finance Transactions ──────────────────────────────────────────────────
+  ipcMain.handle('finance:expensesByCategory', (_, startDate, endDate, userId) => {
+    try { return { success: true, data: FinanceService.getExpensesByCategory(startDate, endDate, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('finance:monthlyTrend', (_, year, userId) => {
+    try { return { success: true, data: FinanceService.getMonthlyTrend(year, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('finance:paymentMethodStats', (_, startDate, endDate, userId) => {
+    try { return { success: true, data: FinanceService.getPaymentMethodStats(startDate, endDate, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('finance:recentTransactions', (_, limit, userId) => {
+    try { return { success: true, data: FinanceService.getRecentTransactions(limit, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('finance:dailyCashFlow', (_, year, month, userId) => {
+    try { return { success: true, data: FinanceService.getDailyCashFlow(year, month, userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Finance Transactions (CRUD) ──────────────────────────────────────────
   ipcMain.handle('finance:transactions', (_, filters) => {
     try { return { success: true, data: financeTransDb.getAllFinanceTransactions(filters || {}) }; }
     catch (e) { return { success: false, error: e.message }; }
@@ -1056,14 +1120,19 @@ function registerHandlers() {
     catch (e) { return { success: false, error: e.message }; }
   });
 
-  // ─── Debts (unified) ──────────────────────────────────────────────────────
+  // ─── Debts (unified via DebtService) ────────────────────────────────────────
   ipcMain.handle('debts:getAll', (_, filters) => {
-    try { return { success: true, data: debtsDb.getAllDebts(filters || {}) }; }
+    try { return { success: true, data: DebtService.getAllDebts(filters || {}) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('debts:detail', (_, id) => {
+    try { return { success: true, data: DebtService.getDebtDetail(id) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
   ipcMain.handle('debts:pay', (_, data) => {
-    try { return { success: true, data: debtsDb.payDebt(data) }; }
+    try { return { success: true, data: DebtService.payDebt(data) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
@@ -1073,7 +1142,7 @@ function registerHandlers() {
   });
 
   ipcMain.handle('debts:stats', (_, userId) => {
-    try { return { success: true, data: debtsDb.getDebtStats(userId || null) }; }
+    try { return { success: true, data: DebtService.getStats(userId || null) }; }
     catch (e) { return { success: false, error: e.message }; }
   });
 
@@ -1083,6 +1152,81 @@ function registerHandlers() {
       const result = updateRecordWithPayment(id, { paid_amount: paidAmount, payment_status: status });
       if (!result) return { success: false, error: 'Qeyd tapılmadı' };
       return { success: true, data: result };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Dashboard (real data) ─────────────────────────────────────────────────
+  ipcMain.handle('dashboard:getAll', (_, userId) => {
+    try { return { success: true, data: DashboardService.getAll(userId || null) }; }
+    catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Notes ────────────────────────────────────────────────────────────────
+  ipcMain.handle('notes:getAll', (_, filters) => {
+    try {
+      const db = require('../database/index').getDb();
+      let sql = 'SELECT n.*, u.full_name as created_by_name FROM notes n LEFT JOIN users u ON n.created_by = u.id WHERE 1=1';
+      const params = [];
+      if (filters?.customer_id) { sql += ' AND n.customer_id = ?'; params.push(filters.customer_id); }
+      if (filters?.vehicle_id) { sql += ' AND n.vehicle_id = ?'; params.push(filters.vehicle_id); }
+      if (filters?.sale_id) { sql += ' AND n.sale_id = ?'; params.push(filters.sale_id); }
+      if (filters?.search) { sql += ' AND (n.title LIKE ? OR n.content LIKE ?)'; params.push(`%${filters.search}%`, `%${filters.search}%`); }
+      sql += ' ORDER BY n.created_at DESC';
+      if (filters?.limit) { sql += ' LIMIT ?'; params.push(filters.limit); }
+      return { success: true, data: db.prepare(sql).all(...params) };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('notes:create', (_, data) => {
+    try {
+      const db = require('../database/index').getDb();
+      const result = db.prepare(`
+        INSERT INTO notes (customer_id, vehicle_id, sale_id, title, content, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(data.customer_id || null, data.vehicle_id || null, data.sale_id || null, data.title || null, data.content || null, data.created_by || null);
+      const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
+      AuditService.logCreate('notes', 'note', note.id, data.created_by, null, data, `Yeni qeyd: ${data.title || 'Başlıqsız'}`);
+      return { success: true, data: note };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('notes:update', (_, id, data) => {
+    try {
+      const db = require('../database/index').getDb();
+      db.prepare("UPDATE notes SET title = ?, content = ?, updated_at = datetime('now','localtime') WHERE id = ?").run(data.title, data.content, id);
+      return { success: true, data: db.prepare('SELECT * FROM notes WHERE id = ?').get(id) };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  ipcMain.handle('notes:delete', (_, id) => {
+    try {
+      const db = require('../database/index').getDb();
+      db.prepare('DELETE FROM notes WHERE id = ?').run(id);
+      return { success: true };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Price History ────────────────────────────────────────────────────────
+  ipcMain.handle('priceHistory:getAll', (_, productId) => {
+    try {
+      const db = require('../database/index').getDb();
+      return { success: true, data: db.prepare(`
+        SELECT ph.*, u.full_name as changed_by_name FROM price_history ph
+        LEFT JOIN users u ON ph.changed_by = u.id
+        WHERE ph.product_id = ? ORDER BY ph.created_at DESC
+      `).all(productId) };
+    } catch (e) { return { success: false, error: e.message }; }
+  });
+
+  // ─── Supplier Detail ──────────────────────────────────────────────────────
+  ipcMain.handle('suppliers:detail', (_, id) => {
+    try {
+      const db = require('../database/index').getDb();
+      const supplier = db.prepare('SELECT * FROM suppliers WHERE id = ?').get(id);
+      if (!supplier) return { success: false, error: 'Təchizatçı tapılmadı' };
+      supplier.products = db.prepare('SELECT * FROM products WHERE supplier_id = ? ORDER BY name').all(id);
+      supplier.expenses = db.prepare('SELECT * FROM expenses WHERE supplier_id = ? AND deleted_at IS NULL ORDER BY date DESC LIMIT 20').all(id);
+      return { success: true, data: supplier };
     } catch (e) { return { success: false, error: e.message }; }
   });
 

@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('api', {
   // Customers
   getCustomers: (search, userId) => ipcRenderer.invoke('customers:getAll', search, userId),
   getCustomer: (id) => ipcRenderer.invoke('customers:getOne', id),
+  getCustomerDetail: (id) => ipcRenderer.invoke('customers:detail', id),
+  getCustomerTimeline: (id, limit) => ipcRenderer.invoke('customers:timeline', id, limit),
   createCustomer: (data) => ipcRenderer.invoke('customers:create', data),
   updateCustomer: (id, data) => ipcRenderer.invoke('customers:update', id, data),
   deleteCustomer: (id) => ipcRenderer.invoke('customers:delete', id),
@@ -98,10 +100,13 @@ contextBridge.exposeInMainWorld('api', {
   updateSupplier: (id, data) => ipcRenderer.invoke('suppliers:update', id, data),
   deleteSupplier: (id) => ipcRenderer.invoke('suppliers:delete', id),
   getSupplierProducts: (id) => ipcRenderer.invoke('suppliers:products', id),
+  getSupplierDetail: (id) => ipcRenderer.invoke('suppliers:detail', id),
 
   // Products
   getProducts: (filters) => ipcRenderer.invoke('products:getAll', filters),
   getProduct: (id) => ipcRenderer.invoke('products:getOne', id),
+  getProductDetail: (id) => ipcRenderer.invoke('products:detail', id),
+  updateProductPrice: (id, buyPrice, sellPrice, reason, userId) => ipcRenderer.invoke('products:updatePrice', id, buyPrice, sellPrice, reason, userId),
   createProduct: (data) => ipcRenderer.invoke('products:create', data),
   updateProduct: (id, data) => ipcRenderer.invoke('products:update', id, data),
   deleteProduct: (id) => ipcRenderer.invoke('products:delete', id),
@@ -118,9 +123,10 @@ contextBridge.exposeInMainWorld('api', {
   // Sales
   getSales: (filters) => ipcRenderer.invoke('sales:getAll', filters),
   getSale: (id) => ipcRenderer.invoke('sales:getOne', id),
+  getSaleDetail: (id) => ipcRenderer.invoke('sales:detail', id),
   createSale: (data) => ipcRenderer.invoke('sales:create', data),
   updateSalePayment: (id, paidAmount, status) => ipcRenderer.invoke('sales:updatePayment', id, paidAmount, status),
-  deleteSale: (id) => ipcRenderer.invoke('sales:delete', id),
+  deleteSale: (id, userId) => ipcRenderer.invoke('sales:delete', id, userId),
   getSalesStats: (startDate, endDate, userId) => ipcRenderer.invoke('sales:stats', startDate, endDate, userId),
   getTopSellingProducts: (limit, userId) => ipcRenderer.invoke('sales:topProducts', limit, userId),
   getMonthlySalesChart: (year, userId) => ipcRenderer.invoke('sales:monthlyChart', year, userId),
@@ -156,7 +162,8 @@ contextBridge.exposeInMainWorld('api', {
   getExpenses: (filters) => ipcRenderer.invoke('expenses:getAll', filters),
   createExpense: (data) => ipcRenderer.invoke('expenses:create', data),
   updateExpense: (id, data) => ipcRenderer.invoke('expenses:update', id, data),
-  deleteExpense: (id) => ipcRenderer.invoke('expenses:delete', id),
+  deleteExpense: (id, userId) => ipcRenderer.invoke('expenses:delete', id, userId),
+  getExpenseDetail: (id) => ipcRenderer.invoke('expenses:detail', id),
   getExpenseStats: (startDate, endDate, userId) => ipcRenderer.invoke('expenses:stats', startDate, endDate, userId),
   getExpenseCategories: () => ipcRenderer.invoke('expenses:categories'),
 
@@ -210,6 +217,11 @@ contextBridge.exposeInMainWorld('api', {
 
   // Finance
   getFinanceSummary: (startDate, endDate, userId) => ipcRenderer.invoke('finance:summary', startDate, endDate, userId),
+  getExpensesByCategory: (startDate, endDate, userId) => ipcRenderer.invoke('finance:expensesByCategory', startDate, endDate, userId),
+  getMonthlyTrend: (year, userId) => ipcRenderer.invoke('finance:monthlyTrend', year, userId),
+  getPaymentMethodStats: (startDate, endDate, userId) => ipcRenderer.invoke('finance:paymentMethodStats', startDate, endDate, userId),
+  getRecentFinanceTransactions: (limit, userId) => ipcRenderer.invoke('finance:recentTransactions', limit, userId),
+  getDailyCashFlow: (year, month, userId) => ipcRenderer.invoke('finance:dailyCashFlow', year, month, userId),
   getFinanceTransactions: (filters) => ipcRenderer.invoke('finance:transactions', filters),
   createFinanceTransaction: (data) => ipcRenderer.invoke('finance:createTransaction', data),
   deleteFinanceTransaction: (id) => ipcRenderer.invoke('finance:deleteTransaction', id),
@@ -224,9 +236,22 @@ contextBridge.exposeInMainWorld('api', {
 
   // Debts (unified)
   getDebts: (filters) => ipcRenderer.invoke('debts:getAll', filters),
+  getDebtDetail: (id) => ipcRenderer.invoke('debts:detail', id),
   payDebt: (data) => ipcRenderer.invoke('debts:pay', data),
   getDebtPayments: (filters) => ipcRenderer.invoke('debts:payments', filters),
   getDebtStatsUnified: (userId) => ipcRenderer.invoke('debts:stats', userId),
+
+  // Dashboard (real data)
+  getDashboardData: (userId) => ipcRenderer.invoke('dashboard:getAll', userId),
+
+  // Notes
+  getNotes: (filters) => ipcRenderer.invoke('notes:getAll', filters),
+  createNote: (data) => ipcRenderer.invoke('notes:create', data),
+  updateNote: (id, data) => ipcRenderer.invoke('notes:update', id, data),
+  deleteNote: (id) => ipcRenderer.invoke('notes:delete', id),
+
+  // Price History
+  getPriceHistory: (productId) => ipcRenderer.invoke('priceHistory:getAll', productId),
 
   // Record Payment
   updateRecordPayment: (id, paidAmount, status) => ipcRenderer.invoke('records:updatePayment', id, paidAmount, status),

@@ -90,7 +90,8 @@ export default function Dashboard() {
       const [
         todayRes, monthRes, allRes, topSvcRes, topBrandRes, chartRes,
         recentRes, licRes, lowStockRes, stockValRes, salesRes,
-        debtRes, prodRes, expTodayRes, expMonthRes, taskRes, unreadRes
+        debtRes, prodRes, expTodayRes, expMonthRes, taskRes, unreadRes,
+        appointRes, activeTaskRes, custRes, notifCheckRes
       ] = await Promise.all([
         apiBridge.getTodayStats(userId),
         apiBridge.getMonthStats(year, month, userId),
@@ -109,6 +110,10 @@ export default function Dashboard() {
         apiBridge.getExpenseStats(`${year}-${String(month).padStart(2,'0')}-01`, now.toISOString().split('T')[0], userId),
         apiBridge.getTaskStats(userId),
         apiBridge.getUnreadCount(userId),
+        apiBridge.getUpcomingAppointments(3, userId),
+        apiBridge.getActiveTasks(userId),
+        apiBridge.getCustomers(null, userId),
+        apiBridge.checkSystemNotifications(userId),
       ]);
 
       if (todayRes.success) setTodayStats(todayRes.data);
@@ -134,6 +139,9 @@ export default function Dashboard() {
       if (expMonthRes.success) setMonthExpenses(expMonthRes.data);
       if (taskRes.success) setTaskStats(taskRes.data);
       if (unreadRes.success) setUnreadNotifs(unreadRes.data || 0);
+      if (appointRes.success) setUpcomingAppointments(appointRes.data || []);
+      if (activeTaskRes.success) setActiveTasks(activeTaskRes.data || []);
+      if (custRes.success) setCustomerCount(Array.isArray(custRes.data) ? custRes.data.length : 0);
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {
