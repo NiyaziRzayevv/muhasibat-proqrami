@@ -55,30 +55,34 @@ export default function Finance() {
     setLoading(true);
     try {
       const year = new Date().getFullYear();
-      const [finRes, revRes] = await Promise.all([
+      const [finRes, trendRes, catRes, pmRes] = await Promise.all([
         apiBridge.getFinanceSummary(startDate, endDate, userId),
-        apiBridge.getMonthlyRevenue(year, userId),
+        apiBridge.getMonthlyTrend(year, userId),
+        apiBridge.getExpensesByCategory(startDate, endDate, userId),
+        apiBridge.getPaymentMethodStats(startDate, endDate, userId),
       ]);
       if (finRes?.success) {
         const d = finRes.data;
         setData({
-          income: d.total_income || 0,
-          serviceRevenue: d.records_income || 0,
+          income: d.income || 0,
+          serviceRevenue: 0,
           salesRevenue: d.sales_income || 0,
-          expenses: d.total_expense || 0,
-          profit: d.net_profit || 0,
-          debt: d.total_debt || 0,
-          cashBalance: d.cash_balance || 0,
-          totalPaid: d.total_paid || 0,
-          expensesByCategory: d.expense_by_category || [],
-          recordCount: d.record_count || 0,
-          saleCount: d.sale_count || 0,
+          expenses: d.expense || 0,
+          profit: d.net || 0,
+          debt: d.outstanding_debt || 0,
+          cashBalance: (d.income || 0) - (d.expense || 0),
+          totalPaid: d.income || 0,
+          expensesByCategory: catRes?.success ? (catRes.data || []) : [],
+          recordCount: 0,
+          saleCount: d.sales_count || 0,
           expenseCount: d.expense_count || 0,
+          profitMargin: d.profit_margin || 0,
         });
       } else {
         showNotification(finRes?.error || 'Xəta', 'error');
       }
-      if (revRes?.success) setMonthlyRev(revRes.data || []);
+      if (trendRes?.success) setMonthlyRev(trendRes.data || []);
+      if (pmRes?.success) setPayStats(pmRes.data || []);
     } catch (e) {
       showNotification('Xəta: ' + e.message, 'error');
     } finally {
@@ -90,9 +94,9 @@ export default function Finance() {
 
   const combinedChartData = monthlyRev.map(r => ({
     name: AZ_MONTHS[(parseInt(r.month) - 1)] || r.month,
-    'Gəlir': Number((r.total || 0).toFixed(2)),
-    'Servis': Number((r.records || 0).toFixed(2)),
-    'Satış': Number((r.sales || 0).toFixed(2)),
+    'Gəlir': Number((r.income || 0).toFixed(2)),
+    'Xərc': Number((r.expense || 0).toFixed(2)),
+    'Xalis': Number((r.net || 0).toFixed(2)),
   }));
 
   const pieData = (data?.expensesByCategory || []).slice(0, 6).map(c => ({
@@ -269,8 +273,8 @@ export default function Finance() {
                       <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px' }}
                         formatter={(v, name) => [`${v.toFixed(2)} ${csym}`, name]} />
                       <Legend wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }} />
-                      <Bar dataKey="Servis" fill="#3b82f6" radius={[3,3,0,0]} maxBarSize={18} />
-                      <Bar dataKey="Satış" fill="#10b981" radius={[3,3,0,0]} maxBarSize={18} />
+                      <Bar dataKey="Gəlir" fill="#10b981" radius={[3,3,0,0]} maxBarSize={18} />
+                      <Bar dataKey="Xərc" fill="#ef4444" radius={[3,3,0,0]} maxBarSize={18} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
