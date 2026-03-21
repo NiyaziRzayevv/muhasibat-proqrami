@@ -85,23 +85,17 @@ export default function POS() {
                paymentMethod === 'debt' ? total : 0;
 
   async function loadProducts() {
-    const res = window.api?.getProducts
-      ? await window.api.getProducts({ userId })
-      : await apiRequest(`/products?${new URLSearchParams({ ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() });
+    const res = await apiBridge.getProducts({ userId });
     if (res.success) setProducts(res.data || []);
   }
 
   async function loadCustomers() {
-    const res = window.api?.getCustomers
-      ? await window.api.getCustomers('', userId)
-      : await apiRequest(`/customers?${new URLSearchParams({ ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() });
+    const res = await apiBridge.getCustomers('', userId);
     if (res.success) setCustomers(res.data || []);
   }
 
   async function loadCategories() {
-    const res = window.api?.getCategories
-      ? await window.api.getCategories(userId)
-      : await apiRequest(`/categories?${new URLSearchParams({ ...(userId ? { userId } : {}) }).toString()}`, { token: getToken() });
+    const res = await apiBridge.getCategories(userId);
     if (res.success) setCategories(res.data || []);
   }
 
@@ -284,13 +278,7 @@ export default function POS() {
     setShowEOD(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const res = window.api?.getSales
-        ? await window.api.getSales({ startDate: today, endDate: today, userId })
-        : await apiRequest(`/sales?${new URLSearchParams({
-          startDate: today,
-          endDate: today,
-          ...(userId ? { userId } : {}),
-        }).toString()}`, { token: getToken() });
+      const res = await apiBridge.getSales({ startDate: today, endDate: today, userId });
       if (res.success) setEodData(res.data || []);
     } catch (e) { console.error(e); }
     finally { setEodLoading(false); }
