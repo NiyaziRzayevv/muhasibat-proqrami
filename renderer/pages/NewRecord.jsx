@@ -4,6 +4,7 @@ import { Sparkles, ClipboardList, Save, Loader2, ChevronLeft } from 'lucide-reac
 import UniversalSmartInput from '../components/UniversalSmartInput';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function getPaymentStatusOptions(t) {
@@ -78,13 +79,7 @@ export default function NewRecord() {
         created_by: currentUser?.id || null,
       };
 
-      const result = window.api?.createRecord
-        ? await window.api.createRecord(payload)
-        : await apiRequest('/records', {
-          method: 'POST',
-          token: localStorage.getItem('auth_token') || '',
-          body: payload,
-        });
+      const result = await apiBridge.createRecord(payload);
       if (result.success) {
         showNotification('Qeyd uğurla əlavə edildi!', 'success');
         setForm({ ...EMPTY_FORM });
