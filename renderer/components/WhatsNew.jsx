@@ -1,10 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.5.5';
+const CURRENT_VERSION = '1.5.6';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.5.6',
+    title: 'SmartQeyd v1.5.6 — Tam apiBridge Migration!',
+    date: '2026-03-22',
+    highlights: [
+      { icon: Zap, text: 'apiBridge: Bütün 17 səhifə unified API ilə işləyir' },
+      { icon: Shield, text: 'Kod təmizliyi: 300+ sətir köhnə window.api/apiRequest silindi' },
+      { icon: Package, text: 'Records, Suppliers, Vehicles, Notifications tam keçid' },
+      { icon: Rocket, text: 'StockMovements, Assets, Analytics, CustomerHistory, PriceBase keçid' },
+    ],
+    changes: [
+      'Records.jsx: CRUD + customer detail + bulk delete → apiBridge',
+      'Suppliers.jsx: CRUD + supplier products → apiBridge',
+      'Vehicles.jsx: CRUD + customer list → apiBridge (parallel Promise.all)',
+      'Notifications.jsx: load + markRead + markAllRead + delete → apiBridge',
+      'StockMovements.jsx: getStockMovements → apiBridge',
+      'Assets.jsx: CRUD (getAssets, createAsset, updateAsset, deleteAsset) → apiBridge',
+      'Analytics.jsx: getSales + getExpenses + getProducts → apiBridge',
+      'CustomerHistory.jsx: getCustomers + getRecords + getSales → apiBridge',
+      'PriceBase.jsx: getPrices + createPrice + updatePrice + deletePrice → apiBridge',
+      'Electron-only funksiyalar (Export, Settings, License, Reports) saxlanıb',
+    ],
+  },
   {
     version: '1.5.5',
     title: 'SmartQeyd v1.5.5 — Unified API & Detail Pages!',
