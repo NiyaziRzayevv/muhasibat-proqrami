@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Sparkles, Send, Loader2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function getPaymentStatusOptions(t) {
@@ -38,7 +39,7 @@ export default function SmartInput({ onRecordCreated }) {
     setParseError(null);
     setParsed(null);
     try {
-      const result = await window.api.parseInput(input.trim());
+      const result = await apiBridge.parseInput(input.trim());
       if (result.success && result.parsed) {
         setParsed(result.parsed);
         setEditedParsed({ ...result.parsed });
@@ -73,7 +74,7 @@ export default function SmartInput({ onRecordCreated }) {
     setSubmitting(true);
     try {
       const dataToSubmit = editMode ? editedParsed : parsed;
-      const result = await window.api.createFromParsed(dataToSubmit, {});
+      const result = await apiBridge.createFromParsed(dataToSubmit, {});
       if (result.success) {
         showNotification(t('createdSuccess'), 'success');
         setInput('');
@@ -97,10 +98,10 @@ export default function SmartInput({ onRecordCreated }) {
     if (!input.trim()) return;
     setParsing(true);
     try {
-      const result = await window.api.parseInput(input.trim());
+      const result = await apiBridge.parseInput(input.trim());
       if (result.success && result.parsed) {
         setSubmitting(true);
-        const createResult = await window.api.createFromParsed(result.parsed, {});
+        const createResult = await apiBridge.createFromParsed(result.parsed, {});
         if (createResult.success) {
           showNotification(t('createdSuccess'), 'success');
           setInput('');

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -78,17 +79,8 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
 
   useEffect(() => {
     async function loadProducts() {
-      if (window.api?.getProducts) {
-        const r = await window.api.getProducts({ userId });
-        if (r.success) setProducts(r.data);
-      } else {
-        try {
-          const token = localStorage.getItem('auth_token') || '';
-          const params = userId ? `?userId=${userId}` : '';
-          const r = await apiRequest(`/products${params}`, { token });
-          if (r.success) setProducts(r.data);
-        } catch (e) { console.warn('Products load:', e.message); }
-      }
+      const r = await apiBridge.getProducts({ userId });
+      if (r.success) setProducts(r.data);
     }
     loadProducts();
   }, []);
@@ -99,18 +91,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
     if (!input.trim()) return;
     setParsing(true); setError(null); setResult(null);
     try {
-      let res;
-      if (window.api?.parseUniversal) {
-        res = await window.api.parseUniversal(input.trim());
-      } else {
-        try {
-          const token = localStorage.getItem('auth_token') || '';
-          res = await apiRequest('/parse/universal', { method: 'POST', token, body: { text: input.trim() } });
-        } catch (e) {
-          setError(t('error') + ': ' + e.message);
-          return;
-        }
-      }
+      const res = await apiBridge.parseUniversal(input.trim());
       if (res.success) {
         const data = { ...res.data };
 
@@ -176,35 +157,18 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
     if (found) return { id: found.id, created: false, product: found };
 
     // Auto-create with minimal info
-    let res;
-    if (window.api?.createProduct) {
-      res = await window.api.createProduct({
-        name: name.trim(),
-        unit: unit || 'ədəd',
-        buy_price: buyPrice || 0,
-        created_by: currentUser?.id || null,
-        sell_price: sellPrice || 0,
-        stock_qty: 0,
-        min_stock: 0,
-      });
-    } else {
-      const token = localStorage.getItem('auth_token') || '';
-      res = await apiRequest('/products', { method: 'POST', token, body: {
-        name: name.trim(), unit: unit || 'ədəd',
-        buy_price: buyPrice || 0, sell_price: sellPrice || 0,
-        stock_qty: 0, min_stock: 0,
-      }});
-    }
+    const res = await apiBridge.createProduct({
+      name: name.trim(),
+      unit: unit || 'ədəd',
+      buy_price: buyPrice || 0,
+      created_by: currentUser?.id || null,
+      sell_price: sellPrice || 0,
+      stock_qty: 0,
+      min_stock: 0,
+    });
     if (res.success) {
       // Refresh local products list
-      let updated;
-      if (window.api?.getProducts) {
-        updated = await window.api.getProducts({ userId });
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        const params = userId ? `?userId=${userId}` : '';
-        updated = await apiRequest(`/products${params}`, { token });
-      }
+      const updated = await apiBridge.getProducts({ userId });
       if (updated.success) setProducts(updated.data);
       return { id: res.data.id, created: true, product: res.data };
     }
@@ -218,24 +182,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
       const data = fields;
 
       if (intent === 'servis') {
-        let res;
-        if (window.api?.createFromParsed) {
-          res = await window.api.createFromParsed(data, { created_by: currentUser?.id || null });
-        } else {
-          const token = localStorage.getItem('auth_token') || '';
-          res = await apiRequest('/records', { method: 'POST', token, body: {
-            date: data.date || new Date().toISOString().split('T')[0],
-            customerName: data.customer_name || null,
-            carBrand: data.car_brand || null,
-            carModel: data.car_model || null,
-            carPlate: data.car_plate || null,
-            serviceType: data.service_type || null,
-            totalPrice: data.price || 0,
-            paidAmount: data.paid_amount || 0,
-            paymentStatus: data.payment_status || 'gozleyir',
-            notes: data.notes || null,
-          }});
-        }
+        const res = await apiBridge.createFromParsed(data, { created_by: currentUser?.id || null });
         if (res.success) { showNotification(t('smartServiceAdded'), 'success'); reset(); onDone?.('records'); }
         else showNotification(res.error || t('error'), 'error');
       }
@@ -248,18 +195,9 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
         if (!productResult) { showNotification(t('smartEnterProduct'), 'error'); setSaving(false); return; }
 
         const { id: pid, created, product } = productResult;
-        let res;
-        if (window.api?.stockIn) {
-          res = intent === 'stok_giris'
-            ? await window.api.stockIn(pid, qty, fields.notes || input, currentUser?.id)
-            : await window.api.stockOut(pid, qty, fields.notes || input, currentUser?.id);
-        } else {
-          const token = localStorage.getItem('auth_token') || '';
-          const body = { product_id: pid, qty, note: fields.notes || input };
-          res = intent === 'stok_giris'
-            ? await apiRequest('/stock/in', { method: 'POST', token, body })
-            : await apiRequest('/stock/out', { method: 'POST', token, body });
-        }
+        const res = intent === 'stok_giris'
+          ? await apiBridge.stockIn(pid, qty, fields.notes || input, currentUser?.id)
+          : await apiBridge.stockOut(pid, qty, fields.notes || input, currentUser?.id);
 
         if (res.success !== false) {
           const productName = product?.name || fields.product_name || productSearch;
@@ -285,28 +223,13 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
 
         const { id: pid, created, product } = productResult;
         const unitPrice = parseFloat(fields.sell_price) || parseFloat(fields.price) || product?.sell_price || 0;
-        let res;
-        if (window.api?.createSale) {
-          res = await window.api.createSale({
-            date: fields.date || new Date().toISOString().split('T')[0],
-            customer_name: fields.customer_name || null,
-            payment_status: 'odenilib',
-            items: [{ product_id: pid, product_name: product?.name || fields.product_name, qty, unit_price: unitPrice }],
-            created_by: currentUser?.id || null,
-          });
-        } else {
-          const token = localStorage.getItem('auth_token') || '';
-          res = await apiRequest('/sales', {
-            method: 'POST',
-            token,
-            body: {
-              date: fields.date || new Date().toISOString().split('T')[0],
-              customer_name: fields.customer_name || null,
-              payment_status: 'odenilib',
-              items: [{ product_id: pid, product_name: product?.name || fields.product_name, qty, unit_price: unitPrice }],
-            }
-          });
-        }
+        const res = await apiBridge.createSale({
+          date: fields.date || new Date().toISOString().split('T')[0],
+          customer_name: fields.customer_name || null,
+          payment_status: 'odenilib',
+          items: [{ product_id: pid, product_name: product?.name || fields.product_name, qty, unit_price: unitPrice }],
+          created_by: currentUser?.id || null,
+        });
         if (res.success) {
           const productName = product?.name || fields.product_name || productSearch;
           showNotification(
@@ -320,15 +243,7 @@ export default function UniversalSmartInput({ onDone, compact = false }) {
 
       else if (intent === 'musteri') {
         if (!data.customer_name) { showNotification(t('smartEnterName'), 'error'); setSaving(false); return; }
-        let res;
-        if (window.api?.createCustomer) {
-          res = await window.api.createCustomer({ name: data.customer_name, phone: data.customer_phone || null, notes: data.notes || null, created_by: userId });
-        } else {
-          const token = localStorage.getItem('auth_token') || '';
-          res = await apiRequest('/customers', { method: 'POST', token, body: {
-            name: data.customer_name, phone: data.customer_phone || null, notes: data.notes || null,
-          }});
-        }
+        const res = await apiBridge.createCustomer({ name: data.customer_name, phone: data.customer_phone || null, notes: data.notes || null, created_by: userId });
         if (res.success) { showNotification(t('smartCustomerAdded'), 'success'); reset(); onDone?.('customers'); }
         else showNotification(res.error || t('error'), 'error');
       }
