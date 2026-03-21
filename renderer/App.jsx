@@ -84,7 +84,7 @@ export default function App() {
         return;
       }
       // User-level license check
-      const res = await window.api.checkUserLicense(u.id);
+      const res = await apiBridge.checkUserLicense(u.id);
       if (res.success && res.data.valid) {
         setLicenseOk(true);
         setLicenseInfo(res.data.license || res.data);
@@ -109,7 +109,7 @@ export default function App() {
     if (isAdm) return; // Admin never expires
     const interval = setInterval(async () => {
       try {
-        const res = await window.api.checkUserLicense(currentUser.id);
+        const res = await apiBridge.checkUserLicense(currentUser.id);
         if (!res.success || !res.data.valid) {
           setLicenseOk(false);
           const reason = res.data?.reason || 'expired';
@@ -180,7 +180,7 @@ export default function App() {
 
   async function checkLicense() {
     try {
-      const res = await window.api.getLicenseStatus();
+      const res = await apiBridge.getLicenseStatus();
       if (res.success && res.data.valid) {
         setLicenseOk(true);
         setLicenseInfo(res.data.license || res.data);
@@ -194,8 +194,7 @@ export default function App() {
 
   async function loadSettings() {
     try {
-      if (!window.api?.getSettings) return;
-      const res = await window.api.getSettings();
+      const res = await apiBridge.getSettings();
       if (res.success) {
         setSettings(res.data);
         setTheme(res.data.theme || 'dark');
@@ -208,8 +207,7 @@ export default function App() {
 
   async function loadUnreadCount() {
     try {
-      if (!window.api?.getUnreadCount) return;
-      const res = await window.api.getUnreadCount(currentUser?.id);
+      const res = await apiBridge.getUnreadCount(currentUser?.id);
       if (res.success) setUnreadCount(res.data || 0);
     } catch (e) { /* ignore */ }
   }
