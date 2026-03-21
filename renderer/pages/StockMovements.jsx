@@ -3,6 +3,7 @@ import { Search, ArrowDown, ArrowUp, RefreshCw, Filter, X, ArrowLeftRight, FileS
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
 
@@ -54,9 +55,7 @@ export default function StockMovements() {
         ...(userId ? { userId } : {}),
       };
 
-      const res = window.api?.getStockMovements
-        ? await window.api.getStockMovements(reqParams)
-        : await apiRequest(`/stock/movements?${new URLSearchParams(reqParams).toString()}`, { token: getToken() });
+      const res = await apiBridge.getStockMovements(reqParams);
       if (res.success) {
         let data = res.data;
         if (search) data = data.filter(m => m.product_name?.toLowerCase().includes(search.toLowerCase()) || m.note?.toLowerCase().includes(search.toLowerCase()));

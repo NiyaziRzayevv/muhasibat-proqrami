@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { getCurrencySymbol } from '../utils/currency';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as XLSX from 'xlsx';
@@ -40,17 +41,8 @@ export default function Vehicles() {
     setLoading(true);
     try {
       const [vRes, cRes] = await Promise.all([
-        window.api?.getVehicles
-          ? window.api.getVehicles(search, userId)
-          : apiRequest(`/vehicles?${new URLSearchParams({
-            ...(search ? { search } : {}),
-            ...(userId ? { userId } : {}),
-          }).toString()}`, { token: getToken() }),
-        window.api?.getCustomers
-          ? window.api.getCustomers('', userId)
-          : apiRequest(`/customers?${new URLSearchParams({
-            ...(userId ? { userId } : {}),
-          }).toString()}`, { token: getToken() }),
+        apiBridge.getVehicles(search, userId),
+        apiBridge.getCustomers('', userId),
       ]);
       if (vRes.success) setVehicles(vRes.data);
       if (cRes.success) setCustomers(cRes.data);
@@ -83,16 +75,9 @@ export default function Vehicles() {
     if (!form.brand) { showNotification('Kateqoriya / Növ daxil edin', 'error'); return; }
     setSaving(true);
     try {
-      let res;
-      if (editing) {
-        res = window.api?.updateVehicle
-          ? await window.api.updateVehicle(editing.id, form)
-          : await apiRequest(`/vehicles/${editing.id}`, { method: 'PUT', token: getToken(), body: form });
-      } else {
-        res = window.api?.createVehicle
-          ? await window.api.createVehicle({ ...form, created_by: currentUser?.id })
-          : await apiRequest('/vehicles', { method: 'POST', token: getToken(), body: form });
-      }
+      const res = editing
+        ? await apiBridge.updateVehicle(editing.id, form)
+        : await apiBridge.createVehicle({ ...form, created_by: currentUser?.id });
 
       if (res.success) {
         showNotification(editing ? 'Aktiv yeniləndi' : 'Aktiv əlavə edildi', 'success');
@@ -108,9 +93,7 @@ export default function Vehicles() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const result = window.api?.deleteVehicle
-        ? await window.api.deleteVehicle(deleteId)
-        : await apiRequest(`/vehicles/${deleteId}`, { method: 'DELETE', token: getToken() });
+      const result = await apiBridge.deleteVehicle(deleteId);
       if (result.success) {
         showNotification('Aktiv silindi', 'success');
         setDeleteId(null);

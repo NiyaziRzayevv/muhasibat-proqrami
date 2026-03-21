@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCurrencySymbol } from '../utils/currency';
 
@@ -52,9 +53,9 @@ export default function Analytics() {
       const fmt_date = d => d.toISOString().split('T')[0];
 
       const [salesRes, expRes, productsRes] = await Promise.all([
-        window.api.getSales({ startDate: fmt_date(startDate), endDate: fmt_date(today), userId }),
-        window.api.getExpenses({ startDate: fmt_date(startDate), endDate: fmt_date(today), userId }),
-        window.api.getProducts({ userId }),
+        apiBridge.getSales({ startDate: fmt_date(startDate), endDate: fmt_date(today), userId }),
+        apiBridge.getExpenses({ startDate: fmt_date(startDate), endDate: fmt_date(today), userId }),
+        apiBridge.getProducts({ userId }),
       ]);
 
       const sales = salesRes.success ? salesRes.data || [] : [];

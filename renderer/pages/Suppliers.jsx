@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const EMPTY_FORM = { name: '', phone: '', email: '', address: '', notes: '' };
@@ -31,12 +32,7 @@ export default function Suppliers() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = window.api?.getSuppliers
-        ? await window.api.getSuppliers(search, userId)
-        : await apiRequest(`/suppliers?${new URLSearchParams({
-          ...(search ? { search } : {}),
-          ...(userId ? { userId } : {}),
-        }).toString()}`, { token: getToken() });
+      const res = await apiBridge.getSuppliers(search, userId);
       if (res.success) setSuppliers(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -54,9 +50,7 @@ export default function Suppliers() {
 
   async function openDetail(s) {
     setDetailSupplier(s);
-    const res = window.api?.getSupplierProducts
-      ? await window.api.getSupplierProducts(s.id)
-      : await apiRequest(`/suppliers/${s.id}/products`, { token: getToken() });
+    const res = await apiBridge.getSupplierProducts(s.id);
     if (res.success) setDetailProducts(res.data);
   }
 
@@ -64,16 +58,9 @@ export default function Suppliers() {
     if (!form.name) { showNotification('Təchizatçı adı daxil edin', 'error'); return; }
     setSaving(true);
     try {
-      let result;
-      if (editing) {
-        result = window.api?.updateSupplier
-          ? await window.api.updateSupplier(editing.id, form)
-          : await apiRequest(`/suppliers/${editing.id}`, { method: 'PUT', token: getToken(), body: form });
-      } else {
-        result = window.api?.createSupplier
-          ? await window.api.createSupplier({ ...form, created_by: currentUser?.id })
-          : await apiRequest('/suppliers', { method: 'POST', token: getToken(), body: form });
-      }
+      const result = editing
+        ? await apiBridge.updateSupplier(editing.id, form)
+        : await apiBridge.createSupplier({ ...form, created_by: currentUser?.id });
 
       if (result.success) {
         showNotification(editing ? 'Təchizatçı yeniləndi' : 'Təchizatçı əlavə edildi', 'success');
@@ -87,9 +74,7 @@ export default function Suppliers() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const result = window.api?.deleteSupplier
-        ? await window.api.deleteSupplier(deleteId)
-        : await apiRequest(`/suppliers/${deleteId}`, { method: 'DELETE', token: getToken() });
+      const result = await apiBridge.deleteSupplier(deleteId);
       if (result.success) {
         showNotification('Təchizatçı silindi', 'success');
         setDeleteId(null);

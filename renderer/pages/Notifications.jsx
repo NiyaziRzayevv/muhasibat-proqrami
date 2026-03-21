@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, CheckCheck, Trash2, RefreshCw, Package, AlertTriangle, CreditCard, Shield, Info } from 'lucide-react';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function getTypeConfig(t) {
@@ -30,23 +31,8 @@ export default function Notifications() {
   async function loadNotifs() {
     setLoading(true);
     try {
-      if (window.api?.checkSystemNotifications && window.api?.getNotifications) {
-        await window.api.checkSystemNotifications(currentUser?.id);
-        const res = await window.api.getNotifications(currentUser?.id, 100);
-        if (res.success) setNotifs(res.data || []);
-        return;
-      }
-
-      await apiRequest('/notifications/check', {
-        method: 'POST',
-        token: getToken(),
-        body: { user_id: currentUser?.id },
-      });
-
-      const res = await apiRequest(`/notifications?${new URLSearchParams({
-        userId: currentUser?.id || '',
-        limit: 100,
-      }).toString()}`, { token: getToken() });
+      await apiBridge.checkSystemNotifications(currentUser?.id);
+      const res = await apiBridge.getNotifications(currentUser?.id, 100);
       if (res.success) setNotifs(res.data || []);
     } catch (e) {
       showNotification('Xəta: ' + e.message, 'error');
@@ -56,35 +42,18 @@ export default function Notifications() {
   }
 
   async function handleMarkRead(id) {
-    if (window.api?.markNotificationRead) {
-      await window.api.markNotificationRead(id);
-      setNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
-      return;
-    }
-    await apiRequest(`/notifications/${id}/read`, { method: 'PUT', token: getToken() });
+    await apiBridge.markNotificationRead(id);
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
   }
 
   async function handleMarkAllRead() {
-    if (window.api?.markAllNotificationsRead) {
-      await window.api.markAllNotificationsRead();
-      setNotifs(prev => prev.map(n => ({ ...n, is_read: 1 })));
-      showNotification('Hamısı oxundu kimi işarələndi', 'success');
-      return;
-    }
-
-    await apiRequest('/notifications/read-all', { method: 'PUT', token: getToken(), body: { user_id: currentUser?.id } });
+    await apiBridge.markAllNotificationsRead();
     setNotifs(prev => prev.map(n => ({ ...n, is_read: 1 })));
     showNotification('Hamısı oxundu kimi işarələndi', 'success');
   }
 
   async function handleDelete(id) {
-    if (window.api?.deleteNotification) {
-      await window.api.deleteNotification(id);
-      setNotifs(prev => prev.filter(n => n.id !== id));
-      return;
-    }
-    await apiRequest(`/notifications/${id}`, { method: 'DELETE', token: getToken() });
+    await apiBridge.deleteNotification(id);
     setNotifs(prev => prev.filter(n => n.id !== id));
   }
 

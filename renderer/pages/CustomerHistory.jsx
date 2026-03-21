@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Users, Wrench, ShoppingCart, CreditCard, MessageCircle, RefreshCw, ChevronRight, Phone, FileSpreadsheet, TrendingUp, Calendar, Star } from 'lucide-react';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCurrencySymbol } from '../utils/currency';
 
@@ -32,7 +33,7 @@ export default function CustomerHistory() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    window.api.getCustomers('', userId).then(r => { if (r.success) setCustomers(r.data); });
+    apiBridge.getCustomers('', userId).then(r => { if (r.success) setCustomers(r.data); });
   }, [userId]);
 
   const filteredCustomers = customers.filter(c =>
@@ -47,12 +48,12 @@ export default function CustomerHistory() {
     setLoading(true);
     try {
       const [rByIdRes, sRes] = await Promise.all([
-        window.api.getRecords({ customer_id: customer.id, userId }),
-        window.api.getSales({ customer_id: customer.id, userId }),
+        apiBridge.getRecords({ customer_id: customer.id, userId }),
+        apiBridge.getSales({ customer_id: customer.id, userId }),
       ]);
       // Also fetch name-based records for entries without customer_id
       const rByNameRes = customer.name
-        ? await window.api.getRecords({ search: customer.name, userId })
+        ? await apiBridge.getRecords({ search: customer.name, userId })
         : { success: false };
 
       const idSet = new Set();

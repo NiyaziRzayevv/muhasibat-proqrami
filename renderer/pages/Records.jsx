@@ -110,10 +110,8 @@ export default function Records() {
     try {
       let customer = null;
       if (r.customer_id) {
-        if (window.api?.getCustomer) {
-          const res = await window.api.getCustomer(r.customer_id);
-          if (res.success) customer = res.data;
-        }
+        const res = await apiBridge.getCustomer(r.customer_id);
+        if (res.success) customer = res.data;
       }
       if (!customer) {
         customer = {
@@ -123,10 +121,8 @@ export default function Records() {
         };
       }
       let vehicles = [];
-      if (window.api?.getVehicles) {
-        const vehRes = await window.api.getVehicles('', userId);
-        vehicles = vehRes.success ? (vehRes.data || []).filter(v => v.customer_id === customer.id) : [];
-      }
+      const vehRes = await apiBridge.getVehicles('', userId);
+      vehicles = vehRes.success ? (vehRes.data || []).filter(v => v.customer_id === customer.id) : [];
       setCustomerModal({ open: true, loading: false, customer, vehicles });
     } catch (e) {
       console.error(e);
@@ -203,31 +199,14 @@ export default function Records() {
       const totalPrice = parseFloat(editForm.total_price) || null;
       const paidAmount = editForm.payment_status === 'odenilib' ? totalPrice : (parseFloat(editForm.paid_amount) || 0);
       const remainingAmount = totalPrice !== null ? Math.max(0, totalPrice - paidAmount) : null;
-      let result;
-      if (window.api?.updateRecord) {
-        result = await window.api.updateRecord(editRecord.id, {
-          ...editForm,
-          unit_price: parseFloat(editForm.unit_price) || null,
-          total_price: totalPrice,
-          quantity: parseFloat(editForm.quantity) || 1,
-          paid_amount: paidAmount,
-          remaining_amount: remainingAmount,
-        });
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        result = await apiRequest(`/records/${editRecord.id}`, {
-          method: 'PUT',
-          token,
-          body: {
-            ...editForm,
-            unit_price: parseFloat(editForm.unit_price) || null,
-            total_price: totalPrice,
-            quantity: parseFloat(editForm.quantity) || 1,
-            paid_amount: paidAmount,
-            remaining_amount: remainingAmount,
-          }
-        });
-      }
+      const result = await apiBridge.updateRecord(editRecord.id, {
+        ...editForm,
+        unit_price: parseFloat(editForm.unit_price) || null,
+        total_price: totalPrice,
+        quantity: parseFloat(editForm.quantity) || 1,
+        paid_amount: paidAmount,
+        remaining_amount: remainingAmount,
+      });
       if (result.success) {
         showNotification('Qeyd yeniləndi', 'success');
         setEditRecord(null);
@@ -245,13 +224,7 @@ export default function Records() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      let result;
-      if (window.api?.deleteRecord) {
-        result = await window.api.deleteRecord(deleteId);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        result = await apiRequest(`/records/${deleteId}`, { method: 'DELETE', token });
-      }
+      const result = await apiBridge.deleteRecord(deleteId);
       if (result.success) {
         showNotification('Qeyd silindi', 'success');
         setDeleteId(null);
@@ -269,13 +242,7 @@ export default function Records() {
   async function handleBulkDelete() {
     setDeletingBulk(true);
     try {
-      let result;
-      if (window.api?.deleteMultipleRecords) {
-        result = await window.api.deleteMultipleRecords([...selected]);
-      } else {
-        const token = localStorage.getItem('auth_token') || '';
-        result = await apiRequest('/records/bulk-delete', { method: 'POST', token, body: { ids: [...selected] } });
-      }
+      const result = await apiBridge.deleteMultipleRecords([...selected]);
       if (result.success) {
         showNotification(`${selected.size} qeyd silindi`, 'success');
         setSelected(new Set());

@@ -3,6 +3,7 @@ import { Search, Plus, Edit3, Trash2, Loader2, Save, Tag, RefreshCw, FileSpreads
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCurrencySymbol } from '../utils/currency';
 
@@ -35,7 +36,7 @@ export default function PriceBase() {
   const loadPrices = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await window.api.getPrices(search, userId);
+      const res = await apiBridge.getPrices(search, userId);
       if (res.success) setPrices(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -60,8 +61,8 @@ export default function PriceBase() {
     setSaving(true);
     try {
       let result;
-      if (editing) result = await window.api.updatePrice(editing.id, { ...form, price: parseFloat(form.price) || null });
-      else result = await window.api.createPrice({ ...form, price: parseFloat(form.price) || null, created_by: currentUser?.id });
+      if (editing) result = await apiBridge.updatePrice(editing.id, { ...form, price: parseFloat(form.price) || null });
+      else result = await apiBridge.createPrice({ ...form, price: parseFloat(form.price) || null, created_by: currentUser?.id });
 
       if (result.success) {
         showNotification(editing ? 'Qiymət yeniləndi' : 'Qiymət əlavə edildi', 'success');
@@ -77,7 +78,7 @@ export default function PriceBase() {
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const result = await window.api.deletePrice(deleteId);
+      const result = await apiBridge.deletePrice(deleteId);
       if (result.success) {
         showNotification('Qiymət silindi', 'success');
         setDeleteId(null);

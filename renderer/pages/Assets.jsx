@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../App';
 import { apiRequest } from '../api/http';
+import { apiBridge } from '../api/bridge';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCurrencySymbol } from '../utils/currency';
 import * as XLSX from 'xlsx';
@@ -49,13 +50,7 @@ export default function Assets() {
       if (categoryFilter) filters.category = categoryFilter;
       if (search) filters.search = search;
 
-      let res;
-      if (window.api?.getAssets) {
-        res = await window.api.getAssets(filters);
-      } else {
-        const params = new URLSearchParams(filters).toString();
-        res = await apiRequest(`/assets?${params}`);
-      }
+      const res = await apiBridge.getAssets(filters);
       if (res?.success) setAssets(res.data || []);
     } catch (e) {
       showNotification('Aktivlər yüklənmədi: ' + e.message, 'error');
@@ -98,14 +93,9 @@ export default function Assets() {
         current_value: form.current_value !== '' ? Number(form.current_value) : null,
       };
 
-      let res;
-      if (editing) {
-        if (window.api?.updateAsset) res = await window.api.updateAsset(editing.id, payload);
-        else res = await apiRequest(`/assets/${editing.id}`, { method: 'PUT', body: payload });
-      } else {
-        if (window.api?.createAsset) res = await window.api.createAsset(payload);
-        else res = await apiRequest('/assets', { method: 'POST', body: payload });
-      }
+      const res = editing
+        ? await apiBridge.updateAsset(editing.id, payload)
+        : await apiBridge.createAsset(payload);
 
       if (res?.success) {
         showNotification(editing ? 'Aktiv yeniləndi' : 'Aktiv əlavə edildi', 'success');
@@ -123,9 +113,7 @@ export default function Assets() {
   async function handleDelete() {
     if (!deleteId) return;
     try {
-      let res;
-      if (window.api?.deleteAsset) res = await window.api.deleteAsset(deleteId);
-      else res = await apiRequest(`/assets/${deleteId}`, { method: 'DELETE' });
+      const res = await apiBridge.deleteAsset(deleteId);
 
       if (res?.success) {
         showNotification('Aktiv silindi', 'success');
