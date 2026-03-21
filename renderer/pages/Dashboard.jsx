@@ -138,6 +138,12 @@ export default function Dashboard() {
       if (taskRes.success) setTaskStats(taskRes.data);
       if (unreadRes.success) setUnreadNotifs(unreadRes.data || 0);
       if (activeTaskRes.success) setActiveTasks(activeTaskRes.data || []);
+      if (notifCheckRes.success && notifCheckRes.data?.length > 0) {
+        // Sistem bildirişlərini göstər
+        notifCheckRes.data.forEach(notif => {
+          showNotification(notif.message, notif.type || 'info');
+        });
+      }
     } catch (e) {
       console.error('Dashboard load error:', e);
     } finally {
