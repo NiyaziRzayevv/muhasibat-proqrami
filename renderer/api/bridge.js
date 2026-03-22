@@ -291,7 +291,7 @@ export const apiBridge = {
 
   // ─── Auto-Update (Electron only) ────────────────────────────────────────
   checkForUpdate: () => isElectron ? safeCall(() => window.api.checkForUpdate()) : Promise.resolve({ success: false }),
-  getAppVersion: () => '1.6.3',
+  getAppVersion: () => '1.6.4',
   downloadUpdate: () => isElectron ? safeCall(() => window.api.downloadUpdate()) : Promise.resolve({ success: false }),
   installUpdate: () => isElectron ? window.api?.installUpdate?.() : null,
   onUpdaterStatus: (cb) => isElectron ? (window.api?.onUpdaterStatus?.(cb) || (() => {})) : (() => {}),

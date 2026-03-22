@@ -543,7 +543,7 @@ export default function Login({ onLogin, onPending }) {
         </div>
 
         <p className="text-center text-xs text-dark-600 mt-6">
-          v1.6.3 · SmartQeyd Sistemi
+          v1.6.4 · SmartQeyd Sistemi
         </p>
       </div>
     </div>

@@ -61,7 +61,7 @@ class DashboardService {
     `).get(...p);
 
     // ─── Customers ───────────────────────────────────────────────────
-    const customerCount = db.prepare(`SELECT COUNT(*) as count FROM customers`).get().count;
+    const customerCount = db.prepare(`SELECT COUNT(*) as count FROM customers WHERE 1=1${uf}`).get(...p).count;
 
     // ─── Stock ───────────────────────────────────────────────────────
     const stockValue = db.prepare(`
@@ -82,35 +82,36 @@ class DashboardService {
     const upcomingAppointments = db.prepare(`
       SELECT a.*, c.name as customer_name, c.phone as customer_phone
       FROM appointments a LEFT JOIN customers c ON a.customer_id = c.id
-      WHERE a.date >= ? AND a.date <= ? AND a.status IN ('pending', 'confirmed')
+      WHERE a.date >= ? AND a.date <= ? AND a.status IN ('pending', 'confirmed')${userId ? ' AND a.created_by = ?' : ''}
       ORDER BY a.date, a.time LIMIT 5
-    `).all(today, tomorrow);
+    `).all(today, tomorrow, ...p);
 
     // ─── Tasks ───────────────────────────────────────────────────────
+    const ufTask = userId ? ' AND created_by = ?' : '';
     const activeTasks = db.prepare(`
-      SELECT COUNT(*) as count FROM tasks WHERE status NOT IN ('done', 'cancelled')
-    `).get().count;
+      SELECT COUNT(*) as count FROM tasks WHERE status NOT IN ('done', 'cancelled')${ufTask}
+    `).get(...p).count;
 
     const overdueTasks = db.prepare(`
       SELECT COUNT(*) as count FROM tasks 
-      WHERE status NOT IN ('done', 'cancelled') AND due_date IS NOT NULL AND due_date < ?
-    `).get(today).count;
+      WHERE status NOT IN ('done', 'cancelled') AND due_date IS NOT NULL AND due_date < ?${ufTask}
+    `).get(today, ...p).count;
 
     // ─── Recent transactions ─────────────────────────────────────────
     const recentTransactions = db.prepare(`
-      SELECT * FROM finance_transactions 
+      SELECT * FROM finance_transactions WHERE 1=1${uf}
       ORDER BY created_at DESC LIMIT 10
-    `).all();
+    `).all(...p);
 
     // ─── Top selling products ────────────────────────────────────────
     const topProducts = db.prepare(`
       SELECT si.product_name, SUM(si.qty) as total_qty, SUM(si.total) as total_revenue
       FROM sale_items si
       JOIN sales s ON si.sale_id = s.id
-      WHERE s.date >= ?
+      WHERE s.date >= ?${ufSold}
       GROUP BY si.product_name
       ORDER BY total_qty DESC LIMIT 5
-    `).all(monthStart);
+    `).all(monthStart, ...p);
 
     // ─── Monthly revenue chart ───────────────────────────────────────
     const monthlyChart = db.prepare(`
@@ -118,9 +119,9 @@ class DashboardService {
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense
       FROM finance_transactions
-      WHERE strftime('%Y', date) = ?
+      WHERE strftime('%Y', date) = ?${uf}
       GROUP BY month ORDER BY month
-    `).all(String(year));
+    `).all(String(year), ...p);
 
     // ─── Low stock products list ─────────────────────────────────────
     const lowStockProducts = db.prepare(`

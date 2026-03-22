@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.6.3';
+const CURRENT_VERSION = '1.6.4';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.6.4',
+    title: 'SmartQeyd v1.6.4 — Dashboard Data İzolasiyası & SmartQeyd Branding! 🛡️',
+    date: '2026-03-22',
+    highlights: [
+      { icon: Shield, text: 'Dashboard: Başqa istifadəçinin məlumatları artıq görünmür' },
+      { icon: Sparkles, text: 'Güncəlləmə ekranı: SmartQeyd brendingi əlavə edildi' },
+      { icon: Package, text: 'DashboardService: Bütün sorğular userId ilə filtr olunur' },
+      { icon: Rocket, text: 'Müştəri, randevu, tapşırıq, maliyyə — tam istifadəçi izolasiyası' },
+    ],
+    changes: [
+      'DashboardService: customerCount, appointments, tasks, recentTransactions userId filtrə əlavə edildi',
+      'DashboardService: topProducts, monthlyChart sorğuları da userId ilə filtr olunur',
+      'Güncəlləmə ekranında GitHub əvəzinə SmartQeyd brendingi',
+      'Güncəlləmə footer: SmartQeyd güncəllənir / yenidən başladılacaq',
+      'Versiya v1.6.4 bütün ekranlarda göstərilir',
+    ],
+  },
   {
     version: '1.6.3',
     title: 'SmartQeyd v1.6.3 — Lisenziya & Güncəlləmə Düzəlişi! 🔑',

@@ -78,8 +78,12 @@ export default function UpdateNotification() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1 select-none">
+                <span className="text-sm font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
+                <span className="text-sm font-black tracking-tight text-white/80">Qeyd</span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                 isDownloaded 
                   ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                   : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
@@ -184,7 +188,7 @@ export default function UpdateNotification() {
           {/* Footer */}
           <div className="flex items-center justify-between px-7 py-5 border-t border-white/[0.04] bg-dark-950/30">
             <p className="text-[11px] text-dark-500">
-              {isDownloaded ? 'Proqram yenidən başladılacaq' : 'Zəhmət olmasa gözləyin...'}
+              {isDownloaded ? 'SmartQeyd yenidən başladılacaq' : 'SmartQeyd güncəllənir...'}
             </p>
             <div className="flex gap-2.5">
               {isDownloaded && (

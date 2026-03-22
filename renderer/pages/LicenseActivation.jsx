@@ -79,7 +79,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
               <div className="w-7 h-7 bg-primary-500/20 rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-primary-400">{(currentUser.full_name || currentUser.username || '?')[0].toUpperCase()}</span>
               </div>
-              <span className="text-xs text-dark-500">v1.6.3</span>
+              <span className="text-xs text-dark-500">v1.6.4</span>
               <span className="text-sm text-dark-300">{currentUser.full_name || currentUser.username}</span>
             </div>
             <button onClick={handleLogout} className="text-dark-500 hover:text-red-400 transition-colors" title="Çıxış">
@@ -199,7 +199,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.6.3 · SmartQeyd Sistemi
+          v1.6.4 · SmartQeyd Sistemi
         </p>
       </div>
     </div>
