@@ -2,13 +2,13 @@
 Unicode true
 
 !define APP_NAME "SmartQeyd"
-!define APP_VERSION "1.0.0"
+!define APP_VERSION "1.5.8"
 !define APP_PUBLISHER "SmartQeyd"
 !define APP_EXE "SmartQeyd.exe"
 !define APP_DIR "dist-electron\SmartQeyd-win32-x64"
 !define INSTALL_DIR "$PROGRAMFILES64\${APP_NAME}"
 !define REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
-!define OUTPUT_FILE "dist-electron\SmartQeyd-Setup.exe"
+!define OUTPUT_FILE "dist-electron\SmartQeyd-Setup-${APP_VERSION}.exe"
 
 ; Include modern UI
 !include "MUI2.nsh"
@@ -90,6 +90,12 @@ SectionEnd
 
 ; Uninstaller section
 Section "Uninstall"
+  ; Stop any running instances
+  ExecWait 'taskkill /f /im "${APP_EXE}" /t' $0
+  
+  ; Wait a moment for processes to close
+  Sleep 1000
+  
   ; Remove application files
   RMDir /r "$INSTDIR"
   
@@ -99,4 +105,9 @@ Section "Uninstall"
   
   ; Remove registry entries
   DeleteRegKey HKLM "${REG_KEY}"
+  
+  ; Remove user data (optional - ask user)
+  MessageBox MB_YESNO "İstifadəçi məlumatlarını da silmək istəyirsiniz?" IDNO skip_userdata
+  RMDir /r "$APPDATA\${APP_NAME}"
+  skip_userdata:
 SectionEnd
