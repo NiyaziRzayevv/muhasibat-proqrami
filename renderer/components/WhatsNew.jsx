@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.5.6';
+const CURRENT_VERSION = '1.5.7';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.5.7',
+    title: 'SmartQeyd v1.5.7 — Gözəl Güncəlləmə Ekranı! 🎉',
+    date: '2026-03-22',
+    highlights: [
+      { icon: Sparkles, text: 'UpdateNotification: GitHub məlumatları və gözəl dizayn' },
+      { icon: Shield, text: 'Bildiriş sistemi düzəldildi: Dashboard notifCheckRes işlənir' },
+      { icon: Package, text: 'Emoji və modern UI: Progress bar, detallar, GitHub commit info' },
+      { icon: Rocket, text: 'Avtomatik güncəlləmə: GitHub push sonrası səliqəli məlumatlar' },
+    ],
+    changes: [
+      'UpdateNotification: Tam yeniləndi - 420px genişlik, gradient dizayn',
+      'GitHub məlumatları: Commit hash, müəllif, tarix, fayl ölçüsü göstərilir',
+      'Changelog: Emoji ilə kateqoriyalar (🆕 yeni, 🐛 düzəliş, ⚡ təkmilləşdirmə)',
+      'Progress bar: Gradient animasiya, shadow effektləri',
+      'Dashboard: notifCheckRes nəticəsi düzgün işlənir, sistem bildirişləri göstərilir',
+      'Button dizaynı: Hover effektləri, scale animasiyaları, emoji',
+      'Detallar bölməsi: GitHub commit, müəllif, tarix məlumatları',
+      'Footer: Avtomatik güncəlləmə və GitHub sinxronizasiya məlumatı',
+    ],
+  },
   {
     version: '1.5.6',
     title: 'SmartQeyd v1.5.6 — Tam apiBridge Migration!',

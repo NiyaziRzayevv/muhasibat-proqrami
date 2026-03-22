@@ -78,6 +78,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
               <div className="w-7 h-7 bg-primary-500/20 rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-primary-400">{(currentUser.full_name || currentUser.username || '?')[0].toUpperCase()}</span>
               </div>
+              <span className="text-xs text-dark-500">v1.5.7</span>
               <span className="text-sm text-dark-300">{currentUser.full_name || currentUser.username}</span>
             </div>
             <button onClick={handleLogout} className="text-dark-500 hover:text-red-400 transition-colors" title="Çıxış">
