@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, RefreshCw, CheckCircle, ArrowDownCircle, Sparkles, Loader2, GitBranch, Calendar, User, FileText } from 'lucide-react';
+import { Download, X, RefreshCw, CheckCircle, Loader2, Github } from 'lucide-react';
 
 export default function UpdateNotification() {
   const [updateInfo, setUpdateInfo] = useState(null);
-  const [status, setStatus] = useState(null); // checking, available, downloading, downloaded, error
+  const [status, setStatus] = useState(null);
   const [progress, setProgress] = useState(0);
   const [dismissed, setDismissed] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (!window.api?.onUpdaterStatus) return;
@@ -29,196 +28,119 @@ export default function UpdateNotification() {
     return () => { if (unsub) unsub(); };
   }, []);
 
-  if (dismissed || !status || status === 'up-to-date' || status === 'checking') return null;
-
-  if (status === 'error') return null;
+  if (dismissed || !status || status === 'up-to-date' || status === 'checking' || status === 'error') return null;
 
   const version = updateInfo?.version || '?';
 
-  // Parse release notes and GitHub info
-  const releaseNotes = updateInfo?.releaseNotes || '';
-  const changeItems = releaseNotes
-    .split('\n')
-    .filter(line => line.trim().startsWith('-'))
-    .map(line => line.trim().replace(/^-\s*/, ''));
-  
-  const githubInfo = {
-    commitHash: updateInfo?.commitHash || 'unknown',
-    author: updateInfo?.author || 'System',
-    date: updateInfo?.publishedAt ? new Date(updateInfo.publishedAt).toLocaleDateString('az-AZ') : 'Bilinmir',
-    size: updateInfo?.downloadSize ? `${(updateInfo.downloadSize / 1024 / 1024).toFixed(1)} MB` : 'Bilinmir'
-  };
+  // Steps state
+  const steps = [
+    { label: 'Dəyişikliklər Yüklənir..', done: progress > 30 || status === 'downloaded' },
+    { label: 'Fayllar Aktarılır..', done: progress > 70 || status === 'downloaded' },
+    { label: 'Yeniliklər Yoxlanır..', done: status === 'downloaded' },
+  ];
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-gradient-to-br from-dark-900 via-dark-900 to-dark-800 border border-dark-700/50 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden w-[460px] max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="w-[520px] rounded-2xl overflow-hidden shadow-2xl shadow-black/70 border border-dark-700/40" style={{ background: 'linear-gradient(145deg, #0f1729 0%, #0a1628 30%, #0d1f3d 60%, #091322 100%)' }}>
+
         {/* Header */}
-        <div className="relative px-5 py-4 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-emerald-500/20 border-b border-dark-700/50">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-emerald-500/10 backdrop-blur-sm"></div>
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary-500/20 border border-primary-400/30">
-                <Sparkles size={18} className="text-primary-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  {status === 'downloaded' ? '🎉 Yeniləmə hazırdır!' : status === 'downloading' ? '⬇️ Yüklənir...' : `🚀 Yeni versiya: v${version}`}
-                </h3>
-                <p className="text-xs text-dark-300 mt-0.5">
-                  {status === 'downloaded' ? 'Yenidən başlatmaq üçün hazırdır' : status === 'downloading' ? 'Zəhmət olmasa gözləyin...' : 'GitHub-dan yeni güncəlləmə'}
-                </p>
+        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <Github size={22} className="text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-wide">
+              {status === 'downloaded' ? 'Güncəlləmə Hazırdır!' : "GitHub'a Güncəllənir..."}
+            </h2>
+          </div>
+          <span className="text-xs text-dark-400 font-medium">Smart Qeyd</span>
+        </div>
+
+        {/* Illustration area */}
+        <div className="flex justify-center py-4">
+          <div className="relative w-48 h-32 flex items-center justify-center">
+            {/* Cloud/city silhouette background */}
+            <div className="absolute inset-0 flex items-end justify-center opacity-20">
+              <div className="flex gap-1 items-end">
+                {[40, 55, 35, 60, 45, 50, 30, 55, 40].map((h, i) => (
+                  <div key={i} className="bg-primary-400/60 rounded-t-sm" style={{ width: '8px', height: `${h}px` }} />
+                ))}
               </div>
             </div>
-            <button
-              onClick={() => setDismissed(true)}
-              className="p-1.5 rounded-lg text-dark-400 hover:text-white hover:bg-dark-700/50 transition-all"
-            >
-              <X size={16} />
-            </button>
+            {/* Central icon */}
+            <div className="relative z-10 w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-600/30 to-dark-800/80 border border-primary-500/30 flex items-center justify-center shadow-2xl shadow-primary-500/20">
+              {status === 'downloaded' ? (
+                <CheckCircle size={36} className="text-emerald-400" />
+              ) : status === 'downloading' ? (
+                <Download size={36} className="text-primary-400 animate-bounce" />
+              ) : (
+                <Download size={36} className="text-primary-400" />
+              )}
+            </div>
+            {/* Floating paper planes */}
+            <div className="absolute top-2 right-4 text-primary-300/40 rotate-12 text-lg">&#9992;</div>
+            <div className="absolute top-6 right-12 text-primary-300/25 -rotate-6 text-sm">&#9992;</div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="px-5 py-4">
-          {/* Version and GitHub info */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r from-primary-500/20 to-primary-400/20 border border-primary-400/30 text-primary-300">
-                📦 v{version}
-              </span>
-              {status === 'downloaded' && (
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 border border-emerald-400/30 text-emerald-300">
-                  ✅ Hazır
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="text-xs text-primary-400 hover:text-primary-300 font-medium transition-colors"
-            >
-              {showDetails ? '🔼 Gizlə' : '🔽 Detallar'}
-            </button>
+        {/* Progress bar */}
+        <div className="px-8 mb-4">
+          <div className="w-full h-3 bg-dark-800 rounded-full overflow-hidden border border-dark-700/50">
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: status === 'downloaded' ? '100%' : `${progress}%`,
+                background: status === 'downloaded'
+                  ? 'linear-gradient(90deg, #10b981, #34d399)'
+                  : 'linear-gradient(90deg, #3b82f6, #60a5fa, #38bdf8)',
+                boxShadow: status === 'downloaded'
+                  ? '0 0 12px rgba(16, 185, 129, 0.5)'
+                  : '0 0 12px rgba(59, 130, 246, 0.5)',
+              }}
+            />
           </div>
-          
-          {/* GitHub Details */}
-          {showDetails && (
-            <div className="mb-4 p-3 rounded-xl bg-dark-800/50 border border-dark-700/50">
-              <div className="flex items-center gap-2 mb-2">
-                <GitBranch size={14} className="text-emerald-400" />
-                <span className="text-xs font-semibold text-emerald-400">GitHub Məlumatları</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <FileText size={10} className="text-dark-400" />
-                  <span className="text-dark-400">Commit:</span>
-                  <code className="text-primary-300 font-mono">{githubInfo.commitHash.substring(0, 7)}</code>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <User size={10} className="text-dark-400" />
-                  <span className="text-dark-400">Müəllif:</span>
-                  <span className="text-white">{githubInfo.author}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar size={10} className="text-dark-400" />
-                  <span className="text-dark-400">Tarix:</span>
-                  <span className="text-white">{githubInfo.date}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Download size={10} className="text-dark-400" />
-                  <span className="text-dark-400">Ölçü:</span>
-                  <span className="text-white">{githubInfo.size}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          <p className="text-center text-sm font-semibold mt-2" style={{ color: status === 'downloaded' ? '#34d399' : '#60a5fa' }}>
+            {status === 'downloaded' ? 'Güncəlləmə Tamamlandı!' : `Güncəlləmə Göndərilir...  ${progress}%`}
+          </p>
+        </div>
 
-          {/* Changelog */}
-          {changeItems.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText size={14} className="text-amber-400" />
-                <span className="text-xs font-semibold text-amber-400">📝 Yeniliklər və Dəyişikliklər</span>
-              </div>
-              <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
-                {changeItems.map((item, i) => {
-                  const isFeature = item.toLowerCase().includes('yeni') || item.toLowerCase().includes('əlavə') || item.toLowerCase().includes('feature');
-                  const isFix = item.toLowerCase().includes('düzəld') || item.toLowerCase().includes('fix') || item.toLowerCase().includes('bug');
-                  const isImprovement = item.toLowerCase().includes('yaxşılaş') || item.toLowerCase().includes('optim') || item.toLowerCase().includes('performance');
-                  
-                  return (
-                    <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-dark-800/30 border border-dark-700/30">
-                      {isFeature && <span className="text-xs">🆕</span>}
-                      {isFix && <span className="text-xs">🐛</span>}
-                      {isImprovement && <span className="text-xs">⚡</span>}
-                      {!isFeature && !isFix && !isImprovement && <CheckCircle size={12} className="text-primary-400 shrink-0 mt-0.5" />}
-                      <span className="text-xs text-dark-200 leading-relaxed">{item}</span>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Steps */}
+        <div className="px-8 mb-5 space-y-2.5">
+          {steps.map((step, i) => (
+            <div key={i} className="flex items-center gap-3">
+              {step.done ? (
+                <CheckCircle size={18} className="text-emerald-400 shrink-0" />
+              ) : (
+                <Loader2 size={18} className="text-primary-400 shrink-0 animate-spin" />
+              )}
+              <span className={`text-sm font-medium ${step.done ? 'text-emerald-300' : 'text-dark-300'}`}>
+                {step.label}
+              </span>
             </div>
-          )}
+          ))}
+        </div>
 
-          {/* Download progress */}
-          {status === 'downloading' && (
-            <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary-900/30 to-primary-800/20 border border-primary-700/30">
-              <div className="flex items-center justify-between text-xs mb-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 size={12} className="animate-spin text-primary-400" />
-                  <span className="font-medium text-primary-300">Yüklənir...</span>
-                </div>
-                <span className="font-bold text-primary-200">{progress}%</span>
-              </div>
-              <div className="w-full h-2 bg-dark-800 rounded-full overflow-hidden border border-dark-700">
-                <div
-                  className="h-full bg-gradient-to-r from-primary-500 via-primary-400 to-emerald-400 rounded-full transition-all duration-500 shadow-lg shadow-primary-500/30"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-dark-400 mt-1.5 text-center">GitHub-dan yüklənir... Zəhmət olmasa gözləyin</p>
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            {status === 'available' && (
-              <button
-                onClick={() => window.api?.downloadUpdate?.()}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white text-sm font-bold transition-all duration-300 shadow-lg shadow-primary-600/30 hover:shadow-primary-500/40 hover:scale-105"
-              >
-                <Download size={14} />
-                🚀 İndi Yüklə
-              </button>
-            )}
-            {status === 'downloading' && (
-              <div className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-dark-800 to-dark-700 text-dark-300 text-sm font-bold border border-dark-600">
-                <Loader2 size={14} className="animate-spin" />
-                ⏳ Yüklənir...
-              </div>
-            )}
+        {/* Footer */}
+        <div className="flex items-center justify-between px-8 py-4 border-t border-dark-700/30">
+          <p className="text-xs text-dark-500">
+            Zəhmət olmasa, biraz gözləyin...
+          </p>
+          <div className="flex gap-2">
             {status === 'downloaded' && (
               <button
                 onClick={() => window.api?.installUpdate?.()}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-bold transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/40 hover:scale-105"
+                className="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-bold transition-all duration-300 shadow-lg shadow-emerald-600/30"
               >
-                <RefreshCw size={14} />
-                🔄 Yenidən başlat
+                Quraşdır
               </button>
             )}
             <button
               onClick={() => setDismissed(true)}
-              className="px-4 py-3 rounded-xl bg-dark-800 hover:bg-dark-700 border border-dark-600 hover:border-dark-500 text-dark-300 hover:text-white text-sm font-medium transition-all duration-300"
+              className="px-5 py-2 rounded-lg bg-dark-800/80 hover:bg-dark-700 border border-dark-600/50 hover:border-dark-500 text-dark-300 hover:text-white text-sm font-medium transition-all duration-300"
             >
-              ⏰ Sonra
+              İmtina Et
             </button>
           </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="px-5 py-2 bg-dark-900/50 border-t border-dark-700/50">
-          <p className="text-xs text-dark-500 text-center">
-            💡 Avtomatik yeniləmə • GitHub ilə sinxronizasiya
-          </p>
         </div>
       </div>
     </div>

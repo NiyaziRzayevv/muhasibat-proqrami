@@ -92,11 +92,11 @@ function makeRequest(url, options, body) {
  * @param {Array} history - Əvvəlki söhbət tarixçəsi [{role, content}]
  * @returns {Promise<{success: boolean, text: string, error?: string}>}
  */
-async function chatWithGroq(userMessage, dbContext, history = []) {
+async function chatWithGroq(userMessage, dbContext, history = [], _retryCount = 0) {
   try {
     const messages = [
       { role: 'system', content: buildSystemPrompt(dbContext) },
-      ...history.slice(-10),
+      ...history.slice(-6),
       { role: 'user', content: userMessage },
     ];
 
@@ -110,7 +110,7 @@ async function chatWithGroq(userMessage, dbContext, history = []) {
       model: GROQ_MODEL,
       messages,
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 1500,
     });
 
     if (response.status === 200 && response.data?.choices?.[0]?.message?.content) {
@@ -118,6 +118,15 @@ async function chatWithGroq(userMessage, dbContext, history = []) {
         success: true,
         text: response.data.choices[0].message.content.trim(),
       };
+    }
+
+    // Rate limit — retry after delay (max 3 attempts)
+    if (response.status === 429 && _retryCount < 3) {
+      const retryMatch = (response.data?.error?.message || '').match(/try again in ([\d.]+)s/i);
+      const waitSec = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) + 1 : 5;
+      console.log(`[GROQ] Rate limited, retrying in ${waitSec}s (attempt ${_retryCount + 1}/3)`);
+      await new Promise(r => setTimeout(r, waitSec * 1000));
+      return chatWithGroq(userMessage, dbContext, history, _retryCount + 1);
     }
 
     const errMsg = response.data?.error?.message || `API status: ${response.status}`;

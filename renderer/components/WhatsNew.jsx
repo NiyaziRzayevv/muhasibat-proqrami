@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.6.1';
+const CURRENT_VERSION = '1.6.2';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
   {
-    version: '1.6.1',
-    title: 'SmartQeyd v1.6.1 — Lisenziya & Güncəlləmə Təkmilləşdirmələri! 🎉',
+    version: '1.6.2',
+    title: 'SmartQeyd v1.6.2 — Gözəl Güncəlləmə & AI Təkmilləşdirmə! 🎉',
     date: '2026-03-22',
     highlights: [
-      { icon: Shield, text: 'Lisenziya sistemi düzəldildi: UNIQUE constraint xətası həll edildi' },
-      { icon: Sparkles, text: 'Güncəlləmə ekranı tam mərkəzdə, daha səliqəli dizayn' },
-      { icon: Package, text: 'Güncəlləmə sonrası dəyişikliklər ana ekranda göstərilir' },
-      { icon: Rocket, text: 'Checksum uyğunluğu problemi həll edildi' },
+      { icon: Sparkles, text: 'Güncəlləmə ekranı: GitHub tematik gözəl dizayn, mərkəzdə modal' },
+      { icon: Shield, text: 'AI rate limit düzəldildi: Avtomatik retry mexanizmi (3 cəhd)' },
+      { icon: Package, text: 'Lisenziya UNIQUE xətası həll edildi' },
+      { icon: Rocket, text: 'Token istifadəsi optimallasdırıldı: daha az TPM' },
     ],
     changes: [
-      'Lisenziya aktivasiyası: Pending açar UPDATE olunur, INSERT dublikat xətası düzəldildi',
-      'Admin lisenziya yaratdıqda istifadəçi rahat aktiv edə bilir',
-      'Güncəlləmə bildirişi: Sağ yuxarıdan tam mərkəzə köçürüldü',
-      'Güncəlləmə ekranı: Modal overlay ilə daha professional görünüş',
-      'Yeniliklər pəncərəsi: v1.6.0 changelog əlavə edildi',
-      'SHA512 checksum uyğunluğu: latest.yml + exe eyni build-dən',
+      'Güncəlləmə ekranı: GitHub logo, progress bar, addımlar (Yüklənir, Aktarılır, Yoxlanır)',
+      'Şəhər silueti illustrasiya, kağız təyyarələri, gradient arxa plan',
+      'AI: Groq rate limit (429) avtomatik retry — gözləmə vaxtı parse edilir',
+      'AI: Söhbət tarixçəsi 6 mesaja, max_tokens 1500-ə azaldıldı (TPM optimallasdırma)',
+      'Lisenziya: Pending açar INSERT əvəzinə UPDATE (UNIQUE fix)',
+      'Güncəlləmə tamamlandıqda Quraşdır düyməsi görünür',
     ],
   },
   {
