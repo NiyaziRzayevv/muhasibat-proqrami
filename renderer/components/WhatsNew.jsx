@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.5.7';
+const CURRENT_VERSION = '1.6.0';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.6.0',
+    title: 'SmartQeyd v1.6.0 — Lisenziya & Güncəlləmə Təkmilləşdirmələri! 🎉',
+    date: '2026-03-22',
+    highlights: [
+      { icon: Shield, text: 'Lisenziya sistemi düzəldildi: UNIQUE constraint xətası həll edildi' },
+      { icon: Sparkles, text: 'Güncəlləmə ekranı tam mərkəzdə, daha səliqəli dizayn' },
+      { icon: Package, text: 'Güncəlləmə sonrası dəyişikliklər ana ekranda göstərilir' },
+      { icon: Rocket, text: 'Checksum uyğunluğu problemi həll edildi' },
+    ],
+    changes: [
+      'Lisenziya aktivasiyası: Pending açar UPDATE olunur, INSERT dublikat xətası düzəldildi',
+      'Admin lisenziya yaratdıqda istifadəçi rahat aktiv edə bilir',
+      'Güncəlləmə bildirişi: Sağ yuxarıdan tam mərkəzə köçürüldü',
+      'Güncəlləmə ekranı: Modal overlay ilə daha professional görünüş',
+      'Yeniliklər pəncərəsi: v1.6.0 changelog əlavə edildi',
+      'SHA512 checksum uyğunluğu: latest.yml + exe eyni build-dən',
+    ],
+  },
   {
     version: '1.5.7',
     title: 'SmartQeyd v1.5.7 — Gözəl Güncəlləmə Ekranı! 🎉',

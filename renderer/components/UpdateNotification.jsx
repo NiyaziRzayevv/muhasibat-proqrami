@@ -50,8 +50,8 @@ export default function UpdateNotification() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] w-[420px] animate-fade-in">
-      <div className="bg-gradient-to-br from-dark-900 via-dark-900 to-dark-800 border border-dark-700/50 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-gradient-to-br from-dark-900 via-dark-900 to-dark-800 border border-dark-700/50 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden w-[460px] max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="relative px-5 py-4 bg-gradient-to-r from-primary-600/30 via-primary-500/20 to-emerald-500/20 border-b border-dark-700/50">
           <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-emerald-500/10 backdrop-blur-sm"></div>
