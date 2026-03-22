@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Key, CheckCircle, XCircle, Copy, Trash2, Loader2, Plus, Clock, Calendar, Infinity, Users, User } from 'lucide-react';
 import { useApp } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
+import { apiBridge } from '../api/bridge';
 
 export default function License() {
   const { showNotification, checkLicense, isAdmin, currentUser } = useApp();
@@ -31,8 +32,8 @@ export default function License() {
     try {
       if (isAdmin) {
         const [licRes, usersRes] = await Promise.all([
-          window.api.getAllUserLicenses(),
-          window.api.getUsers?.() || Promise.resolve({ success: true, data: [] }),
+          apiBridge.getAllUserLicenses(),
+          apiBridge.getUsers?.() || Promise.resolve({ success: true, data: [] }),
         ]);
         if (licRes.success) setAllLicenses(licRes.data || []);
         if (usersRes.success) {
@@ -52,7 +53,7 @@ export default function License() {
     setGeneratedKey('');
     try {
       const targetUser = selectedUserId ? parseInt(selectedUserId) : null;
-      const res = await window.api.generateUserLicense(genDurationType, genDurationValue, currentUser.id, targetUser, targetDeviceId.trim() || null);
+      const res = await apiBridge.generateUserLicense(genDurationType, genDurationValue, currentUser.id, targetUser, targetDeviceId.trim() || null);
       if (res.success) {
         setGeneratedKey(res.data.licenseKey);
         showNotification('Lisenziya yaradıldı!', 'success');
@@ -69,7 +70,7 @@ export default function License() {
 
   async function handleRevoke(licId) {
     try {
-      const res = await window.api.revokeUserLicense(licId);
+      const res = await apiBridge.revokeUserLicense(licId);
       if (res.success) {
         showNotification('Lisenziya ləğv edildi', 'success');
         await loadData();

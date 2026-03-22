@@ -164,7 +164,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               <span className="text-lg font-black tracking-tight bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Smart</span>
               <span className="text-lg font-black tracking-tight text-white">Qeyd</span>
             </div>
-            <span className="text-xs text-dark-500">v1.5.7</span>
+            <span className="text-xs text-dark-500">v1.6.3</span>
           </div>
         ) : (
           <div className="flex items-center justify-center">

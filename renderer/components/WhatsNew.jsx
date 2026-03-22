@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.6.2';
+const CURRENT_VERSION = '1.6.3';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
+  {
+    version: '1.6.3',
+    title: 'SmartQeyd v1.6.3 — Lisenziya & Güncəlləmə Düzəlişi! 🔑',
+    date: '2026-03-22',
+    highlights: [
+      { icon: Shield, text: 'Lisenziya aktivasiyası düzəldildi: Artıq daxil olduqda yenidən istəmir' },
+      { icon: Sparkles, text: 'Güncəlləmə ekranı tamamilə yenidən dizayn edildi' },
+      { icon: Package, text: 'Versiya nömrəsi bütün ekranlarda düzgün göstərilir' },
+      { icon: Rocket, text: 'apiBridge: İstifadəçi lisenziya metodları əlavə edildi' },
+    ],
+    changes: [
+      'apiBridge-ə checkUserLicense, activateUserLicense, generateUserLicense əlavə edildi',
+      'Lisenziya aktivasiyadan sonra düzgün saxlanılır (bridge bug fix)',
+      'Güncəlləmə ekranı: Yeni gradient dizayn, animasiyalar, gözəl UI',
+      'Versiya v1.6.3 bütün ekranlarda (Login, Sidebar, Lisenziya) göstərilir',
+      'WhatsNew changelog v1.6.3 əlavə edildi',
+    ],
+  },
   {
     version: '1.6.2',
     title: 'SmartQeyd v1.6.2 — Gözəl Güncəlləmə & AI Təkmilləşdirmə! 🎉',

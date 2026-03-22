@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Copy, CheckCircle, Clock, Shield, AlertTriangle, Loader2, Monitor, Phone, LogOut } from 'lucide-react';
 import { useApp } from '../App';
+import { apiBridge } from '../api/bridge';
 
 export default function LicenseActivation({ onActivated, licenseInfo }) {
   const { currentUser, handleLogout, showNotification } = useApp();
@@ -18,7 +19,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
 
   async function loadDeviceId() {
     try {
-      const res = await window.api.getDeviceId();
+      const res = await apiBridge.getDeviceId();
       if (res.success) setDeviceId(res.data);
     } catch (e) {
       console.error('Device ID error:', e);
@@ -45,7 +46,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
     setError('');
     setSuccess('');
     try {
-      const res = await window.api.activateUserLicense(currentUser.id, licenseKey.trim(), deviceId);
+      const res = await apiBridge.activateUserLicense(currentUser.id, licenseKey.trim(), deviceId);
       if (res.success) {
         setSuccess('Lisenziya uğurla aktivləşdirildi!');
         setTimeout(() => onActivated?.(), 1000);
@@ -78,7 +79,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
               <div className="w-7 h-7 bg-primary-500/20 rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-primary-400">{(currentUser.full_name || currentUser.username || '?')[0].toUpperCase()}</span>
               </div>
-              <span className="text-xs text-dark-500">v1.5.7</span>
+              <span className="text-xs text-dark-500">v1.6.3</span>
               <span className="text-sm text-dark-300">{currentUser.full_name || currentUser.username}</span>
             </div>
             <button onClick={handleLogout} className="text-dark-500 hover:text-red-400 transition-colors" title="Çıxış">
@@ -198,7 +199,7 @@ export default function LicenseActivation({ onActivated, licenseInfo }) {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-dark-600 mt-6">
-          v1.5.6 · SmartQeyd Sistemi
+          v1.6.3 · SmartQeyd Sistemi
         </p>
       </div>
     </div>

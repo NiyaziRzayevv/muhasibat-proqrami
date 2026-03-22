@@ -291,7 +291,7 @@ export const apiBridge = {
 
   // ─── Auto-Update (Electron only) ────────────────────────────────────────
   checkForUpdate: () => isElectron ? safeCall(() => window.api.checkForUpdate()) : Promise.resolve({ success: false }),
-  getAppVersion: () => '1.5.7',
+  getAppVersion: () => '1.6.3',
   downloadUpdate: () => isElectron ? safeCall(() => window.api.downloadUpdate()) : Promise.resolve({ success: false }),
   installUpdate: () => isElectron ? window.api?.installUpdate?.() : null,
   onUpdaterStatus: (cb) => isElectron ? (window.api?.onUpdaterStatus?.(cb) || (() => {})) : (() => {}),
@@ -319,6 +319,13 @@ export const apiBridge = {
 
   // ─── Price History ──────────────────────────────────────────────────────
   getPriceHistory: (pid) => ipcOrHttp(() => window.api.getPriceHistory(pid), 'GET', `/products/${pid}/price-history`),
+
+  // ─── User-Level License ────────────────────────────────────────────────
+  checkUserLicense: (userId) => isElectron ? safeCall(() => window.api.checkUserLicense(userId)) : httpCall('GET', `/licenses/user/${userId}/check`),
+  activateUserLicense: (userId, key, deviceId) => isElectron ? safeCall(() => window.api.activateUserLicense(userId, key, deviceId)) : httpCall('POST', '/licenses/user/activate', { userId, key, deviceId }),
+  generateUserLicense: (durationType, durationValue, adminId, targetUserId, targetDeviceId) => isElectron ? safeCall(() => window.api.generateUserLicense(durationType, durationValue, adminId, targetUserId, targetDeviceId)) : httpCall('POST', '/licenses/user/generate', { durationType, durationValue, adminId, targetUserId, targetDeviceId }),
+  getAllUserLicenses: () => isElectron ? safeCall(() => window.api.getAllUserLicenses()) : httpCall('GET', '/licenses/user/all'),
+  revokeUserLicense: (licenseId) => isElectron ? safeCall(() => window.api.revokeUserLicense(licenseId)) : httpCall('POST', `/licenses/user/${licenseId}/revoke`),
 
   // ─── Compat stubs ───────────────────────────────────────────────────────
   getRemoteConfig: () => ({ enabled: !isElectron }),
