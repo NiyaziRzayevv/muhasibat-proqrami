@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Zap, Bot, Shield, Package, Rocket } from 'lucide-react';
 
-const CURRENT_VERSION = '1.6.0';
+const CURRENT_VERSION = '1.6.1';
 
 // Versiyalar sıra ilə (ən yenidən köhnəyə)
 const CHANGELOGS = [
   {
-    version: '1.6.0',
-    title: 'SmartQeyd v1.6.0 — Lisenziya & Güncəlləmə Təkmilləşdirmələri! 🎉',
+    version: '1.6.1',
+    title: 'SmartQeyd v1.6.1 — Lisenziya & Güncəlləmə Təkmilləşdirmələri! 🎉',
     date: '2026-03-22',
     highlights: [
       { icon: Shield, text: 'Lisenziya sistemi düzəldildi: UNIQUE constraint xətası həll edildi' },
